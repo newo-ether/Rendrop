@@ -1,0 +1,9 @@
+<RCC>
+    <qresource prefix="/icon">
+        <file>icon/down_arrow.ico</file>
+        <file>icon/icon.ico</file>
+        <file>icon/up_arrow.ico</file>
+        <file>icon/plus.ico</file>
+    </qresource>
+    <qresource prefix="/font"/>
+</RCC>

@@ -1,0 +1,310 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>fileBar</class>
+ <widget class="QWidget" name="fileBar">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>977</width>
+    <height>50</height>
+   </rect>
+  </property>
+  <property name="minimumSize">
+   <size>
+    <width>0</width>
+    <height>50</height>
+   </size>
+  </property>
+  <property name="maximumSize">
+   <size>
+    <width>16777215</width>
+    <height>50</height>
+   </size>
+  </property>
+  <property name="windowTitle">
+   <string>Form</string>
+  </property>
+  <property name="autoFillBackground">
+   <bool>false</bool>
+  </property>
+  <property name="styleSheet">
+   <string notr="true">background-color: transparent;</string>
+  </property>
+  <layout class="QHBoxLayout" name="horizontalLayout_2">
+   <property name="spacing">
+    <number>0</number>
+   </property>
+   <property name="leftMargin">
+    <number>0</number>
+   </property>
+   <property name="topMargin">
+    <number>0</number>
+   </property>
+   <property name="rightMargin">
+    <number>0</number>
+   </property>
+   <property name="bottomMargin">
+    <number>0</number>
+   </property>
+   <item>
+    <widget class="QWidget" name="fileBarContentWidget" native="true">
+     <property name="styleSheet">
+      <string notr="true">background-color: #2A2A2A;
+border: 1px solid #3C3C3C;
+border-radius: 16px;</string>
+     </property>
+     <layout class="QHBoxLayout" name="horizontalLayout">
+      <property name="spacing">
+       <number>7</number>
+      </property>
+      <property name="leftMargin">
+       <number>11</number>
+      </property>
+      <property name="topMargin">
+       <number>5</number>
+      </property>
+      <property name="bottomMargin">
+       <number>5</number>
+      </property>
+      <item>
+       <widget class="QWidget" name="sortWidget" native="true">
+        <property name="styleSheet">
+         <string notr="true">background: transparent;
+border: none;</string>
+        </property>
+        <layout class="QVBoxLayout" name="verticalLayout">
+         <property name="spacing">
+          <number>2</number>
+         </property>
+         <property name="leftMargin">
+          <number>0</number>
+         </property>
+         <property name="topMargin">
+          <number>0</number>
+         </property>
+         <property name="rightMargin">
+          <number>0</number>
+         </property>
+         <property name="bottomMargin">
+          <number>0</number>
+         </property>
+         <item>
+          <widget class="QPushButton" name="upButton">
+           <property name="minimumSize">
+            <size>
+             <width>15</width>
+             <height>15</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>15</width>
+             <height>15</height>
+            </size>
+           </property>
+           <property name="styleSheet">
+            <string notr="true">QPushButton {
+    background-color: transparent;
+    border: none;
+    border-radius: 6px;
+    color: white;
+}
+
+QPushButton:hover {
+    background-color: #4B5362;
+    color: white;
+}
+
+QPushButton:pressed {
+    background-color: #2B2F38;
+    color: white;
+}</string>
+           </property>
+           <property name="text">
+            <string/>
+           </property>
+           <property name="icon">
+            <iconset resource="../resource/resource.qrc">
+             <normaloff>:/icon/icon/up_arrow.ico</normaloff>:/icon/icon/up_arrow.ico</iconset>
+           </property>
+           <property name="iconSize">
+            <size>
+             <width>13</width>
+             <height>13</height>
+            </size>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="downButton">
+           <property name="minimumSize">
+            <size>
+             <width>15</width>
+             <height>15</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>15</width>
+             <height>15</height>
+            </size>
+           </property>
+           <property name="styleSheet">
+            <string notr="true">QPushButton {
+    background-color: transparent;
+    border: none;
+    border-radius: 6px;
+    color: white;
+}
+
+QPushButton:hover {
+    background-color: #4B5362;
+    color: white;
+}
+
+QPushButton:pressed {
+    background-color: #2B2F38;
+    color: white;
+}</string>
+           </property>
+           <property name="text">
+            <string/>
+           </property>
+           <property name="icon">
+            <iconset resource="../resource/resource.qrc">
+             <normaloff>:/icon/icon/down_arrow.ico</normaloff>:/icon/icon/down_arrow.ico</iconset>
+           </property>
+           <property name="iconSize">
+            <size>
+             <width>13</width>
+             <height>13</height>
+            </size>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLabel" name="fileBarLabel">
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>35</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>16777215</width>
+          <height>35</height>
+         </size>
+        </property>
+        <property name="font">
+         <font>
+          <family>Bitcount Single</family>
+          <pointsize>11</pointsize>
+          <stylestrategy>PreferAntialias</stylestrategy>
+         </font>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">padding-left: 12px;
+padding-right: 12px;
+border-radius: 12px;
+</string>
+        </property>
+        <property name="text">
+         <string>File</string>
+        </property>
+        <property name="margin">
+         <number>0</number>
+        </property>
+        <property name="indent">
+         <number>-1</number>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QProgressBar" name="fileBarProgressBar">
+        <property name="font">
+         <font>
+          <family>Bitcount Single</family>
+          <pointsize>-1</pointsize>
+          <stylestrategy>PreferAntialias</stylestrategy>
+         </font>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">QProgressBar {
+    background-color: #2C2F36;         /* 深灰背景 */
+    border: 1px solid #3C4049;         /* 稍亮的边框 */
+    border-radius: 6px;
+    text-align: center;                /* 文本居中 */
+    color: white;                    /* 浅灰色文字 */
+    font-size: 13px;
+    height: 16px;                      /* 可根据设计调高 */
+}
+
+QProgressBar::chunk {
+    background-color: #42A5F5;         /* Material 蓝色 */
+    border-radius: 6px;
+    margin: 1px;                       /* 视觉上更精致 */
+}</string>
+        </property>
+        <property name="value">
+         <number>57</number>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="fileBarDeleteButton">
+        <property name="minimumSize">
+         <size>
+          <width>20</width>
+          <height>20</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>20</width>
+          <height>20</height>
+         </size>
+        </property>
+        <property name="font">
+         <font>
+          <family>Bitcount Single</family>
+          <stylestrategy>PreferAntialias</stylestrategy>
+         </font>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">QPushButton {
+    background-color: #333842;    /* 深色背景 */
+    border: 1px solid #555A66;    /* 深色边框 */
+    border-radius: 6px;
+    color: white;
+}
+
+QPushButton:hover {
+    background-color: #4B5362;    /* 稍亮深色 */
+    color: white;
+}
+
+QPushButton:pressed {
+    background-color: #2B2F38;    /* 更深更沉稳的颜色 */
+    color: white;
+}</string>
+        </property>
+        <property name="text">
+         <string>×</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources>
+  <include location="../resource/resource.qrc"/>
+ </resources>
+ <connections/>
+</ui>

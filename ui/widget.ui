@@ -1,0 +1,338 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>widget</class>
+ <widget class="QWidget" name="widget">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1500</width>
+    <height>1025</height>
+   </rect>
+  </property>
+  <property name="minimumSize">
+   <size>
+    <width>500</width>
+    <height>500</height>
+   </size>
+  </property>
+  <property name="font">
+   <font>
+    <family>Product Sans</family>
+    <pointsize>8</pointsize>
+   </font>
+  </property>
+  <property name="windowTitle">
+   <string>Rendrop</string>
+  </property>
+  <property name="autoFillBackground">
+   <bool>false</bool>
+  </property>
+  <layout class="QHBoxLayout" name="horizontalLayout">
+   <property name="spacing">
+    <number>0</number>
+   </property>
+   <property name="leftMargin">
+    <number>0</number>
+   </property>
+   <property name="topMargin">
+    <number>0</number>
+   </property>
+   <property name="rightMargin">
+    <number>0</number>
+   </property>
+   <property name="bottomMargin">
+    <number>0</number>
+   </property>
+   <item>
+    <widget class="QWidget" name="ContentWidget" native="true">
+     <property name="styleSheet">
+      <string notr="true">QWidget#ContentWidget {
+	background-color: #202124;
+	color: #E0E0E0;
+}</string>
+     </property>
+     <layout class="QVBoxLayout" name="verticalLayout">
+      <property name="spacing">
+       <number>0</number>
+      </property>
+      <property name="leftMargin">
+       <number>20</number>
+      </property>
+      <property name="topMargin">
+       <number>0</number>
+      </property>
+      <property name="rightMargin">
+       <number>20</number>
+      </property>
+      <property name="bottomMargin">
+       <number>0</number>
+      </property>
+      <item>
+       <widget class="QWidget" name="titleBar" native="true">
+        <layout class="QFormLayout" name="formLayout_2">
+         <property name="leftMargin">
+          <number>5</number>
+         </property>
+         <property name="topMargin">
+          <number>0</number>
+         </property>
+         <property name="rightMargin">
+          <number>5</number>
+         </property>
+         <property name="bottomMargin">
+          <number>0</number>
+         </property>
+         <item row="0" column="0" colspan="2">
+          <layout class="QHBoxLayout" name="horizontalLayout_2">
+           <property name="spacing">
+            <number>7</number>
+           </property>
+           <property name="leftMargin">
+            <number>0</number>
+           </property>
+           <property name="topMargin">
+            <number>5</number>
+           </property>
+           <property name="bottomMargin">
+            <number>5</number>
+           </property>
+           <item>
+            <widget class="QLabel" name="rendropLabel">
+             <property name="font">
+              <font>
+               <family>Bitcount Single</family>
+               <pointsize>18</pointsize>
+               <bold>true</bold>
+               <stylestrategy>PreferAntialias</stylestrategy>
+              </font>
+             </property>
+             <property name="text">
+              <string>Rendrop</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <spacer name="horizontalSpacer_2">
+             <property name="orientation">
+              <enum>Qt::Orientation::Horizontal</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>40</width>
+               <height>20</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+          </layout>
+         </item>
+        </layout>
+       </widget>
+      </item>
+      <item>
+       <widget class="QWidget" name="infoWidget" native="true">
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>200</height>
+         </size>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">QWidget#infoWidget {
+	background-color: #2C313C;
+	border: 0px solid #555A66;    /* 深色边框 */
+	border-radius: 12px;
+	color: #E0E0E0;
+}</string>
+        </property>
+        <layout class="QHBoxLayout" name="horizontalLayout_3"/>
+       </widget>
+      </item>
+      <item>
+       <spacer name="verticalSpacer_2">
+        <property name="orientation">
+         <enum>Qt::Orientation::Vertical</enum>
+        </property>
+        <property name="sizeType">
+         <enum>QSizePolicy::Policy::Fixed</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>20</width>
+          <height>11</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+      <item>
+       <widget class="QScrollArea" name="scrollArea">
+        <property name="styleSheet">
+         <string notr="true">/* 通用基础样式 */
+QScrollBar:vertical, QScrollBar:horizontal {
+    background: #2C2F36;           /* 滚动条背景 */
+ 	border: 1px solid #555A66;    /* 深色边框 */
+    border-radius: 6px;
+    margin: 2px;
+}
+
+/* 滚动条滑块（thumb） */
+QScrollBar::handle:vertical, QScrollBar::handle:horizontal {
+    background: #5C6BC0;           /* Material 蓝紫色调 */
+    min-height: 20px;
+    min-width: 20px;
+    border-radius: 6px;
+}
+
+/* 悬停状态的滑块 */
+QScrollBar::handle:hover {
+    background: #7986CB;           /* 稍亮，悬停高亮 */
+}
+
+/* 按下状态 */
+QScrollBar::handle:pressed {
+    background: #3F51B5;           /* 深色按压 */
+}
+
+/* 上/下箭头按钮（可隐藏） */
+QScrollBar::sub-line,
+QScrollBar::add-line {
+    background: none;
+    width: 0px;
+    height: 0px;
+}
+
+/* 滚动条轨道上的剩余区域 */
+QScrollBar::sub-page,
+QScrollBar::add-page {
+    background: none;
+}
+
+QScrollArea#scrollArea {
+	background-color: #2C313C;
+	border: 0px solid #555A66;    /* 深色边框 */
+	border-radius: 12px;
+	color: #E0E0E0;
+}</string>
+        </property>
+        <property name="frameShape">
+         <enum>QFrame::Shape::StyledPanel</enum>
+        </property>
+        <property name="widgetResizable">
+         <bool>true</bool>
+        </property>
+        <widget class="QWidget" name="scrollAreaWidgetContents">
+         <property name="geometry">
+          <rect>
+           <x>0</x>
+           <y>0</y>
+           <width>1460</width>
+           <height>713</height>
+          </rect>
+         </property>
+         <property name="styleSheet">
+          <string notr="true">QWidget#scrollAreaWidgetContents {
+	background-color: transparent;
+	border: none;
+	font-family: &quot;Product Sans&quot;;
+}</string>
+         </property>
+         <layout class="QVBoxLayout" name="scrollAreaVerticalLayout">
+          <property name="spacing">
+           <number>9</number>
+          </property>
+          <item>
+           <spacer name="verticalSpacer">
+            <property name="orientation">
+             <enum>Qt::Orientation::Vertical</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>20</width>
+              <height>40</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+         </layout>
+        </widget>
+       </widget>
+      </item>
+      <item>
+       <layout class="QHBoxLayout" name="bottomBar">
+        <property name="topMargin">
+         <number>11</number>
+        </property>
+        <property name="bottomMargin">
+         <number>11</number>
+        </property>
+        <item>
+         <spacer name="bottomBarHorizontalSpacer">
+          <property name="orientation">
+           <enum>Qt::Orientation::Horizontal</enum>
+          </property>
+          <property name="sizeType">
+           <enum>QSizePolicy::Policy::Expanding</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>40</width>
+            <height>20</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+        <item>
+         <widget class="QPushButton" name="renderButton">
+          <property name="minimumSize">
+           <size>
+            <width>150</width>
+            <height>0</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>150</width>
+            <height>16777215</height>
+           </size>
+          </property>
+          <property name="font">
+           <font>
+            <family>Bitcount Single</family>
+            <pointsize>11</pointsize>
+            <stylestrategy>PreferAntialias</stylestrategy>
+           </font>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">QPushButton#renderButton {
+    background-color: #333842;    /* 深色背景 */
+    border-radius: 6px;
+    color: white;
+    padding: 6px 6px;
+}
+
+QPushButton#renderButton:hover {
+    background-color: #4B5362;    /* 稍亮深色 */
+    color: white;
+}
+
+QPushButton#renderButton:pressed {
+    background-color: #2B2F38;    /* 更深更沉稳的颜色 */
+    color: white;
+}</string>
+          </property>
+          <property name="text">
+           <string>Start Render</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+     </layout>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
