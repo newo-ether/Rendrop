@@ -21,10 +21,12 @@ public:
     FileBar(QWidget *parent, DropShadowRenderer *dropShadowRenderer);
     ~FileBar();
 
+    void setFilename(QString filename);
+    DropShadowWidget *getDropShadowWidget();
+
 private:
     Ui::fileBar *ui;
     DropShadowWidget *dropShadowWidget;
-    DropShadowRenderer *dropShadowRenderer;
 
 };
 

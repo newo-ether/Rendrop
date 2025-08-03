@@ -18,8 +18,8 @@ public:
     ~DropShadowRenderer();
 
     QImage render(
-        float width,
-        float height,
+        float widgetWidth,
+        float widgetHeight,
         float borderRadius,
         float offsetX,
         float offsetY,

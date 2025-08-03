@@ -7,11 +7,20 @@
 #include "drop_shadow_widget.h"
 #include "drop_shadow_renderer.h"
 
-DropShadowWidget::DropShadowWidget(QWidget *parent, QWidget *targetWidget, DropShadowRenderer *dropShadowRenderer):
+#define ENABLE_SHADOW_CACHE 1
+
+DropShadowWidget::DropShadowWidget(
+    QWidget *parent,
+    QWidget *targetWidget,
+    DropShadowRenderer *dropShadowRenderer
+):
     QWidget(parent),
     targetWidget(targetWidget),
     dropShadowRenderer(dropShadowRenderer)
 {
+    setAttribute(Qt::WA_TransparentForMouseEvents);
+    updateEnabled = true;
+    stackUnder(targetWidget);
     targetWidget->installEventFilter(this);
 }
 
@@ -21,26 +30,54 @@ void DropShadowWidget::paintEvent(QPaintEvent *)
 {
     QPainter painter(this);
 
-    QImage dropShadowImage = dropShadowRenderer->render(
-        width(),
-        height(),
-        borderRadius,
-        offsetX,
-        offsetY,
-        alphaMax,
-        blurRadius
-    );
-    if (!dropShadowImage.isNull()) {
-        painter.drawImage(QPoint(0, 0), dropShadowImage);
+#if ENABLE_SHADOW_CACHE
+
+    if (updateEnabled)
+    {
+        if (shadowCache.isNull() || !(shadowCache.width() == width()) || !(shadowCache.height() == height()))
+        {
+            shadowCache = dropShadowRenderer->render(
+                width(),
+                height(),
+                borderRadius,
+                offsetX,
+                offsetY,
+                alphaMax,
+                blurRadius
+            );
+        }
+        painter.drawImage(QPoint(0, 0), shadowCache);
     }
+    else
+    {
+        painter.drawImage(QPoint(0, 0), *shadowImage);
+    }
+
+#else
+
+        QImage dropShadowImage = dropShadowRenderer->render(
+            width(),
+            height(),
+            borderRadius,
+            offsetX,
+            offsetY,
+            alphaMax,
+            blurRadius
+        );
+        painter.drawImage(QPoint(0, 0), dropShadowImage);
+
+#endif
+
 }
 
 bool DropShadowWidget::eventFilter(QObject *watched, QEvent *event)
 {
     if (watched == targetWidget && (event->type() == QEvent::Move || event->type() == QEvent::Resize)) {
         QRect rect = targetWidget->geometry();
-        float marginX = offsetX + blurRadius * 0.5f;
-        float marginY = offsetY + blurRadius * 0.5f;
+
+        float marginX = std::abs(offsetX) + blurRadius * 0.5f;
+        float marginY = std::abs(offsetY) + blurRadius * 0.5f;
+
         rect.setRect(rect.x() - marginX, rect.y() - marginY, rect.width() + marginX * 2, rect.height() + marginY * 2);
         setGeometry(rect);
         stackUnder(targetWidget);
@@ -71,4 +108,14 @@ void DropShadowWidget::setAlphaMax(float alphaMax)
 void DropShadowWidget::setBlurRadius(float blurRadius)
 {
     this->blurRadius = blurRadius;
+}
+
+void DropShadowWidget::setShadowUpdateEnabled(bool updateEnabled)
+{
+    this->updateEnabled = updateEnabled;
+}
+
+void DropShadowWidget::setShadowImage(QImage *shadowImage)
+{
+    this->shadowImage = shadowImage;
 }

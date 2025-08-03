@@ -14,7 +14,11 @@ class DropShadowWidget : public QWidget
     Q_OBJECT
 
 public:
-    DropShadowWidget(QWidget *parent, QWidget *targetWidget, DropShadowRenderer *dropShadowRenderer);
+    DropShadowWidget(
+        QWidget *parent,
+        QWidget *targetWidget,
+        DropShadowRenderer *dropShadowRenderer
+    );
     ~DropShadowWidget();
 
     void setBorderRadius(float _borderRadius);
@@ -23,16 +27,21 @@ public:
     void setAlphaMax(float alphaMax);
     void setBlurRadius(float blurRadius);
 
+    void setShadowUpdateEnabled(bool updateEnabled);
+    void setShadowImage(QImage *shadowImage);
+
 protected:
     void paintEvent(QPaintEvent *) override;
     bool eventFilter(QObject *watched, QEvent *event) override;
 
 private:
-    float borderRadius, offsetX, offsetY, alphaMax, blurRadius;
-
     QWidget *targetWidget;
+    QImage shadowCache;
+    QImage *shadowImage;
     DropShadowRenderer *dropShadowRenderer;
 
+    float borderRadius, offsetX, offsetY, alphaMax, blurRadius;
+    bool updateEnabled;
 };
 
 #endif // DROPSHADOWWIDGET_H

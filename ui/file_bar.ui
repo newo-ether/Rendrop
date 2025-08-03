@@ -208,7 +208,10 @@ QPushButton:pressed {
          </font>
         </property>
         <property name="styleSheet">
-         <string notr="true">padding-left: 12px;
+         <string notr="true">background-color: #2A2A2A;
+border: 1px solid #3C3C3C;
+border-radius: 16px;
+padding-left: 12px;
 padding-right: 12px;
 border-radius: 12px;
 </string>

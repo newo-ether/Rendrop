@@ -44,7 +44,7 @@ void DropShadowRenderer::initializeOpenGL()
         out vec2 uv;
 
         void main() {
-            uv = position * 0.5f;
+            uv = position * vec2(0.5f, -0.5f);
             gl_Position = vec4(position, 0.0f, 1.0f);
         }
     )";
@@ -60,8 +60,6 @@ void DropShadowRenderer::initializeOpenGL()
         uniform float widgetHeight;
         uniform float rectWidth;
         uniform float rectHeight;
-        uniform float targetWidgetWidth;
-        uniform float targetWidgetHeight;
         uniform float offsetX;
         uniform float offsetY;
         uniform float alphaMax;
@@ -82,7 +80,7 @@ void DropShadowRenderer::initializeOpenGL()
         }
 
         void main() {
-            vec2 p = uv * vec2(widgetWidth, -widgetHeight) - vec2(offsetX, offsetY);
+            vec2 p = uv * vec2(widgetWidth, widgetHeight) - vec2(offsetX, offsetY);
             float dist = sdfRoundRect(p, rectWidth, rectHeight, borderRadius);
             float alpha = lerp(unlerp(dist, -blurRadius * 0.5f, blurRadius * 0.5f), alphaMax, 0.0f);
             fragColor = vec4(vec3(0.0f), alpha);
@@ -107,8 +105,8 @@ void DropShadowRenderer::initializeOpenGL()
 }
 
 QImage DropShadowRenderer::render(
-    float width,
-    float height,
+    float widgetWidth,
+    float widgetHeight,
     float borderRadius,
     float offsetX,
     float offsetY,
@@ -119,23 +117,23 @@ QImage DropShadowRenderer::render(
     fboFormat.setAttachment(QOpenGLFramebufferObject::NoAttachment);
     fboFormat.setInternalTextureFormat(GL_RGBA8);
 
-    QOpenGLFramebufferObject fbo(width, height, fboFormat);
+    QOpenGLFramebufferObject fbo(widgetWidth, widgetHeight, fboFormat);
     fbo.bind();
 
-    glFunctions->glViewport(0, 0, width, height);
+    glFunctions->glViewport(0, 0, widgetWidth, widgetHeight);
     glFunctions->glClearColor(0, 0, 0, 0);
     glFunctions->glClear(GL_COLOR_BUFFER_BIT);
 
     program->bind();
 
-    float marginX = offsetX + blurRadius * 0.5f;
-    float marginY = offsetY + blurRadius * 0.5f;
+    float marginX = std::abs(offsetX) + blurRadius * 0.5f;
+    float marginY = std::abs(offsetY) + blurRadius * 0.5f;
 
     program->setUniformValue("borderRadius", borderRadius);
-    program->setUniformValue("widgetWidth", static_cast<float>(width));
-    program->setUniformValue("widgetHeight", static_cast<float>(height));
-    program->setUniformValue("rectWidth", static_cast<float>(width - marginX * 2));
-    program->setUniformValue("rectHeight", static_cast<float>(height - marginY * 2));
+    program->setUniformValue("widgetWidth", static_cast<float>(widgetWidth));
+    program->setUniformValue("widgetHeight", static_cast<float>(widgetHeight));
+    program->setUniformValue("rectWidth", static_cast<float>(widgetWidth - marginX * 2));
+    program->setUniformValue("rectHeight", static_cast<float>(widgetHeight - marginY * 2));
     program->setUniformValue("offsetX", offsetX);
     program->setUniformValue("offsetY", offsetY);
     program->setUniformValue("alphaMax", alphaMax);

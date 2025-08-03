@@ -4,7 +4,8 @@
 #define WIDGET_H
 
 #include <QWidget>
-#include <QPushButton>
+#include <QString>
+#include <QImage>
 #include <vector>
 
 #include "file_bar.h"
@@ -32,10 +33,21 @@ private:
     Ui::widget *ui;
     AddFileButton *addFileButton;
     std::vector<FileBar *> fileBars;
+    std::vector<DropShadowWidget *> dropShadowWidgets;
     DropShadowRenderer *dropShadowRenderer;
+    QImage fileBarShadowImage;
 
 private:
-    void newFileBar();
+    void newFileBar(QString filename);
+    void createDropShadowWidget(
+        QWidget *parent,
+        QWidget *target,
+        float borderRadius,
+        float offsetX,
+        float offsetY,
+        float alphaMax,
+        float blurRadius
+    );
 
 };
 #endif // WIDGET_H

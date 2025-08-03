@@ -36,10 +36,10 @@ AddFileButton::AddFileButton(QWidget *parent, DropShadowRenderer *dropShadowRend
 
     dropShadowWidget = new DropShadowWidget(parent, this, dropShadowRenderer);
     dropShadowWidget->setBorderRadius(30);
-    dropShadowWidget->setOffsetX(2);
-    dropShadowWidget->setOffsetY(2);
+    dropShadowWidget->setOffsetX(3);
+    dropShadowWidget->setOffsetY(3);
     dropShadowWidget->setAlphaMax(0.3f);
-    dropShadowWidget->setBlurRadius(15);
+    dropShadowWidget->setBlurRadius(10);
 }
 
 AddFileButton::~AddFileButton()

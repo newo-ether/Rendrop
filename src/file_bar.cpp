@@ -8,21 +8,34 @@
 
 FileBar::FileBar(QWidget *parent, DropShadowRenderer *dropShadowRenderer):
     QWidget(parent),
-    ui(new Ui::fileBar),
-    dropShadowRenderer(dropShadowRenderer)
+    ui(new Ui::fileBar)
 {
     ui->setupUi(this);
 
-    dropShadowWidget = new DropShadowWidget(parent, this, dropShadowRenderer);
+    dropShadowWidget = new DropShadowWidget(
+        parent,
+        this,
+        dropShadowRenderer
+    );
     dropShadowWidget->setBorderRadius(16);
     dropShadowWidget->setOffsetX(2);
     dropShadowWidget->setOffsetY(2);
     dropShadowWidget->setAlphaMax(0.3f);
-    dropShadowWidget->setBlurRadius(15);
+    dropShadowWidget->setBlurRadius(10);
 }
 
 FileBar::~FileBar()
 {
     delete dropShadowWidget;
     delete ui;
+}
+
+void FileBar::setFilename(QString filename)
+{
+    ui->fileBarLabel->setText(filename);
+}
+
+DropShadowWidget * FileBar::getDropShadowWidget()
+{
+    return dropShadowWidget;
 }

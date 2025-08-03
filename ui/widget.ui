@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1500</width>
-    <height>1025</height>
+    <width>1000</width>
+    <height>800</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -226,8 +226,8 @@ QScrollArea#scrollArea {
           <rect>
            <x>0</x>
            <y>0</y>
-           <width>1460</width>
-           <height>713</height>
+           <width>960</width>
+           <height>488</height>
           </rect>
          </property>
          <property name="styleSheet">
@@ -242,7 +242,7 @@ QScrollArea#scrollArea {
            <number>9</number>
           </property>
           <item>
-           <spacer name="verticalSpacer">
+           <spacer name="fileBarVerticalSpacer">
             <property name="orientation">
              <enum>Qt::Orientation::Vertical</enum>
             </property>
@@ -253,6 +253,14 @@ QScrollArea#scrollArea {
              </size>
             </property>
            </spacer>
+          </item>
+          <item>
+           <widget class="QWidget" name="scrollAreaSizeWidget" native="true">
+            <property name="styleSheet">
+             <string notr="true">border: none;
+background: transparent;</string>
+            </property>
+           </widget>
           </item>
          </layout>
         </widget>
