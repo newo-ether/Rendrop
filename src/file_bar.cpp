@@ -6,11 +6,20 @@
 #include "drop_shadow_widget.h"
 #include "drop_shadow_renderer.h"
 
-FileBar::FileBar(QWidget *parent, DropShadowRenderer *dropShadowRenderer):
+FileBar::FileBar(
+    QWidget *parent,
+    DropShadowRenderer *dropShadowRenderer,
+    unsigned int id
+):
     QWidget(parent),
-    ui(new Ui::fileBar)
+    ui(new Ui::fileBar),
+    id(id)
 {
     ui->setupUi(this);
+
+    QObject::connect(ui->upButton, &QPushButton::clicked, this, &FileBar::onUpButtonClicked);
+    QObject::connect(ui->downButton, &QPushButton::clicked, this, &FileBar::onDownButtonClicked);
+    QObject::connect(ui->deleteButton, &QPushButton::clicked, this, &FileBar::onDeleteButtonClicked);
 
     dropShadowWidget = new DropShadowWidget(
         parent,
@@ -22,6 +31,7 @@ FileBar::FileBar(QWidget *parent, DropShadowRenderer *dropShadowRenderer):
     dropShadowWidget->setOffsetY(2);
     dropShadowWidget->setAlphaMax(0.3f);
     dropShadowWidget->setBlurRadius(10);
+    dropShadowWidget->show();
 }
 
 FileBar::~FileBar()
@@ -30,12 +40,42 @@ FileBar::~FileBar()
     delete ui;
 }
 
-void FileBar::setFilename(QString filename)
+void FileBar::setFileName(QString fileName)
 {
-    ui->fileBarLabel->setText(filename);
+    ui->fileNameLabel->setText(fileName);
 }
 
-DropShadowWidget * FileBar::getDropShadowWidget()
+QString FileBar::getFileName() const
+{
+    return ui->fileNameLabel->text();
+}
+
+DropShadowWidget * FileBar::getDropShadowWidget() const
 {
     return dropShadowWidget;
+}
+
+void FileBar::setID(unsigned int id)
+{
+    this->id = id;
+}
+
+unsigned int FileBar::getID() const
+{
+    return id;
+}
+
+void FileBar::onUpButtonClicked()
+{
+    emit upButtonClicked(this);
+}
+
+void FileBar::onDownButtonClicked()
+{
+    emit downButtonClicked(this);
+}
+
+void FileBar::onDeleteButtonClicked()
+{
+    emit deleteButtonClicked(this);
 }

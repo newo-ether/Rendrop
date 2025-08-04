@@ -5,9 +5,11 @@
 
 #include <QWidget>
 #include <QPaintEvent>
-#include <QImage>
+#include <QPixmap>
 
 #include "drop_shadow_renderer.h"
+
+#define ENABLE_SHADOW_CACHE 1
 
 class DropShadowWidget : public QWidget
 {
@@ -28,7 +30,7 @@ public:
     void setBlurRadius(float blurRadius);
 
     void setShadowUpdateEnabled(bool updateEnabled);
-    void setShadowImage(QImage *shadowImage);
+    void setShadowPixmap(QPixmap *shadowPixmap);
 
 protected:
     void paintEvent(QPaintEvent *) override;
@@ -36,12 +38,16 @@ protected:
 
 private:
     QWidget *targetWidget;
-    QImage shadowCache;
-    QImage *shadowImage;
+    QPixmap *shadowPixmap;
     DropShadowRenderer *dropShadowRenderer;
 
     float borderRadius, offsetX, offsetY, alphaMax, blurRadius;
     bool updateEnabled;
+
+#if ENABLE_SHADOW_CACHE
+    QPixmap shadowCache;
+#endif
+
 };
 
 #endif // DROPSHADOWWIDGET_H

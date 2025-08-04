@@ -19,16 +19,21 @@ SOURCES += \
     src/drop_shadow_widget.cpp \
     src/file_bar.cpp \
     src/main.cpp \
-    src/widget.cpp
+    src/widget.cpp \
+    src/drop_file_tip.cpp \
+    src/ring_progress_bar.cpp
 
 HEADERS += \
     src/include/add_file_button.h \
     src/include/drop_shadow_renderer.h \
     src/include/drop_shadow_widget.h \
     src/include/file_bar.h \
-    src/include/widget.h
+    src/include/widget.h \
+    src/include/drop_file_tip.h \
+    src/include/ring_progress_bar.h
 
 FORMS += \
+    ui/drop_file_tip.ui \
     ui/file_bar.ui \
     ui/widget.ui
 

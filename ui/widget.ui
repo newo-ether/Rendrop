@@ -6,14 +6,14 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1000</width>
+    <width>1200</width>
     <height>800</height>
    </rect>
   </property>
   <property name="minimumSize">
    <size>
-    <width>500</width>
-    <height>500</height>
+    <width>800</width>
+    <height>600</height>
    </size>
   </property>
   <property name="font">
@@ -92,10 +92,10 @@
             <number>0</number>
            </property>
            <property name="topMargin">
-            <number>5</number>
+            <number>8</number>
            </property>
            <property name="bottomMargin">
-            <number>5</number>
+            <number>8</number>
            </property>
            <item>
             <widget class="QLabel" name="rendropLabel">
@@ -146,7 +146,30 @@
 	color: #E0E0E0;
 }</string>
         </property>
-        <layout class="QHBoxLayout" name="horizontalLayout_3"/>
+        <layout class="QHBoxLayout" name="horizontalLayout_3">
+         <item>
+          <layout class="QHBoxLayout" name="horizontalLayout_4">
+           <property name="leftMargin">
+            <number>20</number>
+           </property>
+           <property name="topMargin">
+            <number>20</number>
+           </property>
+           <property name="rightMargin">
+            <number>20</number>
+           </property>
+           <property name="bottomMargin">
+            <number>20</number>
+           </property>
+           <item>
+            <widget class="RingProgressBar" name="widget_2" native="true"/>
+           </item>
+           <item>
+            <widget class="RingProgressBar" name="widget_3" native="true"/>
+           </item>
+          </layout>
+         </item>
+        </layout>
        </widget>
       </item>
       <item>
@@ -160,7 +183,7 @@
         <property name="sizeHint" stdset="0">
          <size>
           <width>20</width>
-          <height>11</height>
+          <height>16</height>
          </size>
         </property>
        </spacer>
@@ -226,8 +249,8 @@ QScrollArea#scrollArea {
           <rect>
            <x>0</x>
            <y>0</y>
-           <width>960</width>
-           <height>488</height>
+           <width>1160</width>
+           <height>467</height>
           </rect>
          </property>
          <property name="styleSheet">
@@ -269,10 +292,10 @@ background: transparent;</string>
       <item>
        <layout class="QHBoxLayout" name="bottomBar">
         <property name="topMargin">
-         <number>11</number>
+         <number>16</number>
         </property>
         <property name="bottomMargin">
-         <number>11</number>
+         <number>16</number>
         </property>
         <item>
          <spacer name="bottomBarHorizontalSpacer">
@@ -341,6 +364,14 @@ QPushButton#renderButton:pressed {
    </item>
   </layout>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>RingProgressBar</class>
+   <extends>QWidget</extends>
+   <header>ring_progress_bar.h</header>
+   <container>1</container>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections/>
 </ui>

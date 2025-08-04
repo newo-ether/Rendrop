@@ -5,12 +5,17 @@
 
 #include <QWidget>
 #include <QString>
-#include <QImage>
+#include <QPixmap>
 #include <vector>
 
 #include "file_bar.h"
+
 #include "add_file_button.h"
 #include "drop_shadow_renderer.h"
+
+#include "drop_file_tip.h"
+
+#define DEBUG 0
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -32,13 +37,14 @@ protected:
 private:
     Ui::widget *ui;
     AddFileButton *addFileButton;
+    DropFileTip *dropFileTip;
     std::vector<FileBar *> fileBars;
     std::vector<DropShadowWidget *> dropShadowWidgets;
     DropShadowRenderer *dropShadowRenderer;
-    QImage fileBarShadowImage;
+    QPixmap fileBarShadowPixmap;
 
 private:
-    void newFileBar(QString filename);
+    void newFileBar(QString fileName);
     void createDropShadowWidget(
         QWidget *parent,
         QWidget *target,
@@ -49,5 +55,17 @@ private:
         float blurRadius
     );
 
+#if DEBUG
+    void printItems();
+#endif
+
+private slots:
+    void onFileBarUp(FileBar *fileBar);
+    void onFileBarDown(FileBar *fileBar);
+    void onFileBarDelete(FileBar *fileBar);
+
+    void onAddFileButtonClicked();
+
 };
+
 #endif // WIDGET_H

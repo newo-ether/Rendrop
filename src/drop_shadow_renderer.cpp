@@ -104,7 +104,7 @@ void DropShadowRenderer::initializeOpenGL()
     glFunctions->glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 }
 
-QImage DropShadowRenderer::render(
+QPixmap DropShadowRenderer::render(
     float widgetWidth,
     float widgetHeight,
     float borderRadius,
@@ -150,7 +150,8 @@ QImage DropShadowRenderer::render(
 
     fbo.release();
 
-    QImage result = fbo.toImage();
+    QImage image = fbo.toImage();
+    QPixmap pixmap = QPixmap::fromImage(image);
 
-    return result;
+    return pixmap;
 }

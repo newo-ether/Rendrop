@@ -1,13 +1,11 @@
 // drop_shadow_widget.cpp
 
 #include <QPaintEvent>
-#include <QImage>
+#include <QPixmap>
 #include <QPainter>
 
 #include "drop_shadow_widget.h"
 #include "drop_shadow_renderer.h"
-
-#define ENABLE_SHADOW_CACHE 1
 
 DropShadowWidget::DropShadowWidget(
     QWidget *parent,
@@ -46,11 +44,11 @@ void DropShadowWidget::paintEvent(QPaintEvent *)
                 blurRadius
             );
         }
-        painter.drawImage(QPoint(0, 0), shadowCache);
+        painter.drawPixmap(QPoint(0, 0), shadowCache);
     }
     else
     {
-        painter.drawImage(QPoint(0, 0), *shadowImage);
+        painter.drawPixmap(QPoint(0, 0), *shadowPixmap);
     }
 
 #else
@@ -115,7 +113,7 @@ void DropShadowWidget::setShadowUpdateEnabled(bool updateEnabled)
     this->updateEnabled = updateEnabled;
 }
 
-void DropShadowWidget::setShadowImage(QImage *shadowImage)
+void DropShadowWidget::setShadowPixmap(QPixmap *shadowPixmap)
 {
-    this->shadowImage = shadowImage;
+    this->shadowPixmap = shadowPixmap;
 }

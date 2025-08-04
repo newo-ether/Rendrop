@@ -4,6 +4,7 @@
         <file>icon/icon.ico</file>
         <file>icon/up_arrow.ico</file>
         <file>icon/plus.ico</file>
+        <file>icon/3d_file.ico</file>
     </qresource>
     <qresource prefix="/font"/>
 </RCC>

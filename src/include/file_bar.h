@@ -4,6 +4,7 @@
 #define FILEBAR_H
 
 #include <QWidget>
+#include <QString>
 
 #include "drop_shadow_widget.h"
 #include "drop_shadow_renderer.h"
@@ -18,15 +19,33 @@ class FileBar : public QWidget
 {
     Q_OBJECT
 public:
-    FileBar(QWidget *parent, DropShadowRenderer *dropShadowRenderer);
+    FileBar(
+        QWidget *parent,
+        DropShadowRenderer *dropShadowRenderer,
+        unsigned int id
+    );
     ~FileBar();
 
-    void setFilename(QString filename);
-    DropShadowWidget *getDropShadowWidget();
+    void setFileName(QString fileName);
+    QString getFileName() const;
+    DropShadowWidget *getDropShadowWidget() const;
+    void setID(unsigned int id);
+    unsigned int getID() const;
 
 private:
     Ui::fileBar *ui;
     DropShadowWidget *dropShadowWidget;
+    unsigned int id;
+
+signals:
+    void upButtonClicked(FileBar *fileBar);
+    void downButtonClicked(FileBar *fileBar);
+    void deleteButtonClicked(FileBar *fileBar);
+
+private slots:
+    void onUpButtonClicked();
+    void onDownButtonClicked();
+    void onDeleteButtonClicked();
 
 };
 

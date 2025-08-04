@@ -3,7 +3,7 @@
 #ifndef DROPSHADOWRENDERER_H
 #define DROPSHADOWRENDERER_H
 
-#include <QImage>
+#include <QPixmap>
 
 #include <QOpenGLContext>
 #include <QOffscreenSurface>
@@ -17,7 +17,7 @@ public:
     DropShadowRenderer();
     ~DropShadowRenderer();
 
-    QImage render(
+    QPixmap render(
         float widgetWidth,
         float widgetHeight,
         float borderRadius,
@@ -25,7 +25,7 @@ public:
         float offsetY,
         float alphaMax,
         float blurRadius
-        );
+    );
 
 private:
     void initializeOpenGL();
