@@ -18,7 +18,7 @@ AddFileButton::AddFileButton(QWidget *parent, DropShadowRenderer *dropShadowRend
             border-radius: 30px;
             color: white;
             padding: 6px 6px;
-            border: 1px solid #555A66;
+            border: none;
         }
 
         QPushButton:hover {
@@ -31,15 +31,15 @@ AddFileButton::AddFileButton(QWidget *parent, DropShadowRenderer *dropShadowRend
             color: white;
         }
     )");
-    setIcon(QIcon(":/icon/icon/plus.ico"));
+    setIcon(QIcon(":/icon/plus.ico"));
     setIconSize(QSize(20, 20));
 
     dropShadowWidget = new DropShadowWidget(parent, this, dropShadowRenderer);
     dropShadowWidget->setBorderRadius(30);
-    dropShadowWidget->setOffsetX(3);
-    dropShadowWidget->setOffsetY(3);
-    dropShadowWidget->setAlphaMax(0.2f);
-    dropShadowWidget->setBlurRadius(8);
+    dropShadowWidget->setOffsetX(2);
+    dropShadowWidget->setOffsetY(2);
+    dropShadowWidget->setAlphaMax(0.3f);
+    dropShadowWidget->setBlurRadius(12);
 }
 
 AddFileButton::~AddFileButton()

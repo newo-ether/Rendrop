@@ -50,7 +50,7 @@
    <item>
     <widget class="QWidget" name="fileBarContentWidget" native="true">
      <property name="styleSheet">
-      <string notr="true">background-color: #2A2A2A;
+      <string notr="true">background-color: rgb(43, 45, 48);
 border: 1px solid #3C3C3C;
 border-radius: 16px;</string>
      </property>
@@ -126,7 +126,7 @@ QPushButton:pressed {
            </property>
            <property name="icon">
             <iconset resource="../resource/resource.qrc">
-             <normaloff>:/icon/icon/up_arrow.ico</normaloff>:/icon/icon/up_arrow.ico</iconset>
+             <normaloff>:/icon/up_arrow.ico</normaloff>:/icon/up_arrow.ico</iconset>
            </property>
            <property name="iconSize">
             <size>
@@ -173,7 +173,7 @@ QPushButton:pressed {
            </property>
            <property name="icon">
             <iconset resource="../resource/resource.qrc">
-             <normaloff>:/icon/icon/down_arrow.ico</normaloff>:/icon/icon/down_arrow.ico</iconset>
+             <normaloff>:/icon/down_arrow.ico</normaloff>:/icon/down_arrow.ico</iconset>
            </property>
            <property name="iconSize">
             <size>
@@ -191,13 +191,13 @@ QPushButton:pressed {
         <property name="minimumSize">
          <size>
           <width>0</width>
-          <height>35</height>
+          <height>30</height>
          </size>
         </property>
         <property name="maximumSize">
          <size>
           <width>16777215</width>
-          <height>35</height>
+          <height>30</height>
          </size>
         </property>
         <property name="font">
@@ -208,8 +208,8 @@ QPushButton:pressed {
          </font>
         </property>
         <property name="styleSheet">
-         <string notr="true">background-color: #2A2A2A;
-border: 1px solid #3C3C3C;
+         <string notr="true">background-color: #333842;
+ border: 1px solid #555A66;
 border-radius: 16px;
 padding-left: 12px;
 padding-right: 12px;
@@ -238,23 +238,26 @@ border-radius: 12px;
         </property>
         <property name="styleSheet">
          <string notr="true">QProgressBar {
-    background-color: #2C2F36;         /* 深灰背景 */
-    border: 1px solid #3C4049;         /* 稍亮的边框 */
-    border-radius: 6px;
-    text-align: center;                /* 文本居中 */
-    color: white;                    /* 浅灰色文字 */
+    background-color: #333842;
+    border: 1px solid #555A66;
+	border-radius: 4px;
+    text-align: center;
+    color: white;
     font-size: 13px;
-    height: 16px;                      /* 可根据设计调高 */
+    height: 16px;
 }
 
 QProgressBar::chunk {
-    background-color: #42A5F5;         /* Material 蓝色 */
-    border-radius: 6px;
-    margin: 1px;                       /* 视觉上更精致 */
+    background-color: #42A5F5;
+	border-radius: 4px;
+    margin: 1px;
 }</string>
         </property>
+        <property name="maximum">
+         <number>10000</number>
+        </property>
         <property name="value">
-         <number>57</number>
+         <number>0</number>
         </property>
        </widget>
       </item>
@@ -280,19 +283,19 @@ QProgressBar::chunk {
         </property>
         <property name="styleSheet">
          <string notr="true">QPushButton {
-    background-color: #333842;    /* 深色背景 */
-    border: 1px solid #555A66;    /* 深色边框 */
+    background-color: #333842;
+    border: 1px solid #555A66;
     border-radius: 6px;
     color: white;
 }
 
 QPushButton:hover {
-    background-color: #4B5362;    /* 稍亮深色 */
+    background-color: #4B5362;
     color: white;
 }
 
 QPushButton:pressed {
-    background-color: #2B2F38;    /* 更深更沉稳的颜色 */
+    background-color: #2B2F38;
     color: white;
 }</string>
         </property>

@@ -1,4 +1,4 @@
-QT       += core gui openglwidgets
+QT       += core gui opengl
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -18,6 +18,7 @@ SOURCES += \
     src/drop_shadow_renderer.cpp \
     src/drop_shadow_widget.cpp \
     src/file_bar.cpp \
+    src/blender_version_manager.cpp \
     src/main.cpp \
     src/widget.cpp \
     src/drop_file_tip.cpp \
@@ -25,6 +26,7 @@ SOURCES += \
 
 HEADERS += \
     src/include/add_file_button.h \
+    src/include/blender_version_manager.h \
     src/include/drop_shadow_renderer.h \
     src/include/drop_shadow_widget.h \
     src/include/file_bar.h \

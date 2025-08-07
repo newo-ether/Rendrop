@@ -5,6 +5,8 @@
 
 #include <QWidget>
 #include <QString>
+#include <QTimer>
+#include <QElapsedTimer>
 
 #include "drop_shadow_widget.h"
 #include "drop_shadow_renderer.h"
@@ -31,10 +33,16 @@ public:
     DropShadowWidget *getDropShadowWidget() const;
     void setID(unsigned int id);
     unsigned int getID() const;
+    void setProgressBar(float value);
 
 private:
     Ui::fileBar *ui;
     DropShadowWidget *dropShadowWidget;
+    QTimer *timer;
+    QElapsedTimer *elapsedTimer;
+    qint64 lastElapsed;
+    float value, targetValue, velocity;
+    float stiffness, damping;
     unsigned int id;
 
 signals:
@@ -46,7 +54,7 @@ private slots:
     void onUpButtonClicked();
     void onDownButtonClicked();
     void onDeleteButtonClicked();
-
+    void updateProgressBar();
 };
 
 #endif // FILEBAR_H

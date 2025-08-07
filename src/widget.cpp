@@ -4,6 +4,10 @@
 #include <QFileDialog>
 #include <QFileInfo>
 #include <QGraphicsOpacityEffect>
+#include <QMessageBox>
+#include <QFontDatabase>
+#include <QFont>
+
 #include <vector>
 
 #include "widget.h"
@@ -25,19 +29,24 @@ Widget::Widget(QWidget *parent)
     : QWidget(parent)
     , ui(new Ui::widget)
 {
+    QFontDatabase::addApplicationFont(":/font/BitcountSingle-Regular.ttf");
     ui->setupUi(this);
+
+    blenderVersionManager = new BlenderVersionManager("config/blender_versions.txt");
+    updateBlenderVersions();
 
     dropShadowRenderer = new DropShadowRenderer();
 
     addFileButton = new AddFileButton(ui->ContentWidget, dropShadowRenderer);
     QObject::connect(addFileButton, &AddFileButton::clicked, this, &Widget::onAddFileButtonClicked);
-    ui->scrollArea->installEventFilter(this);
+    ui->scrollAreaContainer->installEventFilter(this);
 
     ui->scrollAreaSizeWidget->setAttribute(Qt::WA_TransparentForMouseEvents);
     ui->scrollAreaSizeWidget->installEventFilter(this);
 
-    createDropShadowWidget(ui->ContentWidget, ui->infoWidget, 12, 4, 4, 0.3f, 15);
-    createDropShadowWidget(ui->ContentWidget, ui->scrollArea, 12, 4, 4, 0.3f, 15);
+    createDropShadowWidget(ui->ContentWidget, ui->selectorContainer, 12, 4, 4, 0.3f, 15);
+    createDropShadowWidget(ui->ContentWidget, ui->infoWidgetContainer, 12, 4, 4, 0.3f, 15);
+    createDropShadowWidget(ui->ContentWidget, ui->scrollAreaContainer, 12, 4, 4, 0.3f, 15);
     createDropShadowWidget(ui->ContentWidget, ui->renderButton, 6, 4, 4, 0.3f, 10);
 
     dropFileTip = new DropFileTip(ui->ContentWidget);
@@ -46,6 +55,12 @@ Widget::Widget(QWidget *parent)
     QGraphicsOpacityEffect *opacity = new QGraphicsOpacityEffect;
     opacity->setOpacity(0.5);
     dropFileTip->setGraphicsEffect(opacity);
+
+    QObject::connect(ui->horizontalSlider, &QSlider::sliderPressed, this, &Widget::onSliderChanged);
+    QObject::connect(ui->horizontalSlider, &QSlider::sliderMoved, this, &Widget::onSliderChanged);
+
+    QObject::connect(ui->addButton, &QPushButton::clicked, this, &Widget::onAddBlenderVersionButtonClicked);
+    QObject::connect(ui->deleteButton, &QPushButton::clicked, this, &Widget::onDeleteBlenderVersionButtonClicked);
 }
 
 Widget::~Widget()
@@ -65,20 +80,21 @@ Widget::~Widget()
 
     delete ui;
     delete dropShadowRenderer;
+    delete blenderVersionManager;
 }
 
 bool Widget::eventFilter(QObject *watched, QEvent *event)
 {
-    if (watched == ui->scrollArea && event->type() == QEvent::Resize)
+    if (watched == ui->scrollAreaContainer && event->type() == QEvent::Resize)
     {
-        QWidget *scrollArea = ui->scrollArea;
-        int x = scrollArea->x() + scrollArea->width();
-        int y = scrollArea->y() + scrollArea->height();
+        QWidget *scrollAreaContainer = ui->scrollAreaContainer;
+        int x = scrollAreaContainer->x() + scrollAreaContainer->width();
+        int y = scrollAreaContainer->y() + scrollAreaContainer->height();
 
-        addFileButton->move(x - 100, y - 100);
+        addFileButton->move(x - 110, y - 110);
         addFileButton->raise();
 
-        dropFileTip->setGeometry(scrollArea->geometry());
+        dropFileTip->setGeometry(scrollAreaContainer->geometry());
         dropFileTip->stackUnder(addFileButton);
     }
 
@@ -110,11 +126,45 @@ bool Widget::eventFilter(QObject *watched, QEvent *event)
     return QWidget::eventFilter(watched, event);
 }
 
+void Widget::errorMessageBox(QString text)
+{
+    QMessageBox messageBox(this);
+    QFont font("Bitcount Single", 12);
+    messageBox.setIcon(QMessageBox::Critical);
+    messageBox.setText(text);
+    messageBox.setWindowTitle("Error");
+    messageBox.setFont(font);
+    messageBox.exec();
+}
+
+void Widget::warningMessageBox(QString text)
+{
+    QMessageBox messageBox(this);
+    QFont font("Bitcount Single", 12);
+    messageBox.setIcon(QMessageBox::Warning);
+    messageBox.setText(text);
+    messageBox.setWindowTitle("Error");
+    messageBox.setFont(font);
+    messageBox.exec();
+}
+
+void Widget::infoMessageBox(QString text)
+{
+    QMessageBox messageBox(this);
+    QFont font("Bitcount Single", 12);
+    messageBox.setIcon(QMessageBox::Information);
+    messageBox.setText(text);
+    messageBox.setWindowTitle("Error");
+    messageBox.setFont(font);
+    messageBox.exec();
+}
+
 void Widget::newFileBar(QString fileName)
 {
     unsigned int id = static_cast<unsigned int>(fileBars.size());
-    FileBar *fileBar = new FileBar(ui->scrollAreaWidgetContents, dropShadowRenderer, id);
+    FileBar *fileBar = new FileBar(ui->scrollAreaContent, dropShadowRenderer, id);
     fileBar->setFileName(fileName);
+    fileBar->setProgressBar(ui->horizontalSlider->sliderPosition() / 100.0f);
 
     DropShadowWidget *fileBarShadow = fileBar->getDropShadowWidget();
     fileBarShadow->setShadowUpdateEnabled(false);
@@ -264,7 +314,7 @@ void Widget::onAddFileButtonClicked()
         this,
         tr("Open File"),
         "",
-        tr("All Files (*)")
+        tr("Blender Files (*.blend)")
     );
 
     if (!filePath.isEmpty()) {
@@ -277,4 +327,81 @@ void Widget::onAddFileButtonClicked()
     printItems();
 #endif
 
+}
+
+void Widget::onSliderChanged()
+{
+    float position = ui->horizontalSlider->sliderPosition() / 100.0f;
+
+    ui->currentProgressBar->setProgressBar(position);
+    ui->totalProgressBar->setProgressBar(position);
+
+    for (auto fileBar : fileBars)
+    {
+        fileBar->setProgressBar(position);
+    }
+}
+
+void Widget::onAddBlenderVersionButtonClicked()
+{
+    QString path = QFileDialog::getOpenFileName(
+        this,
+        tr("Select Blender Version"),
+        "",
+        tr("Blender Executable (blender.exe)")
+    );
+
+    if (!path.isEmpty()) {
+        int result = blenderVersionManager->addBlenderVersion(path.toStdString());
+        if (result != 0)
+        {
+            if (result == -1)
+            {
+                errorMessageBox(tr("Cannot open specified path."));
+            }
+            else if (result == -2)
+            {
+                errorMessageBox(tr("Failed to start Blender."));
+            }
+            else if (result == -3)
+            {
+                infoMessageBox(tr("Selected Blender version is already added."));
+            }
+            else
+            {
+                errorMessageBox(tr("Failed to save version configuration file."));
+            }
+        }
+        else
+        {
+            updateBlenderVersions();
+        }
+    }
+}
+
+void Widget::onDeleteBlenderVersionButtonClicked()
+{
+    QString version = ui->comboBox->currentText();
+    if (blenderVersionManager->deleteBlenderVersion(version.toStdString()) != 0)
+    {
+        errorMessageBox(tr("Failed to save version configuration file."));
+    }
+    updateBlenderVersions();
+}
+
+void Widget::updateBlenderVersions()
+{
+    ui->comboBox->clear();
+    const std::vector<BlenderVersionManager::BlenderVersion> &versions = blenderVersionManager->getBlenderVersions();
+    if (versions.empty())
+    {
+        ui->comboBox->addItem(tr("-- Select A Blender Version --"));
+    }
+    else
+    {
+        for (auto version : versions)
+        {
+            ui->comboBox->addItem(QString::fromStdString(version.version));
+        }
+    }
 }

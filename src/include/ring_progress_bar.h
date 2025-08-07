@@ -6,6 +6,7 @@
 #include <QWidget>
 #include <QPainter>
 #include <QTimer>
+#include <QElapsedTimer>
 
 class RingProgressBar : public QWidget
 {
@@ -15,13 +16,23 @@ public:
     RingProgressBar(QWidget *parent = nullptr);
     ~RingProgressBar();
 
-    void setValue(int value);
+    void setProgressBar(float value);
+    void setStiffness(float stiffness);
+    void setDamping(float damping);
 
 protected:
     void paintEvent(QPaintEvent *) override;
 
 private:
-    int value;
+    void updateProgressBar();
+
+private:
+    float value, targetValue, velocity;
+    float stiffness, damping;
+    qint64 lastElapsed;
+
+    QTimer *timer;
+    QElapsedTimer *elapsedTimer;
 };
 
 #endif // RING_PROGRESS_BAR_H
