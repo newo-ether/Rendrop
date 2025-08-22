@@ -1,7 +1,7 @@
 // add_file_button.h
 
-#ifndef ADDFILEBUTTON_H
-#define ADDFILEBUTTON_H
+#ifndef ADD_FILE_BUTTON_H
+#define ADD_FILE_BUTTON_H
 
 #include <QPushButton>
 
@@ -22,4 +22,4 @@ private:
 
 };
 
-#endif // ADDFILEBUTTON_H
+#endif // ADD_FILE_BUTTON_H

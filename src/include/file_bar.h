@@ -1,7 +1,7 @@
 // file_bar.h
 
-#ifndef FILEBAR_H
-#define FILEBAR_H
+#ifndef FILE_BAR_H
+#define FILE_BAR_H
 
 #include <QWidget>
 #include <QString>
@@ -10,6 +10,11 @@
 
 #include "drop_shadow_widget.h"
 #include "drop_shadow_renderer.h"
+
+#include "blender_file_info.h"
+#include "blender_file_reader.h"
+
+#include "blender_renderer.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -20,41 +25,69 @@ QT_END_NAMESPACE
 class FileBar : public QWidget
 {
     Q_OBJECT
+
 public:
+    enum State
+    {
+        Loading,
+        Queued,
+        Error,
+        Rendering,
+        Finished
+    };
+
     FileBar(
         QWidget *parent,
         DropShadowRenderer *dropShadowRenderer,
-        unsigned int id
+        QString fileName,
+        QString filePath,
+        QString blenderPath
     );
     ~FileBar();
 
     void setFileName(QString fileName);
     QString getFileName() const;
+    QString getFilePath() const;
+    void stopReading();
     DropShadowWidget *getDropShadowWidget() const;
-    void setID(unsigned int id);
-    unsigned int getID() const;
-    void setProgressBar(float value);
+    State getState() const;
+    int getFinishedFrame() const;
+    int getTotalFrame() const;
+    void render();
+    void stopRender();
+
+private:
+    void setFrame(int frameStart, int frameEnd, int frameStep);
+    void setResolution(int resolutionX, int resolutionY, int resolutionScale);
+    void setRenderEngine(int renderEngine);
 
 private:
     Ui::fileBar *ui;
+    BlenderFileReader *blenderFileReader;
     DropShadowWidget *dropShadowWidget;
-    QTimer *timer;
-    QElapsedTimer *elapsedTimer;
-    qint64 lastElapsed;
-    float value, targetValue, velocity;
-    float stiffness, damping;
-    unsigned int id;
+    QString filePath;
+    State state;
+    int frameStart, frameEnd, frameStep;
+    int finishedFrame, totalFrame;
+    BlenderRenderer *blenderRenderer;
 
 signals:
     void upButtonClicked(FileBar *fileBar);
     void downButtonClicked(FileBar *fileBar);
     void deleteButtonClicked(FileBar *fileBar);
+    void reloadButtonClicked(FileBar *fileBar);
+    void finishedReading();
+    void finishedRendering();
+    void progressChanged();
 
 private slots:
     void onUpButtonClicked();
     void onDownButtonClicked();
     void onDeleteButtonClicked();
-    void updateProgressBar();
+    void onReloadButtonClicked();
+    void onFinishedReading(int status, BlenderFileInfo info);
+    void onProgressChanged();
+    void onFinishedRendering(int status);
 };
 
-#endif // FILEBAR_H
+#endif // FILE_BAR_H

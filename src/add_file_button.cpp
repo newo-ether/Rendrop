@@ -30,6 +30,11 @@ AddFileButton::AddFileButton(QWidget *parent, DropShadowRenderer *dropShadowRend
             background-color: #3F51B5;
             color: white;
         }
+
+        QPushButton:disabled {
+            background-color: #55595F;
+            color: #888888;
+        }
     )");
     setIcon(QIcon(":/icon/plus.ico"));
     setIconSize(QSize(20, 20));

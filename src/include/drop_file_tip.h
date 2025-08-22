@@ -1,7 +1,7 @@
 // drop_file_tip.h
 
-#ifndef DROPFILETIP_H
-#define DROPFILETIP_H
+#ifndef DROP_FILE_TIP_H
+#define DROP_FILE_TIP_H
 
 #include <QWidget>
 
@@ -21,4 +21,4 @@ private:
     Ui::DropFileTip *ui;
 };
 
-#endif // DROPFILETIP_H
+#endif // DROP_FILE_TIP_H

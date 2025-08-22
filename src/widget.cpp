@@ -7,6 +7,11 @@
 #include <QMessageBox>
 #include <QFontDatabase>
 #include <QFont>
+#include <QProcess>
+#include <QTemporaryFile>
+#include <QThread>
+#include <QThreadPool>
+#include <QCloseEvent>
 
 #include <vector>
 
@@ -21,10 +26,6 @@
 
 #include "drop_file_tip.h"
 
-#if DEBUG
-#include <QDebug>
-#endif
-
 Widget::Widget(QWidget *parent)
     : QWidget(parent)
     , ui(new Ui::widget)
@@ -35,7 +36,10 @@ Widget::Widget(QWidget *parent)
     blenderVersionManager = new BlenderVersionManager("config/blender_versions.txt");
     updateBlenderVersions();
 
+    qRegisterMetaType<BlenderFileInfo>("BlenderFileInfo");
+
     dropShadowRenderer = new DropShadowRenderer();
+    dropShadowRenderer->setRendererEnabled(false);
 
     addFileButton = new AddFileButton(ui->ContentWidget, dropShadowRenderer);
     QObject::connect(addFileButton, &AddFileButton::clicked, this, &Widget::onAddFileButtonClicked);
@@ -56,11 +60,14 @@ Widget::Widget(QWidget *parent)
     opacity->setOpacity(0.5);
     dropFileTip->setGraphicsEffect(opacity);
 
-    QObject::connect(ui->horizontalSlider, &QSlider::sliderPressed, this, &Widget::onSliderChanged);
-    QObject::connect(ui->horizontalSlider, &QSlider::sliderMoved, this, &Widget::onSliderChanged);
+    isRendering = false;
 
     QObject::connect(ui->addButton, &QPushButton::clicked, this, &Widget::onAddBlenderVersionButtonClicked);
     QObject::connect(ui->deleteButton, &QPushButton::clicked, this, &Widget::onDeleteBlenderVersionButtonClicked);
+    QObject::connect(ui->renderButton, &QPushButton::clicked, this, &Widget::onRenderButtonClicked);
+
+    updateStatisticInfo();
+    updateButtonStatus();
 }
 
 Widget::~Widget()
@@ -72,6 +79,19 @@ Widget::~Widget()
 
     delete addFileButton;
     delete dropFileTip;
+
+    for (auto fileBar: fileBars)
+    {
+        FileBar::State state = fileBar->getState();
+        if (state == FileBar::State::Loading)
+        {
+            fileBar->stopReading();
+        }
+        else if (state == FileBar::State::Rendering)
+        {
+            fileBar->stopRender();
+        }
+    }
 
     for (auto fileBar: fileBars)
     {
@@ -126,67 +146,134 @@ bool Widget::eventFilter(QObject *watched, QEvent *event)
     return QWidget::eventFilter(watched, event);
 }
 
-void Widget::errorMessageBox(QString text)
+void Widget::closeEvent(QCloseEvent *event)
+{
+    bool isLoading = false;
+    if (!isRendering)
+    {
+        for (auto fileBar : fileBars)
+        {
+            FileBar::State state = fileBar->getState();
+            if (state == FileBar::State::Loading)
+            {
+                isLoading = true;
+                break;
+            }
+        }
+    }
+
+    QMessageBox::StandardButton result;
+    if (isRendering)
+    {
+        result = warningMessageBox(
+            tr("Warning"),
+            tr("Some tasks are still rendering. Are you sure to exit?"),
+            QMessageBox::Yes | QMessageBox::No
+        );
+    }
+    else if (isLoading)
+    {
+        result = warningMessageBox(
+            tr("Warning"),
+            tr("Some tasks are still loading. Are you sure to exit?"),
+            QMessageBox::Yes | QMessageBox::No
+        );
+    }
+    else
+    {
+        event->accept();
+        return;
+    }
+
+    if (result == QMessageBox::Yes)
+    {
+        event->accept();
+    }
+    else
+    {
+        event->ignore();
+    }
+}
+
+QMessageBox::StandardButton Widget::errorMessageBox(QString title, QString text, QMessageBox::StandardButtons buttons)
 {
     QMessageBox messageBox(this);
     QFont font("Bitcount Single", 12);
     messageBox.setIcon(QMessageBox::Critical);
     messageBox.setText(text);
-    messageBox.setWindowTitle("Error");
+    messageBox.setWindowTitle(title);
     messageBox.setFont(font);
-    messageBox.exec();
+    messageBox.setStandardButtons(buttons);
+    return static_cast<QMessageBox::StandardButton>(messageBox.exec());
 }
 
-void Widget::warningMessageBox(QString text)
+QMessageBox::StandardButton Widget::warningMessageBox(QString title, QString text, QMessageBox::StandardButtons buttons)
 {
     QMessageBox messageBox(this);
     QFont font("Bitcount Single", 12);
     messageBox.setIcon(QMessageBox::Warning);
     messageBox.setText(text);
-    messageBox.setWindowTitle("Error");
+    messageBox.setWindowTitle(title);
     messageBox.setFont(font);
-    messageBox.exec();
+    messageBox.setStandardButtons(buttons);
+    return static_cast<QMessageBox::StandardButton>(messageBox.exec());
 }
 
-void Widget::infoMessageBox(QString text)
+QMessageBox::StandardButton Widget::infoMessageBox(QString title, QString text, QMessageBox::StandardButtons buttons)
 {
     QMessageBox messageBox(this);
     QFont font("Bitcount Single", 12);
     messageBox.setIcon(QMessageBox::Information);
     messageBox.setText(text);
-    messageBox.setWindowTitle("Error");
+    messageBox.setWindowTitle(title);
     messageBox.setFont(font);
-    messageBox.exec();
+    messageBox.setStandardButtons(buttons);
+    return static_cast<QMessageBox::StandardButton>(messageBox.exec());
 }
 
-void Widget::newFileBar(QString fileName)
+QMessageBox::StandardButton Widget::questionMessageBox(QString title, QString text, QMessageBox::StandardButtons buttons)
 {
-    unsigned int id = static_cast<unsigned int>(fileBars.size());
-    FileBar *fileBar = new FileBar(ui->scrollAreaContent, dropShadowRenderer, id);
-    fileBar->setFileName(fileName);
-    fileBar->setProgressBar(ui->horizontalSlider->sliderPosition() / 100.0f);
+    QMessageBox messageBox(this);
+    QFont font("Bitcount Single", 12);
+    messageBox.setIcon(QMessageBox::Question);
+    messageBox.setText(text);
+    messageBox.setWindowTitle(title);
+    messageBox.setFont(font);
+    messageBox.setStandardButtons(buttons);
+    return static_cast<QMessageBox::StandardButton>(messageBox.exec());
+}
+
+FileBar *Widget::newFileBar(QString fileName, QString filePath)
+{
+    QString blenderPath = QString::fromStdString(blenderVersionManager->getBlenderPath(ui->comboBox->currentText().toStdString()));
+    FileBar *fileBar = new FileBar(
+        ui->scrollAreaContent,
+        dropShadowRenderer,
+        fileName,
+        filePath,
+        blenderPath
+    );
 
     DropShadowWidget *fileBarShadow = fileBar->getDropShadowWidget();
     fileBarShadow->setShadowUpdateEnabled(false);
     fileBarShadow->setShadowPixmap(&fileBarShadowPixmap);
 
+    unsigned int index = static_cast<unsigned int>(fileBars.size());
     QVBoxLayout *layout = ui->scrollAreaVerticalLayout;
-    layout->insertWidget(id, fileBar);
+    layout->insertWidget(index, fileBar);
 
     QObject::connect(fileBar, &FileBar::upButtonClicked, this, &Widget::onFileBarUp);
     QObject::connect(fileBar, &FileBar::downButtonClicked, this, &Widget::onFileBarDown);
     QObject::connect(fileBar, &FileBar::deleteButtonClicked, this, &Widget::onFileBarDelete);
+    QObject::connect(fileBar, &FileBar::reloadButtonClicked, this, &Widget::onFileBarReload);
+    QObject::connect(fileBar, &FileBar::finishedReading, this, &Widget::onFinishedReading);
+    QObject::connect(fileBar, &FileBar::finishedRendering, this, &Widget::onFinishedRendering);
+    QObject::connect(fileBar, &FileBar::progressChanged, this, &Widget::onProgressChanged);
 
     fileBars.push_back(fileBar);
+    dropFileTip->hide();
 
-    if (fileBars.empty())
-    {
-        dropFileTip->show();
-    }
-    else
-    {
-        dropFileTip->hide();
-    }
+    return fileBar;
 }
 
 void Widget::createDropShadowWidget(
@@ -208,90 +295,99 @@ void Widget::createDropShadowWidget(
     dropShadowWidgets.push_back(dropShadowWidget);
 }
 
-#if DEBUG
-
-void Widget::printItems()
-{
-    for (auto item : fileBars)
-    {
-        qDebug()
-            << item->getID()
-            << ": "
-            << item->getFileName();
-    }
-    qDebug() << "\n";
-}
-
-#endif
-
 void Widget::onFileBarUp(FileBar *fileBar)
 {
-    unsigned int id = fileBar->getID();
-    if (id > 0)
+    if (fileBars.empty())
     {
-        FileBar *lastFileBar = fileBars[id - 1];
-        lastFileBar->setID(id);
-        fileBar->setID(id - 1);
+        return;
+    }
+
+    auto iter = std::find(fileBars.begin(), fileBars.end(), fileBar);
+    if (iter > fileBars.begin() && iter < fileBars.end())
+    {
+        FileBar *lastFileBar = *(iter - 1);
 
         QVBoxLayout *layout = ui->scrollAreaVerticalLayout;
         layout->removeWidget(fileBar);
-        layout->insertWidget(id - 1, fileBar);
+        layout->insertWidget(iter - fileBars.begin() - 1, fileBar);
 
         // Refresh File Bars
         lastFileBar->hide();
-        lastFileBar->show();
         fileBar->hide();
+        lastFileBar->show();
         fileBar->show();
 
-        std::swap(fileBars[id - 1], fileBars[id]);
+        std::swap(*iter, *(iter - 1));
     }
-
-#if DEBUG
-    printItems();
-#endif
-
 }
 
 void Widget::onFileBarDown(FileBar *fileBar)
 {
-    unsigned int id = fileBar->getID();
-    if (id < fileBars.size() - 1)
+    if (fileBars.empty())
     {
-        FileBar *nextFileBar = fileBars[id + 1];
-        nextFileBar->setID(id);
-        fileBar->setID(id + 1);
+        return;
+    }
+
+    auto iter = std::find(fileBars.begin(), fileBars.end(), fileBar);
+    if (iter >= fileBars.begin() && iter < fileBars.end() - 1)
+    {
+        FileBar *nextFileBar = *(iter + 1);
 
         QVBoxLayout *layout = ui->scrollAreaVerticalLayout;
         layout->removeWidget(fileBar);
-        layout->insertWidget(id + 1, fileBar);
+        layout->insertWidget(iter - fileBars.begin() + 1, fileBar);
 
         // Refresh File Bars
         fileBar->hide();
-        fileBar->show();
         nextFileBar->hide();
+        fileBar->show();
         nextFileBar->show();
 
-        std::swap(fileBars[id + 1], fileBars[id]);
+        std::swap(*iter, *(iter + 1));
     }
-
-#if DEBUG
-    printItems();
-#endif
-
 }
 
 void Widget::onFileBarDelete(FileBar *fileBar)
 {
-    unsigned int id = fileBar->getID();
-
-    for (auto iter = fileBars.begin() + id + 1; iter != fileBars.end(); iter++)
+    if (fileBar->getState() == FileBar::State::Loading)
     {
-        FileBar *ptr = *iter;
-        ptr->setID(ptr->getID() - 1);
+        auto result = warningMessageBox(
+            tr("Warning"),
+            fileBar->getFileName()
+                + tr(" is still loading. Are you sure to delete?"),
+            QMessageBox::Yes | QMessageBox::No
+        );
+        if (result == QMessageBox::No)
+        {
+            return;
+        }
     }
 
+    if (fileBar->getState() == FileBar::State::Rendering)
+    {
+        auto result = warningMessageBox(
+            tr("Warning"),
+            fileBar->getFileName()
+                + tr(" is still rendering. Are you sure to delete?"),
+            QMessageBox::Yes | QMessageBox::No
+        );
+        if (result == QMessageBox::No)
+        {
+            return;
+        }
+    }
+
+    auto iter = std::find(fileBars.begin(), fileBars.end(), fileBar);
+    if (iter == fileBars.end())
+    {
+        return;
+    }
+
+    QVBoxLayout *layout = ui->scrollAreaVerticalLayout;
+    layout->removeWidget(fileBar);
+
     fileBar->deleteLater();
-    fileBars.erase(fileBars.begin() + id);
+    fileBars.erase(iter);
 
     if (fileBars.empty())
     {
@@ -302,44 +398,43 @@ void Widget::onFileBarDelete(FileBar *fileBar)
         dropFileTip->hide();
     }
 
-#if DEBUG
-    printItems();
-#endif
+    updateButtonStatus();
+    updateStatisticInfo();
+}
 
+void Widget::onFileBarReload(FileBar *)
+{
+    updateButtonStatus();
+    updateStatisticInfo();
+}
+
+void Widget::onFinishedReading()
+{
+    updateButtonStatus();
+    updateStatisticInfo();
 }
 
 void Widget::onAddFileButtonClicked()
 {
-    QString filePath = QFileDialog::getOpenFileName(
+    QStringList filePaths = QFileDialog::getOpenFileNames(
         this,
         tr("Open File"),
         "",
         tr("Blender Files (*.blend)")
     );
 
-    if (!filePath.isEmpty()) {
-        QFileInfo fileInfo(filePath);
-        QString fileName = fileInfo.fileName();
-        newFileBar(fileName);
-    }
-
-#if DEBUG
-    printItems();
-#endif
-
-}
-
-void Widget::onSliderChanged()
-{
-    float position = ui->horizontalSlider->sliderPosition() / 100.0f;
-
-    ui->currentProgressBar->setProgressBar(position);
-    ui->totalProgressBar->setProgressBar(position);
-
-    for (auto fileBar : fileBars)
+    for (QString &filePath : filePaths)
     {
-        fileBar->setProgressBar(position);
+        if (!filePath.isEmpty())
+        {
+            QFileInfo fileInfo(filePath);
+            QString fileName = fileInfo.baseName();
+            newFileBar(fileName, filePath);
+        }
     }
+
+    updateButtonStatus();
+    updateStatisticInfo();
 }
 
 void Widget::onAddBlenderVersionButtonClicked()
@@ -357,19 +452,19 @@ void Widget::onAddBlenderVersionButtonClicked()
         {
             if (result == -1)
             {
-                errorMessageBox(tr("Cannot open specified path."));
+                errorMessageBox(tr("Error"), tr("Cannot open specified path."));
             }
             else if (result == -2)
             {
-                errorMessageBox(tr("Failed to start Blender."));
+                errorMessageBox(tr("Error"), tr("Failed to start Blender."));
             }
             else if (result == -3)
             {
-                infoMessageBox(tr("Selected Blender version is already added."));
+                infoMessageBox(tr("Note"), tr("Selected Blender version is already added."));
             }
             else
             {
-                errorMessageBox(tr("Failed to save version configuration file."));
+                errorMessageBox(tr("Error"), tr("Failed to save version configuration file."));
             }
         }
         else
@@ -377,16 +472,97 @@ void Widget::onAddBlenderVersionButtonClicked()
             updateBlenderVersions();
         }
     }
+
+    updateButtonStatus();
 }
 
 void Widget::onDeleteBlenderVersionButtonClicked()
 {
-    QString version = ui->comboBox->currentText();
-    if (blenderVersionManager->deleteBlenderVersion(version.toStdString()) != 0)
+    if (blenderVersionManager->getBlenderVersionCount() > 0)
     {
-        errorMessageBox(tr("Failed to save version configuration file."));
+        QString version = ui->comboBox->currentText();
+        if (blenderVersionManager->deleteBlenderVersion(version.toStdString()) != 0)
+        {
+            errorMessageBox(tr("Error"), tr("Failed to save version configuration file."));
+        }
+        updateBlenderVersions();
     }
-    updateBlenderVersions();
+
+    updateButtonStatus();
+}
+
+void Widget::onRenderButtonClicked()
+{
+    if (!isRendering)
+    {
+        FileBar *firstRender = nullptr;
+        for (auto fileBar: fileBars)
+        {
+            if (fileBar->getState() == FileBar::State::Queued)
+            {
+                firstRender = fileBar;
+                break;
+            }
+        }
+
+        if (firstRender)
+        {
+            firstRender->render();
+
+            ui->renderButton->setText(tr("Stop Render"));
+            isRendering = true;
+
+            setSelectorEnabled(false);
+        }
+    }
+    else
+    {
+        for (auto fileBar: fileBars)
+        {
+            if (fileBar->getState() == FileBar::State::Rendering)
+            {
+                fileBar->stopRender();
+            }
+        }
+
+        ui->renderButton->setText(tr("Start Render"));
+        isRendering = false;
+
+        setSelectorEnabled(true);
+    }
+}
+
+void Widget::onFinishedRendering()
+{
+    FileBar *nextRender = nullptr;
+    for (auto fileBar: fileBars)
+    {
+        if (fileBar->getState() == FileBar::State::Queued)
+        {
+            nextRender = fileBar;
+            break;
+        }
+    }
+
+    if (nextRender)
+    {
+        nextRender->render();
+    }
+    else
+    {
+        ui->renderButton->setText(tr("Start Render"));
+        isRendering = false;
+
+        setSelectorEnabled(true);
+    }
+
+    updateButtonStatus();
+    updateStatisticInfo();
+}
+
+void Widget::onProgressChanged()
+{
+    updateStatisticInfo();
 }
 
 void Widget::updateBlenderVersions()
@@ -399,9 +575,76 @@ void Widget::updateBlenderVersions()
     }
     else
     {
-        for (auto version : versions)
+        for (auto &version : versions)
         {
             ui->comboBox->addItem(QString::fromStdString(version.version));
         }
     }
+}
+
+void Widget::updateButtonStatus()
+{
+    bool blenderExists = blenderVersionManager->getBlenderVersionCount() > 0;
+    addFileButton->setEnabled(blenderExists);
+
+    bool isLoading = false;
+    for (auto fileBar: fileBars)
+    {
+        if (fileBar->getState() == FileBar::State::Loading)
+        {
+            isLoading = true;
+            break;
+        }
+    }
+
+    if (isRendering)
+    {
+        ui->renderButton->setEnabled(true);
+    }
+    else
+    {
+        ui->renderButton->setEnabled(!fileBars.empty() && blenderExists && !isLoading);
+    }
+}
+
+void Widget::setSelectorEnabled(bool enable)
+{
+    ui->comboBox->setEnabled(enable);
+    ui->addButton->setEnabled(enable);
+    ui->deleteButton->setEnabled(enable);
+}
+
+void Widget::updateStatisticInfo()
+{
+    int frameFinished = 0, frameTotal = 0;
+    int projectFinished = 0, projectTotal = 0;
+
+    for (auto fileBar: fileBars)
+    {
+        FileBar::State state = fileBar->getState();
+        if (state == FileBar::State::Finished)
+        {
+            projectFinished++;
+        }
+
+        frameFinished += fileBar->getFinishedFrame();
+        frameTotal += fileBar->getTotalFrame();
+    }
+    projectTotal = static_cast<int>(fileBars.size());
+
+    ui->framesLabel->setText(
+        QString::number(frameFinished)
+        + " / "
+        + QString::number(frameTotal));
+
+    ui->projectsLabel->setText(
+        QString::number(projectFinished)
+        + " / "
+        + QString::number(projectTotal));
+
+    float frameProgress = frameTotal == 0 ? 0.0f : static_cast<float>(frameFinished) / frameTotal * 100.0f;
+    float projectProgress = projectTotal == 0 ? 0.0f : static_cast<float>(projectFinished) / projectTotal * 100.0f;
+
+    ui->framesProgressBar->setProgressBar(frameProgress);
+    ui->projectsProgressBar->setProgressBar(projectProgress);
 }

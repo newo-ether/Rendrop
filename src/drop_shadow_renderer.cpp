@@ -10,7 +10,8 @@
 
 #include "drop_shadow_renderer.h"
 
-DropShadowRenderer::DropShadowRenderer()
+DropShadowRenderer::DropShadowRenderer(bool enabled):
+    enabled(enabled)
 {
     initializeOpenGL();
 }
@@ -24,11 +25,11 @@ DropShadowRenderer::~DropShadowRenderer()
 
 void DropShadowRenderer::initializeOpenGL()
 {
-    glContext = new QOpenGLContext;
+    glContext = new QOpenGLContext();
     glContext->setFormat(QSurfaceFormat::defaultFormat());
     glContext->create();
 
-    glSurface = new QOffscreenSurface;
+    glSurface = new QOffscreenSurface();
     glSurface->setFormat(glContext->format());
     glSurface->create();
 
@@ -37,55 +38,53 @@ void DropShadowRenderer::initializeOpenGL()
     glFunctions = glContext->functions();
     glFunctions->initializeOpenGLFunctions();
 
-    const char *vertexShaderSource = R"(
-        #version 330 core
+    const char *vertexShaderSource =
+        "#version 330 core\n"
+        "\n"
+        "layout(location = 0) in vec2 position;\n"
+        "out vec2 uv;\n"
+        "\n"
+        "void main() {\n"
+        "    uv = position * vec2(0.5f, -0.5f);\n"
+        "    gl_Position = vec4(position, 0.0f, 1.0f);\n"
+        "}\n";
 
-        layout(location = 0) in vec2 position;
-        out vec2 uv;
-
-        void main() {
-            uv = position * vec2(0.5f, -0.5f);
-            gl_Position = vec4(position, 0.0f, 1.0f);
-        }
-    )";
-
-    const char *fragmentShaderSource = R"(
-        #version 330 core
-
-        in vec2 uv;
-        out vec4 fragColor;
-
-        uniform float borderRadius;
-        uniform float widgetWidth;
-        uniform float widgetHeight;
-        uniform float rectWidth;
-        uniform float rectHeight;
-        uniform float offsetX;
-        uniform float offsetY;
-        uniform float alphaMax;
-        uniform float blurRadius;
-
-        float lerp(float k, float a, float b) {
-            return (1.0f - k) * a + k * b;
-        }
-
-        float unlerp(float x, float a, float b) {
-            return (x - a) / (b - a);
-        }
-
-        float sdfRoundRect(vec2 pos, float width, float height, float radius) {
-            vec2 d = abs(pos) - vec2(width/2 - radius, height/2 - radius);
-            vec2 q = max(d, vec2(0.0f));
-            return length(q) - radius + min(max(q.x, q.y), 0.0f);
-        }
-
-        void main() {
-            vec2 p = uv * vec2(widgetWidth, widgetHeight) - vec2(offsetX, offsetY);
-            float dist = sdfRoundRect(p, rectWidth, rectHeight, borderRadius);
-            float alpha = lerp(unlerp(dist, -blurRadius * 0.5f, blurRadius * 0.5f), alphaMax, 0.0f);
-            fragColor = vec4(vec3(0.0f), alpha);
-        }
-    )";
+    const char *fragmentShaderSource =
+        "#version 330 core\n"
+        "\n"
+        "in vec2 uv;\n"
+        "out vec4 fragColor;\n"
+        "\n"
+        "uniform float borderRadius;\n"
+        "uniform float widgetWidth;\n"
+        "uniform float widgetHeight;\n"
+        "uniform float rectWidth;\n"
+        "uniform float rectHeight;\n"
+        "uniform float offsetX;\n"
+        "uniform float offsetY;\n"
+        "uniform float alphaMax;\n"
+        "uniform float blurRadius;\n"
+        "\n"
+        "float lerp(float k, float a, float b) {\n"
+        "    return (1.0f - k) * a + k * b;\n"
+        "}\n"
+        "\n"
+        "float unlerp(float x, float a, float b) {\n"
+        "    return (x - a) / (b - a);\n"
+        "}\n"
+        "\n"
+        "float sdfRoundRect(vec2 pos, float width, float height, float radius) {\n"
+        "    vec2 d = abs(pos) - vec2(width/2 - radius, height/2 - radius);\n"
+        "    vec2 q = max(d, vec2(0.0f));\n"
+        "    return length(q) - radius + min(max(q.x, q.y), 0.0f);\n"
+        "}\n"
+        "\n"
+        "void main() {\n"
+        "    vec2 p = uv * vec2(widgetWidth, widgetHeight) - vec2(offsetX, offsetY);\n"
+        "    float dist = sdfRoundRect(p, rectWidth, rectHeight, borderRadius);\n"
+        "    float alpha = lerp(unlerp(dist, -blurRadius * 0.5f, blurRadius * 0.5f), alphaMax, 0.0f);\n"
+        "    fragColor = vec4(vec3(0.0f), alpha);\n"
+        "};\n";
 
     program = new QOpenGLShaderProgram();
     program->addShaderFromSourceCode(QOpenGLShader::Vertex, vertexShaderSource);
@@ -113,6 +112,11 @@ QPixmap DropShadowRenderer::render(
     float alphaMax,
     float blurRadius
 ) {
+    if (!enabled)
+    {
+        return QPixmap();
+    }
+
     QOpenGLFramebufferObjectFormat fboFormat;
     fboFormat.setAttachment(QOpenGLFramebufferObject::NoAttachment);
     fboFormat.setInternalTextureFormat(GL_RGBA8);
@@ -154,4 +158,9 @@ QPixmap DropShadowRenderer::render(
     QPixmap pixmap = QPixmap::fromImage(image);
 
     return pixmap;
+}
+
+void DropShadowRenderer::setRendererEnabled(bool enabled)
+{
+    this->enabled = enabled;
 }

@@ -1,13 +1,19 @@
-// ring_progress_bar.cpp
+// progress_bar.cpp
 
 #include <QWidget>
+#include <QLabel>
+#include <QString>
 #include <QPainter>
+#include <QPainterPath>
+#include <QRect>
+#include <QFont>
 #include <QTimer>
 #include <QElapsedTimer>
+#include <QColor>
 
-#include "ring_progress_bar.h"
+#include "progress_bar.h"
 
-RingProgressBar::RingProgressBar(QWidget *parent):
+ProgressBar::ProgressBar(QWidget *parent):
     QWidget(parent),
     value(0),
     targetValue(0),
@@ -16,14 +22,14 @@ RingProgressBar::RingProgressBar(QWidget *parent):
     damping(50)
 {
     timer = new QTimer(this);
-    connect(timer, &QTimer::timeout, this, &RingProgressBar::updateProgressBar);
+    connect(timer, &QTimer::timeout, this, &ProgressBar::updateProgressBar);
 
     elapsedTimer = new QElapsedTimer();
     elapsedTimer->start();
     lastElapsed = 0;
 }
 
-RingProgressBar::~RingProgressBar()
+ProgressBar::~ProgressBar()
 {
     if (timer->isActive())
     {
@@ -33,7 +39,7 @@ RingProgressBar::~RingProgressBar()
     delete elapsedTimer;
 }
 
-void RingProgressBar::setProgressBar(float value)
+void ProgressBar::setProgressBar(float value)
 {
     this->targetValue = std::clamp(value, 0.0f, 100.0f);
     if (!timer->isActive())
@@ -43,47 +49,43 @@ void RingProgressBar::setProgressBar(float value)
     }
 }
 
-void RingProgressBar::setStiffness(float stiffness)
+void ProgressBar::setStiffness(float stiffness)
 {
     this->stiffness = stiffness;
 }
 
-void RingProgressBar::setDamping(float damping)
+void ProgressBar::setDamping(float damping)
 {
     this->damping = damping;
 }
 
-void RingProgressBar::paintEvent(QPaintEvent *)
+void ProgressBar::paintEvent(QPaintEvent *)
 {
-    QPainter p(this);
-    p.setRenderHint(QPainter::Antialiasing);
+    QPainter painter(this);
+    painter.setRenderHint(QPainter::Antialiasing, true);
 
     int w = width();
     int h = height();
-    int size = qMin(w, h);
-    int penWidth = 6;
+    int radius = 4;
 
-    QRectF rect((w - size) / 2 + penWidth / 2, (h - size) / 2 + penWidth / 2,
-                size - penWidth, size - penWidth);
+    QPainterPath backgroundPath;
+    backgroundPath.addRoundedRect(2, 2, w - 4, h - 4, radius, radius);
+    painter.fillPath(backgroundPath, QColor(51, 56, 66));
+    painter.setPen(QColor(85, 90, 102));
+    painter.drawPath(backgroundPath);
 
-    QColor backgroundColor(53, 55, 60);
-    QColor progressColor(33, 150, 243, std::lerp(0, 255, std::clamp(value, 0.0f, 0.5f) / 0.5f));
+    float ratio = value / 100.0f;
+    int progressWidth = qMax(0, int((w - 6) * ratio));
 
-    QPen pen;
-    pen.setColor(backgroundColor);
-    pen.setWidth(penWidth);
-    pen.setCapStyle(Qt::RoundCap);
-    p.setPen(pen);
-    p.drawArc(rect, 90 * 16, -360 * 16);
-
-    pen.setColor(progressColor);
-    p.setPen(pen);
-
-    float angle = 360.0 * value / 100;
-    p.drawArc(rect, 90 * 16, -angle * 16);
+    if (progressWidth > 0)
+    {
+        QPainterPath progressPath;
+        progressPath.addRoundedRect(3, 3, progressWidth, h - 6, radius, radius);
+        painter.fillPath(progressPath, QColor(66, 165, 245));
+    }
 }
 
-void RingProgressBar::updateProgressBar()
+void ProgressBar::updateProgressBar()
 {
     qint64 elapsed = elapsedTimer->elapsed();
     float dt = static_cast<float>(elapsed - lastElapsed) / 1000;

@@ -1,7 +1,7 @@
 // drop_shadow_renderer.h
 
-#ifndef DROPSHADOWRENDERER_H
-#define DROPSHADOWRENDERER_H
+#ifndef DROP_SHADOW_RENDERER_H
+#define DROP_SHADOW_RENDERER_H
 
 #include <QPixmap>
 
@@ -12,9 +12,8 @@
 
 class DropShadowRenderer
 {
-
 public:
-    DropShadowRenderer();
+    DropShadowRenderer(bool enabled = true);
     ~DropShadowRenderer();
 
     QPixmap render(
@@ -27,6 +26,8 @@ public:
         float blurRadius
     );
 
+    void setRendererEnabled(bool enabled);
+
 private:
     void initializeOpenGL();
 
@@ -36,6 +37,7 @@ private:
     QOpenGLFunctions *glFunctions;
     QOpenGLShaderProgram *program;
     GLuint vbo;
+    bool enabled;
 };
 
-#endif // DROPSHADOWRENDERER_H
+#endif // DROP_SHADOW_RENDERER_H

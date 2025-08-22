@@ -22,11 +22,11 @@ public:
     int deleteBlenderVersion(std::string version);
     const std::vector<BlenderVersion>& getBlenderVersions() const;
     std::string getBlenderPath(std::string version) const;
+    unsigned int getBlenderVersionCount() const;
 
 private:
     std::vector<BlenderVersion> blenderVersions;
     std::string versionConfigPath;
-
 };
 
 #endif // BLENDER_VERSION_MANAGER_H

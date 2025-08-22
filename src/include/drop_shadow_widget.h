@@ -1,15 +1,13 @@
 // drop_shadow_widget.h
 
-#ifndef DROPSHADOWWIDGET_H
-#define DROPSHADOWWIDGET_H
+#ifndef DROP_SHADOW_WIDGET_H
+#define DROP_SHADOW_WIDGET_H
 
 #include <QWidget>
 #include <QPaintEvent>
 #include <QPixmap>
 
 #include "drop_shadow_renderer.h"
-
-#define ENABLE_SHADOW_CACHE 1
 
 class DropShadowWidget : public QWidget
 {
@@ -44,10 +42,7 @@ private:
     float borderRadius, offsetX, offsetY, alphaMax, blurRadius;
     bool updateEnabled;
 
-#if ENABLE_SHADOW_CACHE
     QPixmap shadowCache;
-#endif
-
 };
 
-#endif // DROPSHADOWWIDGET_H
+#endif // DROP_SHADOW_WIDGET_H

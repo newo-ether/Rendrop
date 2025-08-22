@@ -15,16 +15,23 @@ INCLUDEPATH += \
 
 SOURCES += \
     src/add_file_button.cpp \
+    src/blender_file_info.cpp \
+    src/blender_file_reader.cpp \
+    src/blender_renderer.cpp \
     src/drop_shadow_renderer.cpp \
     src/drop_shadow_widget.cpp \
     src/file_bar.cpp \
     src/blender_version_manager.cpp \
     src/main.cpp \
+    src/progress_bar.cpp \
     src/widget.cpp \
     src/drop_file_tip.cpp \
     src/ring_progress_bar.cpp
 
 HEADERS += \
+    src/include/blender_renderer.h \
+    src/include/blender_file_info.h \
+    src/include/blender_file_reader.h \
     src/include/add_file_button.h \
     src/include/blender_version_manager.h \
     src/include/drop_shadow_renderer.h \
@@ -32,7 +39,8 @@ HEADERS += \
     src/include/file_bar.h \
     src/include/widget.h \
     src/include/drop_file_tip.h \
-    src/include/ring_progress_bar.h
+    src/include/ring_progress_bar.h \
+    src/include/progress_bar.h
 
 FORMS += \
     ui/drop_file_tip.ui \
@@ -47,7 +55,5 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 
 RESOURCES += \
     resource/resource.qrc
-
-LIBS += opengl32.lib
 
 RC_ICONS = resource/icon/icon.ico

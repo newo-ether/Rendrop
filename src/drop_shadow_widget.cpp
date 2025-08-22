@@ -28,8 +28,6 @@ void DropShadowWidget::paintEvent(QPaintEvent *)
 {
     QPainter painter(this);
 
-#if ENABLE_SHADOW_CACHE
-
     if (updateEnabled)
     {
         if (shadowCache.isNull() || !(shadowCache.width() == width()) || !(shadowCache.height() == height()))
@@ -48,24 +46,11 @@ void DropShadowWidget::paintEvent(QPaintEvent *)
     }
     else
     {
-        painter.drawPixmap(QPoint(0, 0), *shadowPixmap);
+        if (shadowPixmap)
+        {
+            painter.drawPixmap(QPoint(0, 0), *shadowPixmap);
+        }
     }
-
-#else
-
-        QImage dropShadowImage = dropShadowRenderer->render(
-            width(),
-            height(),
-            borderRadius,
-            offsetX,
-            offsetY,
-            alphaMax,
-            blurRadius
-        );
-        painter.drawImage(QPoint(0, 0), dropShadowImage);
-
-#endif
-
 }
 
 bool DropShadowWidget::eventFilter(QObject *watched, QEvent *event)

@@ -2,6 +2,7 @@
 
 #include <QTimer>
 #include <QElapsedTimer>
+#include <QThread>
 
 #include "file_bar.h"
 #include "ui_file_bar.h"
@@ -9,33 +10,50 @@
 #include "drop_shadow_widget.h"
 #include "drop_shadow_renderer.h"
 
+#include "blender_file_info.h"
+#include "blender_file_reader.h"
+
 FileBar::FileBar(
     QWidget *parent,
     DropShadowRenderer *dropShadowRenderer,
-    unsigned int id
+    QString fileName,
+    QString filePath,
+    QString blenderPath
 ):
     QWidget(parent),
     ui(new Ui::fileBar),
-    value(0),
-    targetValue(0),
-    velocity(0),
-    stiffness(300),
-    damping(50),
-    id(id)
+    state(State::Loading),
+    frameStart(0),
+    frameEnd(0),
+    frameStep(0),
+    finishedFrame(0),
+    totalFrame(0)
 {
     ui->setupUi(this);
 
-    timer = new QTimer(this);
-    connect(timer, &QTimer::timeout, this, &FileBar::updateProgressBar);
-    timer->start(8);
+    ui->fileNameLabel->setText(fileName);
+    ui->frameLabel->setText("");
+    ui->resolutionLabel->setText("");
+    ui->renderEngineLabel->setText("");
+    ui->reloadButton->setEnabled(false);
+    ui->progressBar->setProgressBar(0.0f);
+    ui->progressBarLabel->setText("");
 
-    elapsedTimer = new QElapsedTimer();
-    elapsedTimer->start();
-    lastElapsed = 0;
+    blenderFileReader = new BlenderFileReader();
+    blenderFileReader->setParameter(filePath, blenderPath);
+    QObject::connect(blenderFileReader, &BlenderFileReader::finishedReading, this, &FileBar::onFinishedReading);
+
+    blenderFileReader->start(QThread::LowestPriority);
+
+    blenderRenderer = new BlenderRenderer();
+    blenderRenderer->setParameter(blenderPath, filePath, frameStart, frameEnd, frameStep);
+    QObject::connect(blenderRenderer, &BlenderRenderer::progressChanged, this, &FileBar::onProgressChanged);
+    QObject::connect(blenderRenderer, &BlenderRenderer::finishedRendering, this, &FileBar::onFinishedRendering);
 
     QObject::connect(ui->upButton, &QPushButton::clicked, this, &FileBar::onUpButtonClicked);
     QObject::connect(ui->downButton, &QPushButton::clicked, this, &FileBar::onDownButtonClicked);
     QObject::connect(ui->deleteButton, &QPushButton::clicked, this, &FileBar::onDeleteButtonClicked);
+    QObject::connect(ui->reloadButton, &QPushButton::clicked, this, &FileBar::onReloadButtonClicked);
 
     dropShadowWidget = new DropShadowWidget(
         parent,
@@ -54,6 +72,20 @@ FileBar::FileBar(
 
 FileBar::~FileBar()
 {
+    if (blenderFileReader->isRunning())
+    {
+        blenderFileReader->stop();
+        blenderFileReader->wait();
+    }
+    delete blenderFileReader;
+
+    if (blenderRenderer->isRunning())
+    {
+        blenderRenderer->stop();
+        blenderRenderer->wait();
+    }
+    delete blenderRenderer;
+
     delete dropShadowWidget;
     delete ui;
 }
@@ -68,24 +100,94 @@ QString FileBar::getFileName() const
     return ui->fileNameLabel->text();
 }
 
+void FileBar::stopReading()
+{
+    blenderFileReader->stop();
+}
+
 DropShadowWidget * FileBar::getDropShadowWidget() const
 {
     return dropShadowWidget;
 }
 
-void FileBar::setID(unsigned int id)
+int FileBar::getFinishedFrame() const
 {
-    this->id = id;
+    return finishedFrame;
 }
 
-unsigned int FileBar::getID() const
+int FileBar::getTotalFrame() const
 {
-    return id;
+    return totalFrame;
 }
 
-void FileBar::setProgressBar(float value)
+void FileBar::render()
 {
-    this->targetValue = value;
+    blenderRenderer->start(QThread::LowestPriority);
+    state = State::Rendering;
+
+    ui->reloadButton->setEnabled(false);
+    ui->deleteButton->setEnabled(false);
+}
+
+void FileBar::stopRender()
+{
+    blenderRenderer->stop();
+    state = State::Queued;
+
+    ui->reloadButton->setEnabled(true);
+    ui->deleteButton->setEnabled(true);
+}
+
+void FileBar::setFrame(int frameStart, int frameEnd, int frameStep)
+{
+    ui->frameLabel->setText(
+        QString::number(frameStart)
+        + "-"
+        + QString::number(frameEnd)
+        + " ("
+        + QString::number(frameStep)
+        + ")"
+    );
+}
+
+void FileBar::setResolution(int resolutionX, int resolutionY, int resolutionScale)
+{
+    ui->resolutionLabel->setText(
+        QString::number(resolutionX)
+        + "x"
+        + QString::number(resolutionY)
+        + " "
+        + QString::number(resolutionScale)
+        + "%"
+    );
+}
+
+void FileBar::setRenderEngine(int renderEngine)
+{
+    QString renderEngineText;
+    if (renderEngine == 0)
+    {
+        renderEngineText = "Cycles";
+    }
+    else if (renderEngine == 1)
+    {
+        renderEngineText = "EEVEE";
+    }
+    else if (renderEngine == 2)
+    {
+        renderEngineText = "Workbench";
+    }
+    else
+    {
+        renderEngineText = "Unknown";
+    }
+
+    ui->renderEngineLabel->setText(renderEngineText);
+}
+
+FileBar::State FileBar::getState() const
+{
+    return state;
 }
 
 void FileBar::onUpButtonClicked()
@@ -103,30 +205,105 @@ void FileBar::onDeleteButtonClicked()
     emit deleteButtonClicked(this);
 }
 
-void FileBar::updateProgressBar()
+void FileBar::onReloadButtonClicked()
 {
-    qint64 elapsed = elapsedTimer->elapsed();
-    float dt = static_cast<float>(elapsed - lastElapsed) / 1000;
-    lastElapsed = elapsed;
+    ui->reloadButton->setEnabled(false);
 
-    int iteration = std::max(1, (int)(dt / 0.01f));
-    dt /= iteration;
-
-    for (int i = 0; i < iteration; i++)
+    if (blenderFileReader->isRunning())
     {
-        float delta = targetValue - value;
-        float accel = stiffness * delta - damping * velocity;
-
-        velocity += accel * dt;
-        value += velocity * dt;
-        value = std::clamp(value, 0.0f, 100.0f);
-
-        if (std::abs(delta) < 0.1f && std::abs(velocity) < 0.1f) {
-            velocity = 0;
-            value = targetValue;
-        }
+        blenderFileReader->stop();
+        blenderFileReader->wait();
     }
 
-    ui->progressBar->setValue(std::clamp(value, 0.0f, 100.0f) * 100.0f);
-    update();
+    state = State::Loading;
+    finishedFrame = 0;
+    totalFrame = 0;
+
+    blenderFileReader->start(QThread::LowestPriority);
+
+    ui->frameLabel->setText("");
+    ui->resolutionLabel->setText("");
+    ui->renderEngineLabel->setText("");
+    ui->progressBar->setProgressBar(0.0f);
+    ui->progressBarLabel->setText("");
+
+    emit reloadButtonClicked(this);
+}
+
+void FileBar::onFinishedReading(int status, BlenderFileInfo info)
+{
+    if (status == 0)
+    {
+        setFrame(info.frameBegin, info.frameEnd, info.frameStep);
+        setResolution(info.resolutionX, info.resolutionY, info.resolutionScale);
+        setRenderEngine(info.renderEngine);
+
+        state = State::Queued;
+        frameStart = info.frameBegin;
+        frameEnd = info.frameEnd;
+        frameStep = info.frameStep;
+        finishedFrame = 0;
+        totalFrame = info.frameStep == 0 ? 0 : (info.frameEnd - info.frameBegin) / info.frameStep + 1;
+
+        blenderRenderer->setFrame(frameStart, frameEnd, frameStep);
+        blenderRenderer->setCurrentFrame(frameStart);
+
+        float progress = static_cast<float>(finishedFrame) / totalFrame * 100.0f;
+        ui->progressBar->setProgressBar(0.0f);
+        ui->progressBarLabel->setText(
+            QString::number(finishedFrame)
+            + "/"
+            + QString::number(totalFrame)
+            + " ("
+            + QString::number(static_cast<int>(progress))
+            + "%)"
+        );
+    }
+    else
+    {
+        state = State::Error;
+        frameStart = 0;
+        frameEnd = 0;
+        frameStep = 0;
+        finishedFrame = 0;
+        totalFrame = 0;
+    }
+
+    ui->reloadButton->setEnabled(true);
+    emit finishedReading();
+}
+
+void FileBar::onProgressChanged()
+{
+    finishedFrame = blenderRenderer->getFinishedFrame();
+    totalFrame = blenderRenderer->getTotalFrame();
+    float progress = static_cast<float>(finishedFrame) / totalFrame * 100.0f;
+    ui->progressBar->setProgressBar(progress);
+    ui->progressBarLabel->setText(
+        QString::number(finishedFrame)
+        + "/"
+        + QString::number(totalFrame)
+        + " ("
+        + QString::number(static_cast<int>(progress))
+        + "%)"
+        );
+
+    emit progressChanged();
+}
+
+void FileBar::onFinishedRendering(int status)
+{
+    if (status != 0)
+    {
+        state = State::Error;
+    }
+    else
+    {
+        state = State::Finished;
+    }
+
+    ui->reloadButton->setEnabled(true);
+    ui->deleteButton->setEnabled(true);
+
+    emit finishedRendering();
 }

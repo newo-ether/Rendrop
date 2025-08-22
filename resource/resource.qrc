@@ -6,5 +6,7 @@
         <file>icon/icon.ico</file>
         <file>icon/plus.ico</file>
         <file>icon/up_arrow.ico</file>
+        <file>icon/close.ico</file>
+        <file>icon/retry.ico</file>
     </qresource>
 </RCC>

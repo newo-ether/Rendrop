@@ -17,17 +17,20 @@ BlenderVersionManager::BlenderVersionManager(std::string versionConfigPath)
 {
     std::filesystem::path configPath(versionConfigPath);
     std::filesystem::path configDir = configPath.parent_path();
-    if (!std::filesystem::exists(configPath.parent_path())) {
+    if (!std::filesystem::exists(configPath.parent_path()))
+    {
         std::filesystem::create_directories(configDir);
     }
 
     std::fstream configFile(versionConfigPath, std::ios::in | std::ios::out | std::ios::app);
-    if (!configFile.is_open()) {
-        throw std::runtime_error("[BlenderVersionManager] Failed to open Blender version configuration file.");
+    if (!configFile.is_open())
+    {
+        return;
     }
 
     std::string line;
-    while (std::getline(configFile, line)) {
+    while (std::getline(configFile, line))
+    {
         size_t delimiterPos = line.find('|');
         if (delimiterPos != std::string::npos) {
             BlenderVersion version;
@@ -44,7 +47,8 @@ BlenderVersionManager::~BlenderVersionManager() {}
 
 int BlenderVersionManager::addBlenderVersion(std::string path)
 {
-    if (!std::filesystem::exists(path)) {
+    if (!std::filesystem::exists(path))
+    {
         return -1;
     }
 
@@ -54,11 +58,13 @@ int BlenderVersionManager::addBlenderVersion(std::string path)
 
     process.start(program, arguments);
 
-    if (!process.waitForStarted(3000)) {
+    if (!process.waitForStarted(3000))
+    {
         return -2;
     }
 
-    if (!process.waitForFinished(3000)) {
+    if (!process.waitForFinished(3000))
+    {
         return -2;
     }
 
@@ -68,14 +74,11 @@ int BlenderVersionManager::addBlenderVersion(std::string path)
     QString versionString = stream.readLine();
     std::string version = versionString.toStdString();
 
-    bool duplicated = false;
-    for (auto blenderVersion : blenderVersions)
-    {
-        if (blenderVersion.version == version)
-        {
-            duplicated = true;
-        }
-    }
+    bool duplicated = std::any_of(
+        blenderVersions.begin(),
+        blenderVersions.end(),
+        [&version](const BlenderVersion &v){ return v.version == version; }
+    );
 
     if (duplicated)
     {
@@ -88,10 +91,13 @@ int BlenderVersionManager::addBlenderVersion(std::string path)
     blenderVersions.push_back(newVersion);
 
     std::fstream configFile(versionConfigPath, std::ios::out | std::ios::app);
-    if (configFile.is_open()) {
+    if (configFile.is_open())
+    {
         configFile << version << "|" << path << "\n";
         configFile.close();
-    } else {
+    }
+    else
+    {
         return -4;
     }
     return 0;
@@ -104,17 +110,22 @@ int BlenderVersionManager::deleteBlenderVersion(std::string version)
         blenderVersions.end(),
         [&version](const BlenderVersion &v) { return v.version == version; }
     );
-    if (iter != blenderVersions.end()) {
+    if (iter != blenderVersions.end())
+    {
         blenderVersions.erase(iter, blenderVersions.end());
 
         // Rewrite the configuration file
         std::fstream configFile(versionConfigPath, std::ios::out | std::ios::trunc);
-        if (configFile.is_open()) {
-            for (const auto &v : blenderVersions) {
+        if (configFile.is_open())
+        {
+            for (const auto &v : blenderVersions)
+            {
                 configFile << v.version << "|" << v.path << "\n";
             }
             configFile.close();
-        } else {
+        }
+        else
+        {
             return -1;
         }
     }
@@ -128,10 +139,17 @@ const std::vector<BlenderVersionManager::BlenderVersion> & BlenderVersionManager
 
 std::string BlenderVersionManager::getBlenderPath(std::string version) const
 {
-    for (const auto &v : blenderVersions) {
-        if (v.version == version) {
+    for (const auto &v : blenderVersions)
+    {
+        if (v.version == version)
+        {
             return v.path;
         }
     }
     return "";
+}
+
+unsigned int BlenderVersionManager::getBlenderVersionCount() const
+{
+    return static_cast<unsigned int>(blenderVersions.size());
 }
