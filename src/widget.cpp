@@ -597,13 +597,23 @@ void Widget::updateButtonStatus()
         }
     }
 
+    bool isQueued = false;
+    for (auto fileBar: fileBars)
+    {
+        if (fileBar->getState() == FileBar::State::Queued)
+        {
+            isQueued = true;
+            break;
+        }
+    }
+
     if (isRendering)
     {
         ui->renderButton->setEnabled(true);
     }
     else
     {
-        ui->renderButton->setEnabled(!fileBars.empty() && blenderExists && !isLoading);
+        ui->renderButton->setEnabled(!fileBars.empty() && blenderExists && !isLoading && isQueued);
     }
 }
 
