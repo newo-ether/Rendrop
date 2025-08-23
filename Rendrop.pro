@@ -22,6 +22,7 @@ SOURCES += \
     src/drop_shadow_widget.cpp \
     src/file_bar.cpp \
     src/blender_version_manager.cpp \
+    src/loading_bar.cpp \
     src/main.cpp \
     src/progress_bar.cpp \
     src/widget.cpp \
@@ -40,7 +41,8 @@ HEADERS += \
     src/include/widget.h \
     src/include/drop_file_tip.h \
     src/include/ring_progress_bar.h \
-    src/include/progress_bar.h
+    src/include/progress_bar.h \
+    src/include/loading_bar.h
 
 FORMS += \
     ui/drop_file_tip.ui \

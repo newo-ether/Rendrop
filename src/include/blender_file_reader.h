@@ -5,6 +5,7 @@
 
 #include <QString>
 #include <QThread>
+#include <atomic>
 
 #include "blender_file_info.h"
 
@@ -25,8 +26,8 @@ signals:
 
 private:
     QString filePath, blenderPath;
-    bool isParameterSet;
-    bool stopped;
+    std::atomic_bool isParameterSet;
+    std::atomic_bool stopped;
 };
 
 #endif // BLENDER_FILE_READER_H

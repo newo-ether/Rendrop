@@ -13,6 +13,10 @@
 #include "blender_file_info.h"
 #include "blender_file_reader.h"
 
+#include "blender_renderer.h"
+
+#include "loading_bar.h"
+
 FileBar::FileBar(
     QWidget *parent,
     DropShadowRenderer *dropShadowRenderer,
@@ -38,6 +42,18 @@ FileBar::FileBar(
     ui->reloadButton->setEnabled(false);
     ui->progressBar->setProgressBar(0.0f);
     ui->progressBarLabel->setText("");
+
+    frameLoadingBar = new LoadingBar(ui->frameLabel);
+    frameLoadingBar->setGeometry(0, 0, ui->frameLabel->width(), ui->frameLabel->height());
+    ui->frameLabel->installEventFilter(this);
+
+    resolutionLoadingBar = new LoadingBar(ui->resolutionLabel);
+    resolutionLoadingBar->setGeometry(0, 0, ui->resolutionLabel->width(), ui->resolutionLabel->height());
+    ui->resolutionLabel->installEventFilter(this);
+
+    renderEngineLoadingBar = new LoadingBar(ui->renderEngineLabel);
+    renderEngineLoadingBar->setGeometry(0, 0, ui->renderEngineLabel->width(), ui->renderEngineLabel->height());
+    ui->renderEngineLabel->installEventFilter(this);
 
     blenderFileReader = new BlenderFileReader();
     blenderFileReader->setParameter(filePath, blenderPath);
@@ -68,6 +84,7 @@ FileBar::FileBar(
 
     show();
     dropShadowWidget->show();
+    showLoadingBar();
 }
 
 FileBar::~FileBar()
@@ -85,6 +102,10 @@ FileBar::~FileBar()
         blenderRenderer->wait();
     }
     delete blenderRenderer;
+
+    delete frameLoadingBar;
+    delete resolutionLoadingBar;
+    delete renderEngineLoadingBar;
 
     delete dropShadowWidget;
     delete ui;
@@ -138,6 +159,21 @@ void FileBar::stopRender()
     ui->deleteButton->setEnabled(true);
 }
 
+bool FileBar::eventFilter(QObject *object, QEvent *event)
+{
+    if (object == ui->frameLabel && event->type() == QEvent::Resize) {
+        frameLoadingBar->setGeometry(0, 0, ui->frameLabel->width(), ui->frameLabel->height());
+    }
+    else if (object == ui->resolutionLabel && event->type() == QEvent::Resize) {
+        resolutionLoadingBar->setGeometry(0, 0, ui->resolutionLabel->width(), ui->resolutionLabel->height());
+    }
+    else if (object == ui->renderEngineLabel && event->type() == QEvent::Resize) {
+        renderEngineLoadingBar->setGeometry(0, 0, ui->renderEngineLabel->width(), ui->renderEngineLabel->height());
+    }
+
+    return QWidget::eventFilter(object, event);
+}
+
 void FileBar::setFrame(int frameStart, int frameEnd, int frameStep)
 {
     ui->frameLabel->setText(
@@ -185,6 +221,20 @@ void FileBar::setRenderEngine(int renderEngine)
     ui->renderEngineLabel->setText(renderEngineText);
 }
 
+void FileBar::showLoadingBar()
+{
+    frameLoadingBar->show();
+    resolutionLoadingBar->show();
+    renderEngineLoadingBar->show();
+}
+
+void FileBar::hideLoadingBar()
+{
+    frameLoadingBar->hide();
+    resolutionLoadingBar->hide();
+    renderEngineLoadingBar->hide();
+}
+
 FileBar::State FileBar::getState() const
 {
     return state;
@@ -226,6 +276,8 @@ void FileBar::onReloadButtonClicked()
     ui->renderEngineLabel->setText("");
     ui->progressBar->setProgressBar(0.0f);
     ui->progressBarLabel->setText("");
+
+    showLoadingBar();
 
     emit reloadButtonClicked(this);
 }
@@ -270,6 +322,7 @@ void FileBar::onFinishedReading(int status, BlenderFileInfo info)
     }
 
     ui->reloadButton->setEnabled(true);
+    hideLoadingBar();
     emit finishedReading();
 }
 
@@ -286,7 +339,7 @@ void FileBar::onProgressChanged()
         + " ("
         + QString::number(static_cast<int>(progress))
         + "%)"
-        );
+    );
 
     emit progressChanged();
 }

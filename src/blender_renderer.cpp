@@ -11,15 +11,9 @@
 BlenderRenderer::BlenderRenderer(QObject *parent):
     QThread(parent),
     isParameterSet(false),
-    stopped(false)
-{
-    blenderProcess = new QProcess();
-}
+    stopped(false) {}
 
-BlenderRenderer::~BlenderRenderer()
-{
-    delete blenderProcess;
-}
+BlenderRenderer::~BlenderRenderer() {}
 
 void BlenderRenderer::setParameter(
     QString blenderPath,

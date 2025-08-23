@@ -43,8 +43,6 @@ void BlenderFileReader::run()
         return;
     }
 
-    QProcess process;
-
     QTemporaryFile readerFile(QDir::temp().filePath("blender_reader_XXXXXX.py"));
     readerFile.setAutoRemove(false);
     if (!readerFile.open())
@@ -100,6 +98,8 @@ void BlenderFileReader::run()
     out.flush();
     readerFile.close();
 
+    QProcess process;
+
     QStringList args;
     args << "-b"
          << "--factory-startup"
@@ -110,10 +110,9 @@ void BlenderFileReader::run()
     process.start(blenderPath, args);
 
     QFileInfo outputFileInfo(outputFile.fileName());
-    while (!outputFileInfo.exists() || outputFileInfo.size() == 0)
+    while (process.state() != QProcess::NotRunning)
     {
-        QThread::msleep(50);
-        outputFileInfo.refresh();
+        process.waitForFinished(50);
         if (stopped)
         {
             process.kill();
@@ -124,7 +123,13 @@ void BlenderFileReader::run()
         }
     }
 
-    process.waitForFinished();
+    if (!outputFileInfo.exists() || outputFileInfo.size() == 0)
+    {
+        readerFile.remove();
+        outputFile.remove();
+        emit finishedReading(-1, BlenderFileInfo());
+        return;
+    }
 
     if (!outputFile.open())
     {
@@ -133,6 +138,7 @@ void BlenderFileReader::run()
         emit finishedReading(-1, BlenderFileInfo());
         return;
     }
+
     QTextStream in(&outputFile);
     QStringList lines;
     while (!in.atEnd())
@@ -144,6 +150,7 @@ void BlenderFileReader::run()
         }
     }
     outputFile.close();
+
     if (lines.size() < 6)
     {
         readerFile.remove();

@@ -6,6 +6,7 @@
 #include <QString>
 #include <QProcess>
 #include <QThread>
+#include <atomic>
 
 class BlenderRenderer : public QThread
 {
@@ -36,12 +37,11 @@ signals:
     void finishedRendering(int status);
 
 private:
-    QProcess *blenderProcess;
     QString blenderPath, filePath;
-    int frameStart, frameEnd, frameStep;
-    int currentFrame;
-    bool isParameterSet;
-    bool stopped;
+    std::atomic_int frameStart, frameEnd, frameStep;
+    std::atomic_int currentFrame;
+    std::atomic_bool isParameterSet;
+    std::atomic_bool stopped;
 };
 
 #endif // BLENDER_RENDERER_H

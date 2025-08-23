@@ -16,6 +16,8 @@
 
 #include "blender_renderer.h"
 
+#include "loading_bar.h"
+
 QT_BEGIN_NAMESPACE
 namespace Ui {
 class fileBar;
@@ -56,10 +58,15 @@ public:
     void render();
     void stopRender();
 
+protected:
+    bool eventFilter(QObject *object, QEvent *event);
+
 private:
     void setFrame(int frameStart, int frameEnd, int frameStep);
     void setResolution(int resolutionX, int resolutionY, int resolutionScale);
     void setRenderEngine(int renderEngine);
+    void showLoadingBar();
+    void hideLoadingBar();
 
 private:
     Ui::fileBar *ui;
@@ -70,6 +77,7 @@ private:
     int frameStart, frameEnd, frameStep;
     int finishedFrame, totalFrame;
     BlenderRenderer *blenderRenderer;
+    LoadingBar *frameLoadingBar, *resolutionLoadingBar, *renderEngineLoadingBar;
 
 signals:
     void upButtonClicked(FileBar *fileBar);
