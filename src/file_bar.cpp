@@ -64,6 +64,7 @@ FileBar::FileBar(
     blenderRenderer = new BlenderRenderer();
     blenderRenderer->setParameter(blenderPath, filePath, frameStart, frameEnd, frameStep);
     QObject::connect(blenderRenderer, &BlenderRenderer::progressChanged, this, &FileBar::onProgressChanged);
+    QObject::connect(blenderRenderer, &BlenderRenderer::outputTextUpdate, this, &FileBar::onOutputTextUpdate);
     QObject::connect(blenderRenderer, &BlenderRenderer::finishedRendering, this, &FileBar::onFinishedRendering);
 
     QObject::connect(ui->upButton, &QPushButton::clicked, this, &FileBar::onUpButtonClicked);
@@ -342,6 +343,11 @@ void FileBar::onProgressChanged()
     );
 
     emit progressChanged();
+}
+
+void FileBar::onOutputTextUpdate(QString text)
+{
+    emit outputTextUpdate(text);
 }
 
 void FileBar::onFinishedRendering(int status)

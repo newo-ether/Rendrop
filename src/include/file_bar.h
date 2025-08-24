@@ -87,6 +87,7 @@ signals:
     void finishedReading();
     void finishedRendering();
     void progressChanged();
+    void outputTextUpdate(QString text);
 
 private slots:
     void onUpButtonClicked();
@@ -95,6 +96,7 @@ private slots:
     void onReloadButtonClicked();
     void onFinishedReading(int status, BlenderFileInfo info);
     void onProgressChanged();
+    void onOutputTextUpdate(QString text);
     void onFinishedRendering(int status);
 };
 

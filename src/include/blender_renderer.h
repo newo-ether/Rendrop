@@ -34,12 +34,17 @@ protected:
 
 signals:
     void progressChanged();
+    void outputTextUpdate(QString text);
     void finishedRendering(int status);
+
+private:
+    void parseOutput(QString line);
 
 private:
     QString blenderPath, filePath;
     std::atomic_int frameStart, frameEnd, frameStep;
     std::atomic_int currentFrame;
+    std::atomic_bool currentFrameFinished;
     std::atomic_bool isParameterSet;
     std::atomic_bool stopped;
 };

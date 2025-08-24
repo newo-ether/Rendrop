@@ -66,6 +66,7 @@ private:
     void updateBlenderVersions();
     void updateButtonStatus();
     void updateStatisticInfo();
+    void clearOutputText();
     void setSelectorEnabled(bool enable);
 
 private slots:
@@ -80,6 +81,7 @@ private slots:
     void onRenderButtonClicked();
     void onFinishedRendering();
     void onProgressChanged();
+    void onOutputTextUpdate(QString text);
 };
 
 #endif // WIDGET_H

@@ -52,6 +52,7 @@ Widget::Widget(QWidget *parent)
     createDropShadowWidget(ui->ContentWidget, ui->infoWidgetContainer, 12, 4, 4, 0.3f, 15);
     createDropShadowWidget(ui->ContentWidget, ui->scrollAreaContainer, 12, 4, 4, 0.3f, 15);
     createDropShadowWidget(ui->ContentWidget, ui->renderButton, 6, 4, 4, 0.3f, 10);
+    createDropShadowWidget(ui->ContentWidget, ui->outputContainer, 15, 4, 4, 0.3f, 10);
 
     dropFileTip = new DropFileTip(ui->ContentWidget);
     dropFileTip->setAttribute(Qt::WA_TransparentForMouseEvents);
@@ -61,6 +62,7 @@ Widget::Widget(QWidget *parent)
     dropFileTip->setGraphicsEffect(opacity);
 
     isRendering = false;
+    clearOutputText();
 
     QObject::connect(ui->addButton, &QPushButton::clicked, this, &Widget::onAddBlenderVersionButtonClicked);
     QObject::connect(ui->deleteButton, &QPushButton::clicked, this, &Widget::onDeleteBlenderVersionButtonClicked);
@@ -269,6 +271,7 @@ FileBar *Widget::newFileBar(QString fileName, QString filePath)
     QObject::connect(fileBar, &FileBar::finishedReading, this, &Widget::onFinishedReading);
     QObject::connect(fileBar, &FileBar::finishedRendering, this, &Widget::onFinishedRendering);
     QObject::connect(fileBar, &FileBar::progressChanged, this, &Widget::onProgressChanged);
+    QObject::connect(fileBar, &FileBar::outputTextUpdate, this, &Widget::onOutputTextUpdate);
 
     fileBars.push_back(fileBar);
     dropFileTip->hide();
@@ -530,6 +533,8 @@ void Widget::onRenderButtonClicked()
 
         setSelectorEnabled(true);
     }
+
+    clearOutputText();
 }
 
 void Widget::onFinishedRendering()
@@ -558,11 +563,17 @@ void Widget::onFinishedRendering()
 
     updateButtonStatus();
     updateStatisticInfo();
+    clearOutputText();
 }
 
 void Widget::onProgressChanged()
 {
     updateStatisticInfo();
+}
+
+void Widget::onOutputTextUpdate(QString text)
+{
+    ui->outputLabel->setText(text);
 }
 
 void Widget::updateBlenderVersions()
@@ -657,4 +668,9 @@ void Widget::updateStatisticInfo()
 
     ui->framesProgressBar->setProgressBar(frameProgress);
     ui->projectsProgressBar->setProgressBar(projectProgress);
+}
+
+void Widget::clearOutputText()
+{
+    ui->outputLabel->setText("Ready to render.");
 }

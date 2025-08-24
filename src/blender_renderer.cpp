@@ -5,6 +5,7 @@
 #include <QProcess>
 #include <QByteArray>
 #include <QTimer>
+#include <QRegularExpression>
 
 #include "blender_renderer.h"
 
@@ -28,6 +29,7 @@ void BlenderRenderer::setParameter(
     this->frameEnd = frameEnd;
     this->frameStep = frameStep;
     this->currentFrame = frameStart;
+    this->currentFrameFinished = false;
     isParameterSet = true;
 }
 
@@ -51,6 +53,7 @@ void BlenderRenderer::stop()
 void BlenderRenderer::run()
 {
     stopped = false;
+    currentFrameFinished = false;
 
     if (!isParameterSet)
     {
@@ -58,37 +61,62 @@ void BlenderRenderer::run()
         return;
     }
 
-    while (currentFrame < frameEnd)
-    {
-        if (stopped)
-        {
-            return;
-        }
+    QProcess process;
+    QObject::connect(&process, &QProcess::readyReadStandardOutput, this, [&process, this](){
+        QByteArray data = process.readAllStandardOutput();
+        QString output = QString::fromLocal8Bit(data);
+        parseOutput(output);
+    });
 
-        QThread::msleep(200);
-        currentFrame += frameStep;
-        emit progressChanged();
-    }
-
-/*
     QStringList args;
     args << "-b"
          << filePath
+         << "-s"
+         << QString::number(currentFrame)
+         << "-e"
+         << QString::number(frameEnd)
+         << "-j"
+         << QString::number(frameStep)
          << "-a";
 
-    blenderProcess->start(blenderPath, args);
-    blenderProcess->waitForFinished(1000000000);
-*/
+    process.start(blenderPath, args);
 
+    emit outputTextUpdate("Starting Blender...");
+
+    while (process.state() != QProcess::NotRunning)
+    {
+        if (stopped)
+        {
+            process.kill();
+            process.waitForFinished();
+            return;
+        }
+
+        process.waitForFinished(50);
+    }
+
+    currentFrameFinished = true;
+    emit progressChanged();
     emit finishedRendering(0);
 }
 
 int BlenderRenderer::getFinishedFrame() const
 {
-    return currentFrame - frameStart + 1;
+    return currentFrame - frameStart + (currentFrameFinished ? 1 : 0);
 }
 
 int BlenderRenderer::getTotalFrame() const
 {
     return frameStep == 0 ? 0 : (frameEnd - frameStart) / frameStep + 1;
+}
+
+void BlenderRenderer::parseOutput(QString line)
+{
+    static QRegularExpression re("^Fra:\\s*(\\d+).*(\\r?\\n)?$");
+    auto match = re.match(line);
+    if (match.hasMatch()) {
+        currentFrame = match.captured(1).toInt();
+        emit progressChanged();
+        emit outputTextUpdate(match.captured().trimmed());
+    }
 }
