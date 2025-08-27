@@ -24,6 +24,7 @@ SOURCES += \
     src/blender_version_manager.cpp \
     src/loading_bar.cpp \
     src/main.cpp \
+    src/process.cpp \
     src/progress_bar.cpp \
     src/widget.cpp \
     src/drop_file_tip.cpp \
@@ -38,6 +39,7 @@ HEADERS += \
     src/include/drop_shadow_renderer.h \
     src/include/drop_shadow_widget.h \
     src/include/file_bar.h \
+    src/include/process.h \
     src/include/widget.h \
     src/include/drop_file_tip.h \
     src/include/ring_progress_bar.h \
@@ -57,5 +59,7 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 
 RESOURCES += \
     resource/resource.qrc
+
+LIBS += user32.lib
 
 RC_ICONS = resource/icon/icon.ico

@@ -1,41 +1,40 @@
 // blender_version_manager.cpp
 
-#include <QProcess>
 #include <QString>
 #include <QTextStream>
 
-#include <string>
 #include <vector>
-#include <fstream>
-#include <filesystem>
-#include <algorithm>
+#include <QFile>
+#include <QDir>
 
 #include "blender_version_manager.h"
+#include "process.h"
 
-BlenderVersionManager::BlenderVersionManager(std::string versionConfigPath)
+BlenderVersionManager::BlenderVersionManager(QString versionConfigPath)
     : versionConfigPath(versionConfigPath)
 {
-    std::filesystem::path configPath(versionConfigPath);
-    std::filesystem::path configDir = configPath.parent_path();
-    if (!std::filesystem::exists(configPath.parent_path()))
+    QDir configDir = QFileInfo(versionConfigPath).absoluteDir();
+    if (!configDir.exists())
     {
-        std::filesystem::create_directories(configDir);
+        configDir.mkpath(configDir.absolutePath());
     }
 
-    std::fstream configFile(versionConfigPath, std::ios::in | std::ios::out | std::ios::app);
-    if (!configFile.is_open())
+    QFile configFile(versionConfigPath);
+    if (!configFile.open(QIODevice::ReadOnly | QIODevice::Text))
     {
         return;
     }
 
-    std::string line;
-    while (std::getline(configFile, line))
+    QTextStream stream(&configFile);
+    while (!stream.atEnd())
     {
-        size_t delimiterPos = line.find('|');
-        if (delimiterPos != std::string::npos) {
+        QString line = stream.readLine();
+        int delimiterPos = line.indexOf('|');
+        if (delimiterPos != -1)
+        {
             BlenderVersion version;
-            version.version = line.substr(0, delimiterPos);
-            version.path = line.substr(delimiterPos + 1);
+            version.version = line.left(delimiterPos);
+            version.path = line.mid(delimiterPos + 1);
             blenderVersions.push_back(version);
         }
     }
@@ -45,20 +44,18 @@ BlenderVersionManager::BlenderVersionManager(std::string versionConfigPath)
 
 BlenderVersionManager::~BlenderVersionManager() {}
 
-int BlenderVersionManager::addBlenderVersion(std::string path)
+int BlenderVersionManager::addBlenderVersion(QString path)
 {
-    if (!std::filesystem::exists(path))
+    if (!QFile::exists(path))
     {
         return -1;
     }
 
-    QProcess process;
-    QString program = QString::fromStdString(path);
+    Process process;
+    QString program = path;
     QStringList arguments = {"--version"};
 
-    process.start(program, arguments);
-
-    if (!process.waitForStarted(3000))
+    if (process.start(program, arguments) != 0)
     {
         return -2;
     }
@@ -68,16 +65,14 @@ int BlenderVersionManager::addBlenderVersion(std::string path)
         return -2;
     }
 
-    QString output = process.readAllStandardOutput();
-
-    QTextStream stream(&output);
-    QString versionString = stream.readLine();
-    std::string version = versionString.toStdString();
+    QString output = process.readStandardOutput();
+    QString versionString = output.split("\n").first().trimmed();
+    QString version = versionString;
 
     bool duplicated = std::any_of(
         blenderVersions.begin(),
         blenderVersions.end(),
-        [&version](const BlenderVersion &v){ return v.version == version; }
+        [&version](const BlenderVersion &v) { return v.version == version; }
     );
 
     if (duplicated)
@@ -90,10 +85,11 @@ int BlenderVersionManager::addBlenderVersion(std::string path)
     newVersion.path = path;
     blenderVersions.push_back(newVersion);
 
-    std::fstream configFile(versionConfigPath, std::ios::out | std::ios::app);
-    if (configFile.is_open())
+    QFile configFile(versionConfigPath);
+    if (configFile.open(QIODevice::Append | QIODevice::Text))
     {
-        configFile << version << "|" << path << "\n";
+        QTextStream out(&configFile);
+        out << version << "|" << path << "\n";
         configFile.close();
     }
     else
@@ -103,7 +99,7 @@ int BlenderVersionManager::addBlenderVersion(std::string path)
     return 0;
 }
 
-int BlenderVersionManager::deleteBlenderVersion(std::string version)
+int BlenderVersionManager::deleteBlenderVersion(QString version)
 {
     auto iter = std::remove_if(
         blenderVersions.begin(),
@@ -115,12 +111,13 @@ int BlenderVersionManager::deleteBlenderVersion(std::string version)
         blenderVersions.erase(iter, blenderVersions.end());
 
         // Rewrite the configuration file
-        std::fstream configFile(versionConfigPath, std::ios::out | std::ios::trunc);
-        if (configFile.is_open())
+        QFile configFile(versionConfigPath);
+        if (configFile.open(QIODevice::WriteOnly | QIODevice::Text))
         {
+            QTextStream out(&configFile);
             for (const auto &v : blenderVersions)
             {
-                configFile << v.version << "|" << v.path << "\n";
+                out << v.version << "|" << v.path << "\n";
             }
             configFile.close();
         }
@@ -137,7 +134,7 @@ const std::vector<BlenderVersionManager::BlenderVersion> & BlenderVersionManager
     return blenderVersions;
 }
 
-std::string BlenderVersionManager::getBlenderPath(std::string version) const
+QString BlenderVersionManager::getBlenderPath(QString version) const
 {
     for (const auto &v : blenderVersions)
     {

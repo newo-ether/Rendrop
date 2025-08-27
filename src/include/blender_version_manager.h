@@ -4,29 +4,29 @@
 #define BLENDER_VERSION_MANAGER_H
 
 #include <vector>
-#include <string>
+#include <QString>
 
 class BlenderVersionManager
 {
 public:
     struct BlenderVersion
     {
-        std::string version;
-        std::string path;
+        QString version;
+        QString path;
     };
 
-    BlenderVersionManager(std::string versionConfigPath);
+    BlenderVersionManager(QString versionConfigPath);
     ~BlenderVersionManager();
 
-    int addBlenderVersion(std::string path);
-    int deleteBlenderVersion(std::string version);
+    int addBlenderVersion(QString path);
+    int deleteBlenderVersion(QString version);
     const std::vector<BlenderVersion>& getBlenderVersions() const;
-    std::string getBlenderPath(std::string version) const;
+    QString getBlenderPath(QString version) const;
     unsigned int getBlenderVersionCount() const;
 
 private:
     std::vector<BlenderVersion> blenderVersions;
-    std::string versionConfigPath;
+    QString versionConfigPath;
 };
 
 #endif // BLENDER_VERSION_MANAGER_H

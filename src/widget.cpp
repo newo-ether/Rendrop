@@ -39,7 +39,6 @@ Widget::Widget(QWidget *parent)
     qRegisterMetaType<BlenderFileInfo>("BlenderFileInfo");
 
     dropShadowRenderer = new DropShadowRenderer();
-    dropShadowRenderer->setRendererEnabled(false);
 
     addFileButton = new AddFileButton(ui->ContentWidget, dropShadowRenderer);
     QObject::connect(addFileButton, &AddFileButton::clicked, this, &Widget::onAddFileButtonClicked);
@@ -48,10 +47,10 @@ Widget::Widget(QWidget *parent)
     ui->scrollAreaSizeWidget->setAttribute(Qt::WA_TransparentForMouseEvents);
     ui->scrollAreaSizeWidget->installEventFilter(this);
 
-    createDropShadowWidget(ui->ContentWidget, ui->selectorContainer, 12, 4, 4, 0.3f, 15);
-    createDropShadowWidget(ui->ContentWidget, ui->infoWidgetContainer, 12, 4, 4, 0.3f, 15);
-    createDropShadowWidget(ui->ContentWidget, ui->scrollAreaContainer, 12, 4, 4, 0.3f, 15);
-    createDropShadowWidget(ui->ContentWidget, ui->renderButton, 6, 4, 4, 0.3f, 10);
+    createDropShadowWidget(ui->ContentWidget, ui->selectorContainer, 12, 4, 4, 0.4f, 15);
+    createDropShadowWidget(ui->ContentWidget, ui->infoWidgetContainer, 12, 4, 4, 0.4f, 15);
+    createDropShadowWidget(ui->ContentWidget, ui->scrollAreaContainer, 12, 4, 4, 0.4f, 15);
+    createDropShadowWidget(ui->ContentWidget, ui->renderButton, 15, 4, 4, 0.3f, 10);
     createDropShadowWidget(ui->ContentWidget, ui->outputContainer, 15, 4, 4, 0.3f, 10);
 
     dropFileTip = new DropFileTip(ui->ContentWidget);
@@ -247,7 +246,7 @@ QMessageBox::StandardButton Widget::questionMessageBox(QString title, QString te
 
 FileBar *Widget::newFileBar(QString fileName, QString filePath)
 {
-    QString blenderPath = QString::fromStdString(blenderVersionManager->getBlenderPath(ui->comboBox->currentText().toStdString()));
+    QString blenderPath = blenderVersionManager->getBlenderPath(ui->comboBox->currentText());
     FileBar *fileBar = new FileBar(
         ui->scrollAreaContent,
         dropShadowRenderer,
@@ -450,7 +449,7 @@ void Widget::onAddBlenderVersionButtonClicked()
     );
 
     if (!path.isEmpty()) {
-        int result = blenderVersionManager->addBlenderVersion(path.toStdString());
+        int result = blenderVersionManager->addBlenderVersion(path);
         if (result != 0)
         {
             if (result == -1)
@@ -484,7 +483,7 @@ void Widget::onDeleteBlenderVersionButtonClicked()
     if (blenderVersionManager->getBlenderVersionCount() > 0)
     {
         QString version = ui->comboBox->currentText();
-        if (blenderVersionManager->deleteBlenderVersion(version.toStdString()) != 0)
+        if (blenderVersionManager->deleteBlenderVersion(version) != 0)
         {
             errorMessageBox(tr("Error"), tr("Failed to save version configuration file."));
         }
@@ -588,7 +587,7 @@ void Widget::updateBlenderVersions()
     {
         for (auto &version : versions)
         {
-            ui->comboBox->addItem(QString::fromStdString(version.version));
+            ui->comboBox->addItem(version.version);
         }
     }
 }

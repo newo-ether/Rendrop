@@ -2,12 +2,11 @@
 
 #include <QString>
 #include <QObject>
-#include <QProcess>
-#include <QByteArray>
 #include <QTimer>
 #include <QRegularExpression>
 
 #include "blender_renderer.h"
+#include "process.h"
 
 BlenderRenderer::BlenderRenderer(QObject *parent):
     QThread(parent),
@@ -61,12 +60,7 @@ void BlenderRenderer::run()
         return;
     }
 
-    QProcess process;
-    QObject::connect(&process, &QProcess::readyReadStandardOutput, this, [&process, this](){
-        QByteArray data = process.readAllStandardOutput();
-        QString output = QString::fromLocal8Bit(data);
-        parseOutput(output);
-    });
+    Process process;
 
     QStringList args;
     args << "-b"
@@ -79,18 +73,24 @@ void BlenderRenderer::run()
          << QString::number(frameStep)
          << "-a";
 
-    process.start(blenderPath, args);
+    if (process.start(blenderPath, args) != 0)
+    {
+        emit finishedRendering(-1);
+        return;
+    }
 
     emit outputTextUpdate("Starting Blender...");
 
-    while (process.state() != QProcess::NotRunning)
+    while (process.isRunning())
     {
         if (stopped)
         {
             process.kill();
-            process.waitForFinished();
             return;
         }
+
+        QString output = process.readStandardOutput();
+        parseOutput(output);
 
         process.waitForFinished(50);
     }

@@ -80,7 +80,7 @@ FileBar::FileBar(
     dropShadowWidget->setBorderRadius(16);
     dropShadowWidget->setOffsetX(2);
     dropShadowWidget->setOffsetY(2);
-    dropShadowWidget->setAlphaMax(0.3f);
+    dropShadowWidget->setAlphaMax(0.4f);
     dropShadowWidget->setBlurRadius(10);
 
     show();

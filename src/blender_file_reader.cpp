@@ -3,13 +3,13 @@
 #include <QThread>
 #include <QString>
 #include <QFileInfo>
-#include <QProcess>
 #include <QTemporaryFile>
 #include <QDir>
 #include <QTextStream>
 
 #include "blender_file_reader.h"
 #include "blender_file_info.h"
+#include "process.h"
 
 BlenderFileReader::BlenderFileReader(QObject *parent):
     QThread(parent), stopped(false) {}
@@ -98,7 +98,7 @@ void BlenderFileReader::run()
     out.flush();
     readerFile.close();
 
-    QProcess process;
+    Process process;
 
     QStringList args;
     args << "-b"
@@ -107,16 +107,19 @@ void BlenderFileReader::run()
          << "--python"
          << readerFile.fileName();
 
-    process.start(blenderPath, args);
+    if (process.start(blenderPath, args) != 0)
+    {
+        emit finishedReading(-1, BlenderFileInfo());
+        return;
+    }
 
     QFileInfo outputFileInfo(outputFile.fileName());
-    while (process.state() != QProcess::NotRunning)
+    while (process.isRunning())
     {
         process.waitForFinished(50);
         if (stopped)
         {
             process.kill();
-            process.waitForFinished();
             readerFile.remove();
             outputFile.remove();
             return;
