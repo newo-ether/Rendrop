@@ -90,7 +90,10 @@ void BlenderRenderer::run()
         }
 
         QString output = process.readStandardOutput();
-        parseOutput(output);
+        if (!output.isEmpty())
+        {
+            parseOutput(output);
+        }
 
         process.waitForFinished(50);
     }
