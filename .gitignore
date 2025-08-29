@@ -61,6 +61,9 @@ CMakeLists.txt.user*
 *.vcxproj
 *vcxproj.*
 
+# VS Code generated files
+.vscode
+
 # MinGW generated files
 *.Debug
 *.Release
