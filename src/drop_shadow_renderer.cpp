@@ -66,7 +66,7 @@ void DropShadowRenderer::run()
                 lock.lockForRead();
 
                 auto iter = std::find_if(widgetBuffers.begin(), widgetBuffers.end(), [](const auto &widgetBuffer) {
-                    return widgetBuffer.lastInfo != widgetBuffer.info && widgetBuffer.updateEnabled;
+                    return widgetBuffer.lastInfo != widgetBuffer.info;
                 });
 
                 if (iter == widgetBuffers.end())
@@ -119,6 +119,51 @@ void DropShadowRenderer::deleteWidgetBuffer(int handle)
     if (iter != widgetBuffers.end())
     {
         widgetBuffers.erase(iter);
+        lock.unlock();
+        return;
+    }
+
+    iter = std::find_if(disabledWidgetBuffers.begin(), disabledWidgetBuffers.end(), [handle](const auto &widgetBuffer) {
+        return widgetBuffer.handle == handle;
+    });
+
+    if (iter != disabledWidgetBuffers.end())
+    {
+        disabledWidgetBuffers.erase(iter);
+    }
+
+    lock.unlock();
+}
+
+void DropShadowRenderer::setWidgetBufferUpdateEnabled(int handle, bool enabled)
+{
+    lock.lockForWrite();
+
+    if (enabled)
+    {
+        auto iter = std::find_if(disabledWidgetBuffers.begin(), disabledWidgetBuffers.end(), [handle](const auto &widgetBuffer) {
+            return widgetBuffer.handle == handle;
+        });
+
+        if (iter != disabledWidgetBuffers.end())
+        {
+            WidgetBuffer widgetBuffer = *iter;
+            disabledWidgetBuffers.erase(iter);
+            widgetBuffers.push_back(widgetBuffer);
+        }
+    }
+    else
+    {
+        auto iter = std::find_if(widgetBuffers.begin(), widgetBuffers.end(), [handle](const auto &widgetBuffer) {
+            return widgetBuffer.handle == handle;
+        });
+
+        if (iter != widgetBuffers.end())
+        {
+            WidgetBuffer widgetBuffer = *iter;
+            widgetBuffers.erase(iter);
+            disabledWidgetBuffers.push_back(widgetBuffer);
+        }
     }
 
     lock.unlock();
@@ -158,24 +203,6 @@ void DropShadowRenderer::setWidgetBuffer(
 
     draw = true;
     emit drawRequested();
-}
-
-void DropShadowRenderer::setWidgetBufferUpdateEnabled(int handle, bool enabled)
-{
-    lock.lockForRead();
-
-    auto iter = std::find_if(widgetBuffers.begin(), widgetBuffers.end(), [handle](const auto &widgetBuffer) {
-        return widgetBuffer.handle == handle;
-    });
-
-    QPixmap pixmap;
-
-    if (iter != widgetBuffers.end())
-    {
-        (*iter).updateEnabled = enabled;
-    }
-
-    lock.unlock();
 }
 
 QPixmap DropShadowRenderer::getPixmap(int handle)

@@ -151,7 +151,6 @@ private:
         WidgetInfo lastInfo;
         WidgetInfo info;
         QPixmap pixmap;
-        std::atomic_bool updateEnabled;
         std::function<void ()> updateFunc;
 
         inline WidgetBuffer(int handle, std::function<void ()> updateFunc):
@@ -159,7 +158,6 @@ private:
             lastInfo(WidgetInfo()),
             info(WidgetInfo()),
             pixmap(QPixmap()),
-            updateEnabled(true),
             updateFunc(updateFunc) {}
 
         inline WidgetBuffer(const WidgetBuffer &widgetBuffer):
@@ -167,7 +165,6 @@ private:
             lastInfo(widgetBuffer.lastInfo),
             info(widgetBuffer.info),
             pixmap(widgetBuffer.pixmap),
-            updateEnabled(widgetBuffer.updateEnabled.load()),
             updateFunc(widgetBuffer.updateFunc) {}
 
         inline WidgetBuffer(WidgetBuffer &&widgetBuffer):
@@ -175,7 +172,6 @@ private:
             lastInfo(widgetBuffer.lastInfo),
             info(widgetBuffer.info),
             pixmap(widgetBuffer.pixmap),
-            updateEnabled(widgetBuffer.updateEnabled.load()),
             updateFunc(widgetBuffer.updateFunc) {}
 
         inline WidgetBuffer &operator=(const WidgetBuffer &widgetBuffer)
@@ -184,7 +180,6 @@ private:
             lastInfo = widgetBuffer.lastInfo;
             info = widgetBuffer.info;
             pixmap = widgetBuffer.pixmap;
-            updateEnabled = widgetBuffer.updateEnabled.load();
             updateFunc = widgetBuffer.updateFunc;
 
             return *this;
@@ -196,7 +191,6 @@ private:
             lastInfo = widgetBuffer.lastInfo;
             info = widgetBuffer.info;
             pixmap = widgetBuffer.pixmap;
-            updateEnabled = widgetBuffer.updateEnabled.load();
             updateFunc = widgetBuffer.updateFunc;
 
             return *this;
@@ -223,6 +217,7 @@ private:
 
     QReadWriteLock lock;
     std::vector<WidgetBuffer> widgetBuffers;
+    std::vector<WidgetBuffer> disabledWidgetBuffers;
     std::atomic_int handleCounter = 0;
 
     std::atomic_bool stopped = false;
