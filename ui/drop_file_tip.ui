@@ -90,7 +90,7 @@ border: none;</string>
        <widget class="QLabel" name="label">
         <property name="font">
          <font>
-          <family>Bitcount Single</family>
+          <family>Pixel Mixed</family>
           <pointsize>12</pointsize>
          </font>
         </property>
@@ -99,7 +99,7 @@ border: none;</string>
 color: white;</string>
         </property>
         <property name="text">
-         <string>Drop Your 3D Project Files Here.</string>
+         <string>Drop your Blender Files here.</string>
         </property>
        </widget>
       </item>

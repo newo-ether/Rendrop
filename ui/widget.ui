@@ -46,6 +46,12 @@
    </property>
    <item>
     <widget class="QWidget" name="ContentWidget" native="true">
+     <property name="font">
+      <font>
+       <family>Segoe UI</family>
+       <pointsize>8</pointsize>
+      </font>
+     </property>
      <property name="styleSheet">
       <string notr="true">QWidget#ContentWidget {
 	background-color: #202124;
@@ -124,6 +130,94 @@
               </size>
              </property>
             </spacer>
+           </item>
+           <item>
+            <widget class="QComboBox" name="languageComboBox">
+             <property name="minimumSize">
+              <size>
+               <width>150</width>
+               <height>28</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>150</width>
+               <height>28</height>
+              </size>
+             </property>
+             <property name="font">
+              <font>
+               <family>Pixel Mixed</family>
+               <pointsize>11</pointsize>
+              </font>
+             </property>
+             <property name="styleSheet">
+              <string notr="true">QComboBox {
+    background-color: #333842;
+    border-radius: 8px;
+	border: 1px solid rgb(65, 65, 85);
+    padding: 6px 28px 6px 12px;
+    color: white;
+}
+
+QComboBox:hover {
+    background-color: #4B5362;
+}
+
+QComboBox:disabled {
+    background-color: #55595F;
+    color: #AAAAAA;
+}
+
+QComboBox::drop-down {
+    subcontrol-origin: padding;
+    subcontrol-position: top right;
+    width: 24px;
+    border-left: none;
+}
+
+QComboBox::down-arrow {
+    image: url(:/icon/down_arrow.ico);
+    width: 10px;
+    height: 10px;
+}
+
+QComboBox QAbstractItemView {
+    background-color: #333842;
+    border: 1px solid #555A66;
+    border-radius: 6px;
+    padding: 4px;
+    color: white;
+    selection-background-color: #4B5362;
+    selection-color: white;
+	outline: none;
+}
+
+QComboBox QAbstractItemView::item:hover {
+    background-color: #4B5362;
+	border-left: 3px solid #0078d7;
+	border-radius: 6px;
+	padding: 2px;
+}
+
+QComboBox QAbstractItemView::item:selected {
+    background-color: #4B5362;
+	border-left: 3px solid #0078d7;
+	border-radius: 6px;
+	padding: 2px;
+}</string>
+             </property>
+             <item>
+              <property name="text">
+               <string>English</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>中文</string>
+              </property>
+             </item>
+            </widget>
            </item>
           </layout>
          </item>
@@ -231,7 +325,7 @@ background-color: rgb(26, 28, 32);</string>
                <widget class="QLabel" name="selectorLabel">
                 <property name="font">
                  <font>
-                  <family>Bitcount Single</family>
+                  <family>Pixel Mixed</family>
                   <pointsize>16</pointsize>
                  </font>
                 </property>
@@ -286,8 +380,8 @@ background-color: rgb(26, 28, 32);</string>
                   </property>
                   <property name="font">
                    <font>
-                    <family>Bitcount Single</family>
-                    <pointsize>-1</pointsize>
+                    <family>Pixel Mixed</family>
+                    <pointsize>11</pointsize>
                    </font>
                   </property>
                   <property name="styleSheet">
@@ -297,7 +391,6 @@ background-color: rgb(26, 28, 32);</string>
 	border: 1px solid rgb(65, 65, 85);
     padding: 6px 28px 6px 12px;
     color: white;
-    font-size: 14px;
 }
 
 QComboBox:hover {
@@ -369,12 +462,6 @@ QComboBox QAbstractItemView::item:selected {
                     <height>30</height>
                    </size>
                   </property>
-                  <property name="font">
-                   <font>
-                    <family>Bitcount Single</family>
-                    <pointsize>12</pointsize>
-                   </font>
-                  </property>
                   <property name="styleSheet">
                    <string notr="true">QPushButton {
     background-color: #333842;
@@ -426,12 +513,6 @@ QPushButton:disabled {
                     <width>50</width>
                     <height>30</height>
                    </size>
-                  </property>
-                  <property name="font">
-                   <font>
-                    <family>Bitcount Single</family>
-                    <pointsize>11</pointsize>
-                   </font>
                   </property>
                   <property name="styleSheet">
                    <string notr="true">QPushButton {
@@ -625,7 +706,7 @@ background-color: rgb(26, 28, 32);</string>
                       <widget class="QLabel" name="framesLabel">
                        <property name="font">
                         <font>
-                         <family>Bitcount Single</family>
+                         <family>Pixel Mixed</family>
                          <pointsize>11</pointsize>
                         </font>
                        </property>
@@ -663,7 +744,7 @@ background-color: rgb(26, 28, 32);</string>
                    <widget class="QLabel" name="framesText">
                     <property name="font">
                      <font>
-                      <family>Bitcount Single</family>
+                      <family>Pixel Mixed</family>
                       <pointsize>12</pointsize>
                      </font>
                     </property>
@@ -745,7 +826,7 @@ background-color: rgb(26, 28, 32);</string>
                       <widget class="QLabel" name="projectsLabel">
                        <property name="font">
                         <font>
-                         <family>Bitcount Single</family>
+                         <family>Pixel Mixed</family>
                          <pointsize>11</pointsize>
                         </font>
                        </property>
@@ -783,7 +864,7 @@ background-color: rgb(26, 28, 32);</string>
                    <widget class="QLabel" name="projectsText">
                     <property name="font">
                      <font>
-                      <family>Bitcount Single</family>
+                      <family>Pixel Mixed</family>
                       <pointsize>12</pointsize>
                      </font>
                     </property>
@@ -1046,7 +1127,7 @@ background-color: #2C313C;</string>
              </property>
              <property name="font">
               <font>
-               <family>Bitcount Single</family>
+               <family>Pixel Mixed</family>
                <pointsize>11</pointsize>
               </font>
              </property>
@@ -1082,7 +1163,8 @@ color: rgb(200, 200, 240);</string>
              </property>
              <property name="font">
               <font>
-               <family>Bitcount Single</family>
+               <family>Pixel Mixed</family>
+               <pointsize>9</pointsize>
               </font>
              </property>
              <property name="styleSheet">
@@ -1130,7 +1212,7 @@ color: rgb(180, 180, 200);</string>
           </property>
           <property name="font">
            <font>
-            <family>Bitcount Single</family>
+            <family>Pixel Mixed</family>
             <pointsize>11</pointsize>
             <stylestrategy>PreferAntialias</stylestrategy>
            </font>

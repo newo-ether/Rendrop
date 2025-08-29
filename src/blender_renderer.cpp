@@ -79,7 +79,7 @@ void BlenderRenderer::run()
         return;
     }
 
-    emit outputTextUpdate("Starting Blender...");
+    emit outputTextUpdate(tr("Starting Blender..."));
 
     while (process.isRunning())
     {

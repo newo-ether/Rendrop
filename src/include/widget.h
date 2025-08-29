@@ -29,7 +29,7 @@ class Widget : public QWidget
     Q_OBJECT
 
 public:
-    Widget(QWidget *parent = nullptr);
+    Widget(int languageIndex, QWidget *parent = nullptr);
     ~Widget();
 
 protected:
@@ -72,6 +72,7 @@ private:
     void updateAllFileBarShadow();
 
 private slots:
+    void onLanguageChanged(int index);
     void onFileBarUp(FileBar *fileBar);
     void onFileBarDown(FileBar *fileBar);
     void onFileBarDelete(FileBar *fileBar);

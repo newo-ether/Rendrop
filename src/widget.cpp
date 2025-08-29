@@ -5,7 +5,6 @@
 #include <QFileInfo>
 #include <QGraphicsOpacityEffect>
 #include <QMessageBox>
-#include <QFontDatabase>
 #include <QFont>
 #include <QProcess>
 #include <QTemporaryFile>
@@ -26,14 +25,16 @@
 
 #include "drop_file_tip.h"
 
-Widget::Widget(QWidget *parent)
-    : QWidget(parent)
-    , ui(new Ui::widget)
+Widget::Widget(int languageIndex, QWidget *parent):
+    QWidget(parent),
+    ui(new Ui::widget)
 {
-    QFontDatabase::addApplicationFont(":/font/BitcountSingle-Regular.ttf");
     ui->setupUi(this);
 
-    blenderVersionManager = new BlenderVersionManager("config/blender_versions.txt");
+    ui->languageComboBox->setCurrentIndex(languageIndex);
+    QObject::connect(ui->languageComboBox, &QComboBox::currentIndexChanged, this, &Widget::onLanguageChanged);
+
+    blenderVersionManager = new BlenderVersionManager("config/blender_versions.cfg");
     updateBlenderVersions();
 
     qRegisterMetaType<BlenderFileInfo>("BlenderFileInfo");
@@ -62,6 +63,7 @@ Widget::Widget(QWidget *parent)
     opacity->setOpacity(0.5);
     dropFileTip->setGraphicsEffect(opacity);
 
+    ui->renderButton->setText(tr("Start Render"));
     isRendering = false;
     clearOutputText();
 
@@ -182,7 +184,7 @@ void Widget::closeEvent(QCloseEvent *event)
     {
         result = warningMessageBox(
             tr("Warning"),
-            tr("Some tasks are still rendering. Are you sure to exit?"),
+            tr("Some files are still rendering. Are you sure to exit?"),
             QMessageBox::Yes | QMessageBox::No
         );
     }
@@ -190,7 +192,7 @@ void Widget::closeEvent(QCloseEvent *event)
     {
         result = warningMessageBox(
             tr("Warning"),
-            tr("Some tasks are still loading. Are you sure to exit?"),
+            tr("Some files are still loading. Are you sure to exit?"),
             QMessageBox::Yes | QMessageBox::No
         );
     }
@@ -213,7 +215,7 @@ void Widget::closeEvent(QCloseEvent *event)
 QMessageBox::StandardButton Widget::errorMessageBox(QString title, QString text, QMessageBox::StandardButtons buttons)
 {
     QMessageBox messageBox(this);
-    QFont font("Bitcount Single", 12);
+    QFont font("Pixel Mixed", 12);
     messageBox.setIcon(QMessageBox::Critical);
     messageBox.setText(text);
     messageBox.setWindowTitle(title);
@@ -225,7 +227,7 @@ QMessageBox::StandardButton Widget::errorMessageBox(QString title, QString text,
 QMessageBox::StandardButton Widget::warningMessageBox(QString title, QString text, QMessageBox::StandardButtons buttons)
 {
     QMessageBox messageBox(this);
-    QFont font("Bitcount Single", 12);
+    QFont font("Pixel Mixed", 12);
     messageBox.setIcon(QMessageBox::Warning);
     messageBox.setText(text);
     messageBox.setWindowTitle(title);
@@ -237,7 +239,7 @@ QMessageBox::StandardButton Widget::warningMessageBox(QString title, QString tex
 QMessageBox::StandardButton Widget::infoMessageBox(QString title, QString text, QMessageBox::StandardButtons buttons)
 {
     QMessageBox messageBox(this);
-    QFont font("Bitcount Single", 12);
+    QFont font("Pixel Mixed", 12);
     messageBox.setIcon(QMessageBox::Information);
     messageBox.setText(text);
     messageBox.setWindowTitle(title);
@@ -249,7 +251,7 @@ QMessageBox::StandardButton Widget::infoMessageBox(QString title, QString text, 
 QMessageBox::StandardButton Widget::questionMessageBox(QString title, QString text, QMessageBox::StandardButtons buttons)
 {
     QMessageBox messageBox(this);
-    QFont font("Bitcount Single", 12);
+    QFont font("Pixel Mixed", 12);
     messageBox.setIcon(QMessageBox::Question);
     messageBox.setText(text);
     messageBox.setWindowTitle(title);
@@ -309,6 +311,36 @@ void Widget::createDropShadowWidget(
     dropShadowWidget->setBlurRadius(blurRadius);
 
     dropShadowWidgets.push_back(dropShadowWidget);
+}
+
+void Widget::onLanguageChanged(int index)
+{
+    QDir configDir = QFileInfo("config/language.cfg").absoluteDir();
+    if (!configDir.exists())
+    {
+        configDir.mkpath(configDir.absolutePath());
+    }
+
+    QFile configFile("config/language.cfg");
+    if (configFile.open(QIODevice::WriteOnly | QIODevice::Text))
+    {
+        configFile.write(index == 0 ? "en_US\n" : "zh_CN\n");
+        configFile.close();
+    }
+
+    auto result = warningMessageBox(
+        tr("Warning"),
+        tr("Language settings will take effect after restarting the program. Restart now?"),
+        QMessageBox::Yes | QMessageBox::No
+    );
+
+    if (result == QMessageBox::Yes)
+    {
+        QString program = QCoreApplication::applicationFilePath();
+        QStringList arguments = QCoreApplication::arguments();
+        QProcess::startDetached(program, arguments);
+        QCoreApplication::quit();
+    }
 }
 
 void Widget::onFileBarUp(FileBar *fileBar)
@@ -444,7 +476,7 @@ void Widget::onAddFileButtonClicked()
         if (!filePath.isEmpty())
         {
             QFileInfo fileInfo(filePath);
-            QString fileName = fileInfo.baseName();
+            QString fileName = fileInfo.completeBaseName();
             newFileBar(fileName, filePath);
         }
     }
@@ -685,7 +717,7 @@ void Widget::updateStatisticInfo()
 
 void Widget::clearOutputText()
 {
-    ui->outputLabel->setText("Ready to render.");
+    ui->outputLabel->setText(tr("Ready to render."));
 }
 
 void Widget::updateAllFileBarShadow()

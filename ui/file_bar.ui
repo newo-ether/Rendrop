@@ -208,7 +208,7 @@ QPushButton:pressed {
         </property>
         <property name="font">
          <font>
-          <family>Bitcount Single</family>
+          <family>Pixel Mixed</family>
           <pointsize>10</pointsize>
           <stylestrategy>PreferAntialias</stylestrategy>
          </font>
@@ -248,7 +248,7 @@ border-radius: 8px;
         </property>
         <property name="font">
          <font>
-          <family>Bitcount Single</family>
+          <family>Pixel Mixed</family>
           <pointsize>10</pointsize>
           <stylestrategy>PreferAntialias</stylestrategy>
          </font>
@@ -291,7 +291,7 @@ border-radius: 8px;
         </property>
         <property name="font">
          <font>
-          <family>Bitcount Single</family>
+          <family>Pixel Mixed</family>
           <pointsize>10</pointsize>
           <stylestrategy>PreferAntialias</stylestrategy>
          </font>
@@ -334,7 +334,7 @@ border-radius: 8px;
         </property>
         <property name="font">
          <font>
-          <family>Bitcount Single</family>
+          <family>Pixel Mixed</family>
           <pointsize>10</pointsize>
           <stylestrategy>PreferAntialias</stylestrategy>
          </font>
@@ -401,7 +401,8 @@ border-radius: 8px;
           <widget class="QLabel" name="progressBarLabel">
            <property name="font">
             <font>
-             <family>Bitcount Single</family>
+             <family>Pixel Mixed</family>
+             <pointsize>9</pointsize>
             </font>
            </property>
            <property name="styleSheet">
@@ -436,7 +437,6 @@ color: white;</string>
         </property>
         <property name="font">
          <font>
-          <family>Bitcount Single</family>
           <stylestrategy>PreferAntialias</stylestrategy>
          </font>
         </property>
@@ -494,7 +494,6 @@ QPushButton:disabled {
         </property>
         <property name="font">
          <font>
-          <family>Bitcount Single</family>
           <stylestrategy>PreferAntialias</stylestrategy>
          </font>
         </property>

@@ -60,6 +60,8 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 RESOURCES += \
     resource/resource.qrc
 
+TRANSLATIONS += resource/i18n/zh_CN.ts
+
 LIBS += user32.lib
 
 RC_ICONS = resource/icon/icon.ico

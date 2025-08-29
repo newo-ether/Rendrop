@@ -1,6 +1,5 @@
 <RCC>
     <qresource prefix="/">
-        <file>font/BitcountSingle-Regular.ttf</file>
         <file>icon/3d_file.ico</file>
         <file>icon/down_arrow.ico</file>
         <file>icon/icon.ico</file>
@@ -8,5 +7,9 @@
         <file>icon/up_arrow.ico</file>
         <file>icon/close.ico</file>
         <file>icon/retry.ico</file>
+        <file>i18n/zh_CN.qm</file>
+        <file>i18n/zh_CN.ts</file>
+        <file>font/BitcountSingle-Bold.ttf</file>
+        <file>font/PixelMixed.ttf</file>
     </qresource>
 </RCC>
