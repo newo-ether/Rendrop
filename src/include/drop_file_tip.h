@@ -14,7 +14,7 @@ class DropFileTip : public QWidget
     Q_OBJECT
 
 public:
-    explicit DropFileTip(QWidget *parent = nullptr);
+    DropFileTip(QWidget *parent = nullptr);
     ~DropFileTip();
 
 private:

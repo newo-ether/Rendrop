@@ -11,6 +11,11 @@
 #include <QThread>
 #include <QThreadPool>
 #include <QCloseEvent>
+#include <QDragEnterEvent>
+#include <QDropEvent>
+#include <QMimeData>
+#include <QUrl>
+#include <QDir>
 
 #include <vector>
 
@@ -31,6 +36,8 @@ Widget::Widget(int languageIndex, QWidget *parent):
 {
     ui->setupUi(this);
 
+    setAcceptDrops(true);
+
     ui->languageComboBox->setCurrentIndex(languageIndex);
     QObject::connect(ui->languageComboBox, &QComboBox::currentIndexChanged, this, &Widget::onLanguageChanged);
 
@@ -40,6 +47,7 @@ Widget::Widget(int languageIndex, QWidget *parent):
     qRegisterMetaType<BlenderFileInfo>("BlenderFileInfo");
 
     dropShadowRenderer = new DropShadowRenderer();
+    ui->scrollAreaContent->installEventFilter(this);
 
     handle = dropShadowRenderer->createWidgetBuffer([this]() { this->updateAllFileBarShadow(); });
 
@@ -56,8 +64,8 @@ Widget::Widget(int languageIndex, QWidget *parent):
     createDropShadowWidget(ui->ContentWidget, ui->renderButton, 15, 4, 4, 0.3f, 10);
     createDropShadowWidget(ui->ContentWidget, ui->outputContainer, 15, 4, 4, 0.3f, 10);
 
-    dropFileTip = new DropFileTip(ui->ContentWidget);
-    dropFileTip->setAttribute(Qt::WA_TransparentForMouseEvents);
+    dropFileTip = new DropFileTip(ui->scrollAreaContent);
+    dropFileTip->lower();
 
     QGraphicsOpacityEffect *opacity = new QGraphicsOpacityEffect;
     opacity->setOpacity(0.5);
@@ -120,9 +128,13 @@ bool Widget::eventFilter(QObject *watched, QEvent *event)
 
         addFileButton->move(x - 110, y - 110);
         addFileButton->raise();
+    }
 
-        dropFileTip->setGeometry(scrollAreaContainer->geometry());
-        dropFileTip->stackUnder(addFileButton);
+    if (watched == ui->scrollAreaContent && event->type() == QEvent::Resize)
+    {
+        QWidget *scrollAreaContent = ui->scrollAreaContent;
+        dropFileTip->setGeometry(0, 0, scrollAreaContent->width(), scrollAreaContent->height());
+        dropFileTip->lower();
     }
 
     if (watched == ui->scrollAreaSizeWidget && event->type() == QEvent::Resize)
@@ -209,6 +221,61 @@ void Widget::closeEvent(QCloseEvent *event)
     else
     {
         event->ignore();
+    }
+}
+
+void Widget::dragEnterEvent(QDragEnterEvent *event)
+{
+    if (event->mimeData()->hasUrls())
+    {
+        bool hasBlendFile = false;
+        for (const QUrl &url : event->mimeData()->urls())
+        {
+            if (url.isLocalFile())
+            {
+                QString filePath = url.toLocalFile();
+                if (filePath.endsWith(".blend", Qt::CaseInsensitive))
+                {
+                    hasBlendFile = true;
+                    break;
+                }
+            }
+        }
+
+        if (hasBlendFile)
+        {
+            event->acceptProposedAction();
+        }
+    }
+}
+
+void Widget::dropEvent(QDropEvent *event)
+{
+    if (event->mimeData()->hasUrls())
+    {
+        bool hasBlendFile = false;
+        for (const QUrl &url : event->mimeData()->urls())
+        {
+            if (url.isLocalFile())
+            {
+                QString filePath = url.toLocalFile();
+                if (filePath.endsWith(".blend", Qt::CaseInsensitive))
+                {
+                    hasBlendFile = true;
+
+                    QFileInfo fileInfo(filePath);
+                    QString fileName = fileInfo.completeBaseName();
+                    newFileBar(fileName, filePath);
+                }
+            }
+        }
+
+        if (hasBlendFile)
+        {
+            event->acceptProposedAction();
+            updateButtonStatus();
+            updateStatisticInfo();
+        }
     }
 }
 

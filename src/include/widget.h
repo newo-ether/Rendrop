@@ -6,9 +6,12 @@
 #include <QWidget>
 #include <QString>
 #include <QPixmap>
-#include <vector>
 #include <QMessageBox>
 #include <QCloseEvent>
+#include <QDragEnterEvent>
+#include <QDropEvent>
+
+#include <vector>
 
 #include "file_bar.h"
 #include "add_file_button.h"
@@ -35,6 +38,8 @@ public:
 protected:
     bool eventFilter(QObject *watched, QEvent *event) override;
     void closeEvent(QCloseEvent *event) override;
+    void dragEnterEvent(QDragEnterEvent *event) override;
+    void dropEvent(QDropEvent *event) override;
 
 private:
     Ui::widget *ui;
