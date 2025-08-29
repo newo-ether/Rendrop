@@ -18,11 +18,15 @@ DropShadowWidget::DropShadowWidget(
 {
     setAttribute(Qt::WA_TransparentForMouseEvents);
     updateEnabled = true;
+    handle = dropShadowRenderer->createWidgetBuffer([this]() { this->update(); });
     stackUnder(targetWidget);
     targetWidget->installEventFilter(this);
 }
 
-DropShadowWidget::~DropShadowWidget() {}
+DropShadowWidget::~DropShadowWidget()
+{
+    dropShadowRenderer->deleteWidgetBuffer(handle);
+}
 
 void DropShadowWidget::paintEvent(QPaintEvent *)
 {
@@ -30,9 +34,11 @@ void DropShadowWidget::paintEvent(QPaintEvent *)
 
     if (updateEnabled)
     {
+        shadowCache = dropShadowRenderer->getPixmap(handle);
         if (shadowCache.isNull() || !(shadowCache.width() == width()) || !(shadowCache.height() == height()))
         {
-            shadowCache = dropShadowRenderer->render(
+            dropShadowRenderer->setWidgetBuffer(
+                handle,
                 width(),
                 height(),
                 borderRadius,
@@ -41,12 +47,17 @@ void DropShadowWidget::paintEvent(QPaintEvent *)
                 alphaMax,
                 blurRadius
             );
+            if (shadowCache.isNull())
+            {
+                return;
+            }
+            shadowCache = shadowCache.scaled(QSize(width(), height()), Qt::IgnoreAspectRatio, Qt::FastTransformation);
         }
         painter.drawPixmap(QPoint(0, 0), shadowCache);
     }
     else
     {
-        if (shadowPixmap)
+        if (shadowPixmap && !shadowPixmap->isNull())
         {
             painter.drawPixmap(QPoint(0, 0), *shadowPixmap);
         }
@@ -96,6 +107,7 @@ void DropShadowWidget::setBlurRadius(float blurRadius)
 void DropShadowWidget::setShadowUpdateEnabled(bool updateEnabled)
 {
     this->updateEnabled = updateEnabled;
+    dropShadowRenderer->setWidgetBufferUpdateEnabled(handle, updateEnabled);
 }
 
 void DropShadowWidget::setShadowPixmap(QPixmap *shadowPixmap)

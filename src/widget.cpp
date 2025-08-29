@@ -40,6 +40,8 @@ Widget::Widget(QWidget *parent)
 
     dropShadowRenderer = new DropShadowRenderer();
 
+    handle = dropShadowRenderer->createWidgetBuffer([this]() { this->updateAllFileBarShadow(); });
+
     addFileButton = new AddFileButton(ui->ContentWidget, dropShadowRenderer);
     QObject::connect(addFileButton, &AddFileButton::clicked, this, &Widget::onAddFileButtonClicked);
     ui->scrollAreaContainer->installEventFilter(this);
@@ -100,6 +102,8 @@ Widget::~Widget()
     }
 
     delete ui;
+
+    dropShadowRenderer->deleteWidgetBuffer(handle);
     delete dropShadowRenderer;
     delete blenderVersionManager;
 }
@@ -133,7 +137,8 @@ bool Widget::eventFilter(QObject *watched, QEvent *event)
         float marginX = std::abs(offsetX) + blurRadius * 0.5f;
         float marginY = std::abs(offsetY) + blurRadius * 0.5f;
 
-        fileBarShadowPixmap = dropShadowRenderer->render(
+        dropShadowRenderer->setWidgetBuffer(
+            handle,
             fileBarWidth + marginX * 2,
             fileBarHeight + marginY * 2,
             borderRadius,
@@ -142,6 +147,15 @@ bool Widget::eventFilter(QObject *watched, QEvent *event)
             alphaMax,
             blurRadius
         );
+        if (!fileBarShadowPixmap.isNull())
+        {
+            fileBarShadowPixmap = fileBarShadowPixmap.scaled(
+                fileBarWidth + marginX * 2,
+                fileBarHeight + marginY * 2,
+                Qt::IgnoreAspectRatio,
+                Qt::FastTransformation
+            );
+        }
     }
 
     return QWidget::eventFilter(watched, event);
@@ -672,4 +686,14 @@ void Widget::updateStatisticInfo()
 void Widget::clearOutputText()
 {
     ui->outputLabel->setText("Ready to render.");
+}
+
+void Widget::updateAllFileBarShadow()
+{
+    fileBarShadowPixmap = dropShadowRenderer->getPixmap(handle);
+
+    for (auto &fileBar : fileBars)
+    {
+        fileBar->getDropShadowWidget()->update();
+    }
 }

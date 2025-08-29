@@ -1,6 +1,11 @@
 // drop_shadow_renderer.cpp
 
 #include <QImage>
+#include <QPixmap>
+#include <QObject>
+#include <QThread>
+#include <QReadWriteLock>
+#include <QEventLoop>
 
 #include <QOpenGLContext>
 #include <QOffscreenSurface>
@@ -8,22 +13,14 @@
 #include <QOpenGLShaderProgram>
 #include <QOpenGLFramebufferObject>
 
+#include <vector>
+#include <atomic>
+#include <functional>
+
 #include "drop_shadow_renderer.h"
 
-DropShadowRenderer::DropShadowRenderer(bool enabled):
-    enabled(enabled)
-{
-    initializeOpenGL();
-}
-
-DropShadowRenderer::~DropShadowRenderer()
-{
-    glContext->doneCurrent();
-    delete glSurface;
-    delete glContext;
-}
-
-void DropShadowRenderer::initializeOpenGL()
+DropShadowRenderer::DropShadowRenderer(QObject *parent):
+    QThread(parent)
 {
     glContext = new QOpenGLContext();
     glContext->setFormat(QSurfaceFormat::defaultFormat());
@@ -33,8 +30,175 @@ void DropShadowRenderer::initializeOpenGL()
     glSurface->setFormat(glContext->format());
     glSurface->create();
 
-    glContext->makeCurrent(glSurface);
+    glContext->moveToThread(this);
+    start();
+}
 
+DropShadowRenderer::~DropShadowRenderer()
+{
+    stopped = true;
+    emit stopRequested();
+    wait();
+
+    delete glSurface;
+    delete glContext;
+}
+
+void DropShadowRenderer::run()
+{
+    glContext->makeCurrent(glSurface);
+    initializeOpenGL();
+
+    QEventLoop loop;
+    QObject::connect(this, &DropShadowRenderer::stopRequested, &loop, &QEventLoop::quit);
+    QObject::connect(this, &DropShadowRenderer::drawRequested, &loop, &QEventLoop::quit);
+    QObject::connect(this, &DropShadowRenderer::saveImage, this, &DropShadowRenderer::onSaveImage, Qt::QueuedConnection);
+
+    stopped = false;
+    draw = false;
+
+    while (!stopped)
+    {
+        if (draw.exchange(false))
+        {
+            while (true)
+            {
+                lock.lockForRead();
+
+                auto iter = std::find_if(widgetBuffers.begin(), widgetBuffers.end(), [](const auto &widgetBuffer) {
+                    return widgetBuffer.lastInfo != widgetBuffer.info && widgetBuffer.updateEnabled;
+                });
+
+                if (iter == widgetBuffers.end())
+                {
+                    lock.unlock();
+                    break;
+                }
+
+                WidgetBuffer& widgetBuffer = *iter;
+                int handle = widgetBuffer.handle;
+                WidgetInfo info = widgetBuffer.info;
+                widgetBuffer.lastInfo = info;
+                auto updateFunc = widgetBuffer.updateFunc;
+
+                lock.unlock();
+
+                QImage image = render(info);
+                emit saveImage(handle, image, updateFunc);
+            }
+        }
+        else
+        {
+            loop.exec();
+        }
+    }
+
+    glContext->doneCurrent();
+}
+
+int DropShadowRenderer::createWidgetBuffer(std::function<void ()> updateFunc)
+{
+    lock.lockForWrite();
+
+    int handle = handleCounter++;
+    widgetBuffers.push_back(WidgetBuffer(handle, updateFunc));
+
+    lock.unlock();
+
+    return handle;
+}
+
+void DropShadowRenderer::deleteWidgetBuffer(int handle)
+{
+    lock.lockForWrite();
+
+    auto iter = std::find_if(widgetBuffers.begin(), widgetBuffers.end(), [handle](const auto &widgetBuffer) {
+        return widgetBuffer.handle == handle;
+    });
+
+    if (iter != widgetBuffers.end())
+    {
+        widgetBuffers.erase(iter);
+    }
+
+    lock.unlock();
+}
+
+void DropShadowRenderer::setWidgetBuffer(
+    int handle,
+    float widgetWidth,
+    float widgetHeight,
+    float borderRadius,
+    float offsetX,
+    float offsetY,
+    float alphaMax,
+    float blurRadius
+) {
+    lock.lockForRead();
+
+    auto iter = std::find_if(widgetBuffers.begin(), widgetBuffers.end(), [handle](const auto &widgetBuffer) {
+        return widgetBuffer.handle == handle;
+    });
+
+    if (iter != widgetBuffers.end())
+    {
+        WidgetBuffer &widgetBuffer = *iter;
+        widgetBuffer.info = WidgetInfo(
+            widgetWidth,
+            widgetHeight,
+            borderRadius,
+            offsetX,
+            offsetY,
+            alphaMax,
+            blurRadius
+        );
+    }
+
+    lock.unlock();
+
+    draw = true;
+    emit drawRequested();
+}
+
+void DropShadowRenderer::setWidgetBufferUpdateEnabled(int handle, bool enabled)
+{
+    lock.lockForRead();
+
+    auto iter = std::find_if(widgetBuffers.begin(), widgetBuffers.end(), [handle](const auto &widgetBuffer) {
+        return widgetBuffer.handle == handle;
+    });
+
+    QPixmap pixmap;
+
+    if (iter != widgetBuffers.end())
+    {
+        (*iter).updateEnabled = enabled;
+    }
+
+    lock.unlock();
+}
+
+QPixmap DropShadowRenderer::getPixmap(int handle)
+{
+    lock.lockForRead();
+
+    auto iter = std::find_if(widgetBuffers.begin(), widgetBuffers.end(), [handle](const auto &widgetBuffer) {
+        return widgetBuffer.handle == handle;
+    });
+
+    QPixmap pixmap;
+
+    if (iter != widgetBuffers.end())
+    {
+        pixmap = (*iter).pixmap;
+    }
+
+    lock.unlock();
+    return pixmap;
+}
+
+void DropShadowRenderer::initializeOpenGL()
+{
     glFunctions = glContext->functions();
     glFunctions->initializeOpenGLFunctions();
 
@@ -103,45 +267,33 @@ void DropShadowRenderer::initializeOpenGL()
     glFunctions->glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 }
 
-QPixmap DropShadowRenderer::render(
-    float widgetWidth,
-    float widgetHeight,
-    float borderRadius,
-    float offsetX,
-    float offsetY,
-    float alphaMax,
-    float blurRadius
-) {
-    if (!enabled)
-    {
-        return QPixmap();
-    }
-
+QImage DropShadowRenderer::render(WidgetInfo info)
+{
     QOpenGLFramebufferObjectFormat fboFormat;
     fboFormat.setAttachment(QOpenGLFramebufferObject::NoAttachment);
     fboFormat.setInternalTextureFormat(GL_RGBA8);
 
-    QOpenGLFramebufferObject fbo(widgetWidth, widgetHeight, fboFormat);
+    QOpenGLFramebufferObject fbo(info.widgetWidth, info.widgetHeight, fboFormat);
     fbo.bind();
 
-    glFunctions->glViewport(0, 0, widgetWidth, widgetHeight);
+    glFunctions->glViewport(0, 0, info.widgetWidth, info.widgetHeight);
     glFunctions->glClearColor(0, 0, 0, 0);
     glFunctions->glClear(GL_COLOR_BUFFER_BIT);
 
     program->bind();
 
-    float marginX = std::abs(offsetX) + blurRadius * 0.5f;
-    float marginY = std::abs(offsetY) + blurRadius * 0.5f;
+    float marginX = std::abs(info.offsetX) + info.blurRadius * 0.5f;
+    float marginY = std::abs(info.offsetY) + info.blurRadius * 0.5f;
 
-    program->setUniformValue("borderRadius", borderRadius);
-    program->setUniformValue("widgetWidth", static_cast<float>(widgetWidth));
-    program->setUniformValue("widgetHeight", static_cast<float>(widgetHeight));
-    program->setUniformValue("rectWidth", static_cast<float>(widgetWidth - marginX * 2));
-    program->setUniformValue("rectHeight", static_cast<float>(widgetHeight - marginY * 2));
-    program->setUniformValue("offsetX", offsetX);
-    program->setUniformValue("offsetY", offsetY);
-    program->setUniformValue("alphaMax", alphaMax);
-    program->setUniformValue("blurRadius", blurRadius);
+    program->setUniformValue("borderRadius", info.borderRadius);
+    program->setUniformValue("widgetWidth", static_cast<float>(info.widgetWidth));
+    program->setUniformValue("widgetHeight", static_cast<float>(info.widgetHeight));
+    program->setUniformValue("rectWidth", static_cast<float>(info.widgetWidth - marginX * 2));
+    program->setUniformValue("rectHeight", static_cast<float>(info.widgetHeight - marginY * 2));
+    program->setUniformValue("offsetX", info.offsetX);
+    program->setUniformValue("offsetY", info.offsetY);
+    program->setUniformValue("alphaMax", info.alphaMax);
+    program->setUniformValue("blurRadius", info.blurRadius);
 
     glFunctions->glBindBuffer(GL_ARRAY_BUFFER, vbo);
     glFunctions->glEnableVertexAttribArray(0);
@@ -154,13 +306,23 @@ QPixmap DropShadowRenderer::render(
 
     fbo.release();
 
-    QImage image = fbo.toImage();
-    QPixmap pixmap = QPixmap::fromImage(image);
-
-    return pixmap;
+    return fbo.toImage();
 }
 
-void DropShadowRenderer::setRendererEnabled(bool enabled)
+void DropShadowRenderer::onSaveImage(int handle, QImage image, std::function<void ()> updateFunc)
 {
-    this->enabled = enabled;
+    lock.lockForRead();
+
+    auto iter = std::find_if(widgetBuffers.begin(), widgetBuffers.end(), [handle](const auto &widgetBuffer) {
+        return widgetBuffer.handle == handle;
+    });
+
+    if (iter != widgetBuffers.end())
+    {
+        QPixmap pixmap = QPixmap::fromImage(image);
+        (*iter).pixmap = pixmap;
+        updateFunc();
+    }
+
+    lock.unlock();
 }

@@ -46,6 +46,7 @@ private:
     DropShadowRenderer *dropShadowRenderer;
     QPixmap fileBarShadowPixmap;
     bool isRendering;
+    int handle;
 
 private:
     QMessageBox::StandardButton errorMessageBox(QString title, QString text, QMessageBox::StandardButtons buttons = QMessageBox::Ok);
@@ -68,6 +69,7 @@ private:
     void updateStatisticInfo();
     void clearOutputText();
     void setSelectorEnabled(bool enable);
+    void updateAllFileBarShadow();
 
 private slots:
     void onFileBarUp(FileBar *fileBar);

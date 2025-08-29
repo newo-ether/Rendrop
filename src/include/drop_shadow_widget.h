@@ -39,6 +39,7 @@ private:
     QPixmap *shadowPixmap;
     DropShadowRenderer *dropShadowRenderer;
 
+    int handle;
     float borderRadius, offsetX, offsetY, alphaMax, blurRadius;
     bool updateEnabled;
 
