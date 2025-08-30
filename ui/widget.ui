@@ -365,7 +365,7 @@ background-color: rgb(26, 28, 32);</string>
                  <number>8</number>
                 </property>
                 <item>
-                 <widget class="QComboBox" name="comboBox">
+                 <widget class="QComboBox" name="selectorComboBox">
                   <property name="minimumSize">
                    <size>
                     <width>0</width>

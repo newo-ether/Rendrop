@@ -58,11 +58,14 @@ Widget::Widget(int languageIndex, QWidget *parent):
     ui->scrollAreaSizeWidget->setAttribute(Qt::WA_TransparentForMouseEvents);
     ui->scrollAreaSizeWidget->installEventFilter(this);
 
-    createDropShadowWidget(ui->ContentWidget, ui->selectorContainer, 12, 4, 4, 0.4f, 15);
-    createDropShadowWidget(ui->ContentWidget, ui->infoWidgetContainer, 12, 4, 4, 0.4f, 15);
-    createDropShadowWidget(ui->ContentWidget, ui->scrollAreaContainer, 12, 4, 4, 0.4f, 15);
-    createDropShadowWidget(ui->ContentWidget, ui->renderButton, 15, 4, 4, 0.3f, 10);
-    createDropShadowWidget(ui->ContentWidget, ui->outputContainer, 15, 4, 4, 0.3f, 10);
+    createDropShadowWidget(ui->ContentWidget, ui->selectorContainer, 12, 4, 4, 0.8f, 15);
+    createDropShadowWidget(ui->selectorWidgetContent, ui->selectorComboBox, 8, 3, 3, 0.6f, 10);
+    createDropShadowWidget(ui->selectorWidgetContent, ui->addButton, 8, 3, 3, 0.6f, 10);
+    createDropShadowWidget(ui->selectorWidgetContent, ui->deleteButton, 8, 3, 3, 0.6f, 10);
+    createDropShadowWidget(ui->ContentWidget, ui->infoWidgetContainer, 12, 4, 4, 0.8f, 15);
+    createDropShadowWidget(ui->ContentWidget, ui->scrollAreaContainer, 12, 4, 4, 0.8f, 15);
+    createDropShadowWidget(ui->ContentWidget, ui->renderButton, 15, 4, 4, 0.6f, 10);
+    createDropShadowWidget(ui->ContentWidget, ui->outputContainer, 15, 4, 4, 0.6f, 10);
 
     dropFileTip = new DropFileTip(ui->scrollAreaContent);
     dropFileTip->lower();
@@ -142,8 +145,8 @@ bool Widget::eventFilter(QObject *watched, QEvent *event)
         float borderRadius = 16;
         float offsetX = 2;
         float offsetY = 2;
-        float alphaMax = 0.3f;
-        float blurRadius = 10;
+        float alphaMax = 0.6f;
+        float blurRadius = 15;
 
         int fileBarWidth = ui->scrollAreaSizeWidget->width();
         int fileBarHeight = 50;
@@ -151,24 +154,34 @@ bool Widget::eventFilter(QObject *watched, QEvent *event)
         float marginX = std::abs(offsetX) + blurRadius * 0.5f;
         float marginY = std::abs(offsetY) + blurRadius * 0.5f;
 
-        dropShadowRenderer->setWidgetBuffer(
-            handle,
-            fileBarWidth + marginX * 2,
-            fileBarHeight + marginY * 2,
-            borderRadius,
-            offsetX,
-            offsetY,
-            alphaMax,
-            blurRadius
-        );
-        if (!fileBarShadowPixmap.isNull())
-        {
-            fileBarShadowPixmap = fileBarShadowPixmap.scaled(
-                fileBarWidth + marginX * 2,
-                fileBarHeight + marginY * 2,
-                Qt::IgnoreAspectRatio,
-                Qt::FastTransformation
+        float shadowWidth = fileBarWidth + marginX * 2;
+        float shadowHeight = fileBarHeight + marginY * 2;
+
+        fileBarShadowPixmap = dropShadowRenderer->getPixmap(handle);
+        if (fileBarShadowPixmap.isNull() ||
+            fileBarShadowPixmap.width() != static_cast<int>(fileBarWidth) ||
+            fileBarShadowPixmap.height() != static_cast<int>(fileBarHeight)
+        ) {
+            dropShadowRenderer->setWidgetBuffer(
+                handle,
+                shadowWidth,
+                shadowHeight,
+                borderRadius,
+                offsetX,
+                offsetY,
+                alphaMax,
+                blurRadius
             );
+
+            if (!fileBarShadowPixmap.isNull())
+            {
+                fileBarShadowPixmap = fileBarShadowPixmap.scaled(
+                    shadowWidth,
+                    shadowHeight,
+                    Qt::IgnoreAspectRatio,
+                    Qt::SmoothTransformation
+                );
+            }
         }
     }
 
@@ -329,7 +342,7 @@ QMessageBox::StandardButton Widget::questionMessageBox(QString title, QString te
 
 FileBar *Widget::newFileBar(QString fileName, QString filePath)
 {
-    QString blenderPath = blenderVersionManager->getBlenderPath(ui->comboBox->currentText());
+    QString blenderPath = blenderVersionManager->getBlenderPath(ui->selectorComboBox->currentText());
     FileBar *fileBar = new FileBar(
         ui->scrollAreaContent,
         dropShadowRenderer,
@@ -598,7 +611,7 @@ void Widget::onDeleteBlenderVersionButtonClicked()
 {
     if (blenderVersionManager->getBlenderVersionCount() > 0)
     {
-        QString version = ui->comboBox->currentText();
+        QString version = ui->selectorComboBox->currentText();
         if (blenderVersionManager->deleteBlenderVersion(version) != 0)
         {
             errorMessageBox(tr("Error"), tr("Failed to save version configuration file."));
@@ -694,17 +707,17 @@ void Widget::onOutputTextUpdate(QString text)
 
 void Widget::updateBlenderVersions()
 {
-    ui->comboBox->clear();
+    ui->selectorComboBox->clear();
     const std::vector<BlenderVersionManager::BlenderVersion> &versions = blenderVersionManager->getBlenderVersions();
     if (versions.empty())
     {
-        ui->comboBox->addItem(tr("-- Add A Blender Version --"));
+        ui->selectorComboBox->addItem(tr("-- Add A Blender Version --"));
     }
     else
     {
         for (auto &version : versions)
         {
-            ui->comboBox->addItem(version.version);
+            ui->selectorComboBox->addItem(version.version);
         }
     }
 }
@@ -746,7 +759,7 @@ void Widget::updateButtonStatus()
 
 void Widget::setSelectorEnabled(bool enable)
 {
-    ui->comboBox->setEnabled(enable);
+    ui->selectorComboBox->setEnabled(enable);
     ui->addButton->setEnabled(enable);
     ui->deleteButton->setEnabled(enable);
 }

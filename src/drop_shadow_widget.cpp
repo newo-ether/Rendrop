@@ -35,7 +35,7 @@ void DropShadowWidget::paintEvent(QPaintEvent *)
     if (updateEnabled)
     {
         shadowCache = dropShadowRenderer->getPixmap(handle);
-        if (shadowCache.isNull() || !(shadowCache.width() == width()) || !(shadowCache.height() == height()))
+        if (shadowCache.isNull() || shadowCache.width() != width() || shadowCache.height() != height())
         {
             dropShadowRenderer->setWidgetBuffer(
                 handle,
@@ -51,7 +51,7 @@ void DropShadowWidget::paintEvent(QPaintEvent *)
             {
                 return;
             }
-            shadowCache = shadowCache.scaled(QSize(width(), height()), Qt::IgnoreAspectRatio, Qt::FastTransformation);
+            shadowCache = shadowCache.scaled(QSize(width(), height()), Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
         }
         painter.drawPixmap(QPoint(0, 0), shadowCache);
     }

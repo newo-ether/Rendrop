@@ -273,7 +273,8 @@ void DropShadowRenderer::initializeOpenGL()
         "void main() {\n"
         "    vec2 p = uv * vec2(widgetWidth, widgetHeight) - vec2(offsetX, offsetY);\n"
         "    float dist = sdfRoundRect(p, rectWidth, rectHeight, borderRadius);\n"
-        "    float alpha = lerp(unlerp(dist, -blurRadius * 0.5f, blurRadius * 0.5f), alphaMax, 0.0f);\n"
+        "    float factor = clamp(unlerp(dist, -blurRadius * 0.5f, blurRadius * 0.5f), 0.0f, 1.0f);\n"
+        "    float alpha = lerp(pow(factor, 0.3f), alphaMax, 0.0f);\n"
         "    fragColor = vec4(vec3(0.0f), alpha);\n"
         "};\n";
 

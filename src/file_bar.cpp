@@ -37,7 +37,7 @@ FileBar::FileBar(
     queueStyle(Style(Color(60, 60, 60))),
     errorStyle(Style(Color(210, 50, 80))),
     renderingStyle(Style(Color(80, 150, 210))),
-    finishedStyle(Style(Color(60, 210, 60))),
+    finishedStyle(Style(Color(60, 190, 80))),
     style(queueStyle),
     targetStyle(queueStyle),
     velocity(Style::zero()),
