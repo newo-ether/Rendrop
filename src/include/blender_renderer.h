@@ -38,7 +38,7 @@ signals:
     void finishedRendering(int status);
 
 private:
-    void parseOutput(QString line);
+    void parseOutput(QString output);
 
 private:
     QString blenderPath, filePath;

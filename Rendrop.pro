@@ -36,10 +36,12 @@ HEADERS += \
     src/include/blender_file_reader.h \
     src/include/add_file_button.h \
     src/include/blender_version_manager.h \
+    src/include/color.h \
     src/include/drop_shadow_renderer.h \
     src/include/drop_shadow_widget.h \
     src/include/file_bar.h \
     src/include/process.h \
+    src/include/style.h \
     src/include/widget.h \
     src/include/drop_file_tip.h \
     src/include/ring_progress_bar.h \

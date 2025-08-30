@@ -3,6 +3,7 @@
 #include <QTimer>
 #include <QElapsedTimer>
 #include <QThread>
+#include <QObject>
 
 #include "file_bar.h"
 #include "ui_file_bar.h"
@@ -31,7 +32,17 @@ FileBar::FileBar(
     frameEnd(0),
     frameStep(0),
     finishedFrame(0),
-    totalFrame(0)
+    totalFrame(0),
+    loadingStyle(Style(Color(80, 150, 210))),
+    queueStyle(Style(Color(60, 60, 60))),
+    errorStyle(Style(Color(210, 50, 80))),
+    renderingStyle(Style(Color(80, 150, 210))),
+    finishedStyle(Style(Color(60, 210, 60))),
+    style(queueStyle),
+    targetStyle(queueStyle),
+    velocity(Style::zero()),
+    stiffness(300),
+    damping(50)
 {
     ui->setupUi(this);
 
@@ -82,6 +93,15 @@ FileBar::FileBar(
     dropShadowWidget->setOffsetY(2);
     dropShadowWidget->setAlphaMax(0.4f);
     dropShadowWidget->setBlurRadius(10);
+
+    timer = new QTimer(this);
+    QObject::connect(timer, &QTimer::timeout, this, &FileBar::updateStyle);
+
+    elapsedTimer = new QElapsedTimer();
+    elapsedTimer->start();
+    lastElapsed = 0;
+
+    setState(State::Loading);
 
     show();
     dropShadowWidget->show();
@@ -145,7 +165,7 @@ int FileBar::getTotalFrame() const
 void FileBar::render()
 {
     blenderRenderer->start(QThread::LowestPriority);
-    state = State::Rendering;
+    setState(State::Rendering);
 
     ui->reloadButton->setEnabled(false);
     ui->deleteButton->setEnabled(false);
@@ -154,7 +174,7 @@ void FileBar::render()
 void FileBar::stopRender()
 {
     blenderRenderer->stop();
-    state = State::Queued;
+    setState(State::Queued);
 
     ui->reloadButton->setEnabled(true);
     ui->deleteButton->setEnabled(true);
@@ -236,6 +256,43 @@ void FileBar::hideLoadingBar()
     renderEngineLoadingBar->hide();
 }
 
+void FileBar::setState(FileBar::State state)
+{
+    this->state = state;
+
+    switch (state)
+    {
+        case State::Loading:
+            targetStyle = loadingStyle;
+            break;
+
+        case State::Queued:
+            targetStyle = queueStyle;
+            break;
+
+        case State::Error:
+            targetStyle = errorStyle;
+            break;
+
+        case State::Rendering:
+            targetStyle = renderingStyle;
+            break;
+
+        case State::Finished:
+            targetStyle = finishedStyle;
+            break;
+
+        default:
+            break;
+    }
+
+    if (!timer->isActive())
+    {
+        timer->start();
+        lastElapsed = elapsedTimer->elapsed();
+    }
+}
+
 FileBar::State FileBar::getState() const
 {
     return state;
@@ -266,7 +323,7 @@ void FileBar::onReloadButtonClicked()
         blenderFileReader->wait();
     }
 
-    state = State::Loading;
+    setState(State::Loading);
     finishedFrame = 0;
     totalFrame = 0;
 
@@ -291,7 +348,7 @@ void FileBar::onFinishedReading(int status, BlenderFileInfo info)
         setResolution(info.resolutionX, info.resolutionY, info.resolutionScale);
         setRenderEngine(info.renderEngine);
 
-        state = State::Queued;
+        setState(State::Queued);
         frameStart = info.frameBegin;
         frameEnd = info.frameEnd;
         frameStep = info.frameStep;
@@ -314,7 +371,7 @@ void FileBar::onFinishedReading(int status, BlenderFileInfo info)
     }
     else
     {
-        state = State::Error;
+        setState(State::Error);
         frameStart = 0;
         frameEnd = 0;
         frameStep = 0;
@@ -354,15 +411,51 @@ void FileBar::onFinishedRendering(int status)
 {
     if (status != 0)
     {
-        state = State::Error;
+        setState(State::Error);
     }
     else
     {
-        state = State::Finished;
+        setState(State::Finished);
     }
 
     ui->reloadButton->setEnabled(true);
     ui->deleteButton->setEnabled(true);
 
     emit finishedRendering();
+}
+
+void FileBar::updateStyle()
+{
+    qint64 elapsed = elapsedTimer->elapsed();
+    float dt = static_cast<float>(elapsed - lastElapsed) / 1000;
+    lastElapsed = elapsed;
+
+    int iteration = std::max(1, (int)(dt / 0.01f));
+    dt /= iteration;
+
+    for (int i = 0; i < iteration; i++)
+    {
+        Style delta = targetStyle - style;
+        Style accel = stiffness * delta - damping * velocity;
+
+        velocity += accel * dt;
+        style += velocity * dt;
+
+        if (delta.length() < 1.0f / 255.0f && velocity.length() < 1.0f / 255.0f)
+        {
+            velocity = Style::zero();
+            style = targetStyle;
+            timer->stop();
+            break;
+        }
+    }
+
+    ui->fileBarContentWidget->setStyleSheet(
+        QString("background-color: rgb(43, 45, 48);\n")
+        + "border: 1px solid "
+        + style.borderColor.toText()
+        + ";\n"
+        + "border-radius: 16px;\n"
+    );
+    ui->fileBarContentWidget->update();
 }

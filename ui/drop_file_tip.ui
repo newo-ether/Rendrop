@@ -99,7 +99,7 @@ border: none;</string>
 color: white;</string>
         </property>
         <property name="text">
-         <string>Drop your Blender Files here.</string>
+         <string>Drop your Blender Projects here.</string>
         </property>
        </widget>
       </item>

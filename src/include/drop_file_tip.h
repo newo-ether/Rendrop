@@ -4,6 +4,7 @@
 #define DROP_FILE_TIP_H
 
 #include <QWidget>
+#include <QString>
 
 namespace Ui {
 class DropFileTip;
@@ -16,6 +17,8 @@ class DropFileTip : public QWidget
 public:
     DropFileTip(QWidget *parent = nullptr);
     ~DropFileTip();
+
+    void changeTip(QString text);
 
 private:
     Ui::DropFileTip *ui;

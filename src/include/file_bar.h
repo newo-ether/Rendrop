@@ -7,6 +7,7 @@
 #include <QString>
 #include <QTimer>
 #include <QElapsedTimer>
+#include <QColor>
 
 #include "drop_shadow_widget.h"
 #include "drop_shadow_renderer.h"
@@ -17,6 +18,8 @@
 #include "blender_renderer.h"
 
 #include "loading_bar.h"
+
+#include "style.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -67,6 +70,7 @@ private:
     void setRenderEngine(int renderEngine);
     void showLoadingBar();
     void hideLoadingBar();
+    void setState(State state);
 
 private:
     Ui::fileBar *ui;
@@ -78,6 +82,15 @@ private:
     int finishedFrame, totalFrame;
     BlenderRenderer *blenderRenderer;
     LoadingBar *frameLoadingBar, *resolutionLoadingBar, *renderEngineLoadingBar;
+
+    Style loadingStyle, queueStyle, errorStyle, renderingStyle, finishedStyle;
+
+    Style style, targetStyle, velocity;
+    float stiffness, damping;
+    qint64 lastElapsed;
+
+    QTimer *timer;
+    QElapsedTimer *elapsedTimer;
 
 signals:
     void upButtonClicked(FileBar *fileBar);
@@ -98,6 +111,7 @@ private slots:
     void onProgressChanged();
     void onOutputTextUpdate(QString text);
     void onFinishedRendering(int status);
+    void updateStyle();
 };
 
 #endif // FILE_BAR_H

@@ -5,7 +5,7 @@
     <name>DropFileTip</name>
     <message>
         <location filename="ui/drop_file_tip.ui"/>
-        <source>Drop your Blender Files here.</source>
+        <source>Drop your Blender Projects here.</source>
         <translation>将你的 Blender 工程文件拖拽至此处.</translation>
     </message>
 </context>
@@ -43,7 +43,7 @@
     </message>
     <message>
         <location filename="src/widget.cpp"/>
-        <source>Blender Files (*.blend)</source>
+        <source>Blender Projects (*.blend)</source>
         <translation>Blender 工程文件 (*.blend)</translation>
     </message>
     <message>
@@ -54,7 +54,7 @@
     <message>
         <location filename="src/widget.cpp"/>
         <source>Blender Executable (blender.exe)</source>
-        <translation>Blender 程序文件 (blender.exe)</translation>
+        <translation>Blender 主程序 (blender.exe)</translation>
     </message>
     <message>
         <location filename="src/widget.cpp"/>
@@ -78,8 +78,8 @@
     </message>
     <message>
         <location filename="src/widget.cpp"/>
-        <source>Selected Blender version is already added.</source>
-        <translation>选择的 Blender 版本已经添加.</translation>
+        <source>Selected Blender version already exists.</source>
+        <translation>选择的 Blender 版本已存在.</translation>
     </message>
     <message>
         <location filename="src/widget.cpp"/>
@@ -98,8 +98,8 @@
     </message>
     <message>
         <location filename="src/widget.cpp"/>
-        <source>-- Select A Blender Version --</source>
-        <translation>-- 选择 Blender 版本 --</translation>
+        <source>-- Add A Blender Version --</source>
+        <translation>-- 添加 Blender 版本 --</translation>
     </message>
     <message>
         <location filename="src/widget.cpp"/>
@@ -110,6 +110,21 @@
         <location filename="src/widget.cpp"/>
         <source>Language settings will take effect after restarting the program. Restart now?</source>
         <translation>语言设置将在重启程序后生效，是否重启程序？</translation>
+    </message>
+    <message>
+        <location filename="src/widget.cpp"/>
+        <source>Please add a Blender version first.</source>
+        <translation>请先添加一个 Blender 版本.</translation>
+    </message>
+    <message>
+        <location filename="src/widget.cpp"/>
+        <source>Add a Blender project to get started.</source>
+        <translation>添加一个 Blender 项目以开始.</translation>
+    </message>
+    <message>
+        <location filename="src/widget.cpp"/>
+        <source>Drop your Blender Projects here.</source>
+        <translation>将你的 Blender 工程文件拖拽至此处.</translation>
     </message>
 </context>
 <context>

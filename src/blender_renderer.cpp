@@ -89,6 +89,12 @@ void BlenderRenderer::run()
             return;
         }
 
+        if (getFinishedFrame() == getTotalFrame())
+        {
+            process.kill();
+            break;
+        }
+
         QString output = process.readStandardOutput();
         if (!output.isEmpty())
         {
@@ -98,8 +104,12 @@ void BlenderRenderer::run()
         process.waitForFinished(50);
     }
 
-    currentFrameFinished = true;
-    emit progressChanged();
+    if (getFinishedFrame() < getTotalFrame())
+    {
+        emit finishedRendering(-1);
+        return;
+    }
+
     emit finishedRendering(0);
 }
 
@@ -113,13 +123,36 @@ int BlenderRenderer::getTotalFrame() const
     return frameStep == 0 ? 0 : (frameEnd - frameStart) / frameStep + 1;
 }
 
-void BlenderRenderer::parseOutput(QString line)
+void BlenderRenderer::parseOutput(QString output)
 {
-    static QRegularExpression re("^Fra:\\s*(\\d+).*(\\r?\\n)?$");
-    auto match = re.match(line);
-    if (match.hasMatch()) {
-        currentFrame = match.captured(1).toInt();
+    static QRegularExpression reFrame("^Fra:\\s*(\\d+).+$");
+    static QRegularExpression reSave("^Saved:.+$");
+
+    QStringList lines = output.split('\n');
+    QString outputText;
+    bool hasMatch = false;
+
+    for (const QString &line: lines)
+    {
+        auto frameMatch = reFrame.match(line);
+        if (frameMatch.hasMatch()) {
+            hasMatch = true;
+            currentFrame = frameMatch.captured(1).toInt();
+            currentFrameFinished = false;
+            outputText = frameMatch.captured().trimmed();
+        }
+
+        auto saveMatch = reSave.match(line);
+        if (saveMatch.hasMatch()) {
+            hasMatch = true;
+            currentFrameFinished = true;
+            outputText = saveMatch.captured().trimmed();
+        }
+    }
+
+    if (hasMatch)
+    {
         emit progressChanged();
-        emit outputTextUpdate(match.captured().trimmed());
+        emit outputTextUpdate(outputText);
     }
 }

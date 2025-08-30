@@ -73,7 +73,6 @@ Widget::Widget(int languageIndex, QWidget *parent):
 
     ui->renderButton->setText(tr("Start Render"));
     isRendering = false;
-    clearOutputText();
 
     QObject::connect(ui->addButton, &QPushButton::clicked, this, &Widget::onAddBlenderVersionButtonClicked);
     QObject::connect(ui->deleteButton, &QPushButton::clicked, this, &Widget::onDeleteBlenderVersionButtonClicked);
@@ -81,6 +80,7 @@ Widget::Widget(int languageIndex, QWidget *parent):
 
     updateStatisticInfo();
     updateButtonStatus();
+    clearOutputText();
 }
 
 Widget::~Widget()
@@ -515,6 +515,7 @@ void Widget::onFileBarDelete(FileBar *fileBar)
 
     updateButtonStatus();
     updateStatisticInfo();
+    clearOutputText();
 }
 
 void Widget::onFileBarReload(FileBar *)
@@ -535,7 +536,7 @@ void Widget::onAddFileButtonClicked()
         this,
         tr("Open File"),
         "",
-        tr("Blender Files (*.blend)")
+        tr("Blender Projects (*.blend)")
     );
 
     for (QString &filePath : filePaths)
@@ -550,6 +551,7 @@ void Widget::onAddFileButtonClicked()
 
     updateButtonStatus();
     updateStatisticInfo();
+    clearOutputText();
 }
 
 void Widget::onAddBlenderVersionButtonClicked()
@@ -575,7 +577,7 @@ void Widget::onAddBlenderVersionButtonClicked()
             }
             else if (result == -3)
             {
-                infoMessageBox(tr("Note"), tr("Selected Blender version is already added."));
+                infoMessageBox(tr("Note"), tr("Selected Blender version already exists."));
             }
             else
             {
@@ -589,6 +591,7 @@ void Widget::onAddBlenderVersionButtonClicked()
     }
 
     updateButtonStatus();
+    clearOutputText();
 }
 
 void Widget::onDeleteBlenderVersionButtonClicked()
@@ -604,6 +607,7 @@ void Widget::onDeleteBlenderVersionButtonClicked()
     }
 
     updateButtonStatus();
+    clearOutputText();
 }
 
 void Widget::onRenderButtonClicked()
@@ -694,7 +698,7 @@ void Widget::updateBlenderVersions()
     const std::vector<BlenderVersionManager::BlenderVersion> &versions = blenderVersionManager->getBlenderVersions();
     if (versions.empty())
     {
-        ui->comboBox->addItem(tr("-- Select A Blender Version --"));
+        ui->comboBox->addItem(tr("-- Add A Blender Version --"));
     }
     else
     {
@@ -784,7 +788,23 @@ void Widget::updateStatisticInfo()
 
 void Widget::clearOutputText()
 {
-    ui->outputLabel->setText(tr("Ready to render."));
+    if (!isRendering)
+    {
+        if (blenderVersionManager->getBlenderVersionCount() == 0)
+        {
+            ui->outputLabel->setText(tr("Please add a Blender version first."));
+            dropFileTip->changeTip(tr("Please add a Blender version first."));
+        }
+        else if (fileBars.empty())
+        {
+            ui->outputLabel->setText(tr("Add a Blender project to get started."));
+            dropFileTip->changeTip(tr("Drop your Blender Projects here."));
+        }
+        else
+        {
+            ui->outputLabel->setText(tr("Ready to render."));
+        }
+    }
 }
 
 void Widget::updateAllFileBarShadow()

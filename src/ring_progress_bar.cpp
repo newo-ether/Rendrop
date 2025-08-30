@@ -106,6 +106,7 @@ void RingProgressBar::updateProgressBar()
             velocity = 0;
             value = targetValue;
             timer->stop();
+            break;
         }
     }
 
