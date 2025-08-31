@@ -62,10 +62,12 @@ Widget::Widget(int languageIndex, QWidget *parent):
     createDropShadowWidget(ui->selectorWidgetContent, ui->selectorComboBox, 8, 3, 3, 0.6f, 10);
     createDropShadowWidget(ui->selectorWidgetContent, ui->addButton, 8, 3, 3, 0.6f, 10);
     createDropShadowWidget(ui->selectorWidgetContent, ui->deleteButton, 8, 3, 3, 0.6f, 10);
+    createDropShadowWidget(ui->titleBar, ui->languageComboBox, 8, 3, 3, 0.6f, 10);
     createDropShadowWidget(ui->ContentWidget, ui->infoWidgetContainer, 12, 4, 4, 0.8f, 15);
     createDropShadowWidget(ui->ContentWidget, ui->scrollAreaContainer, 12, 4, 4, 0.8f, 15);
     createDropShadowWidget(ui->ContentWidget, ui->renderButton, 15, 4, 4, 0.6f, 10);
     createDropShadowWidget(ui->ContentWidget, ui->outputContainer, 15, 4, 4, 0.6f, 10);
+    createDropShadowWidget(ui->outputContainer, ui->outputText, 15, 4, 4, 0.6f, 10);
 
     dropFileTip = new DropFileTip(ui->scrollAreaContent);
     dropFileTip->lower();
@@ -239,56 +241,70 @@ void Widget::closeEvent(QCloseEvent *event)
 
 void Widget::dragEnterEvent(QDragEnterEvent *event)
 {
-    if (event->mimeData()->hasUrls())
+    if (addFileButton->isEnabled())
     {
-        bool hasBlendFile = false;
-        for (const QUrl &url : event->mimeData()->urls())
+        if (event->mimeData()->hasUrls())
         {
-            if (url.isLocalFile())
+            bool hasBlendFile = false;
+            for (const QUrl &url : event->mimeData()->urls())
             {
-                QString filePath = url.toLocalFile();
-                if (filePath.endsWith(".blend", Qt::CaseInsensitive))
+                if (url.isLocalFile())
                 {
-                    hasBlendFile = true;
-                    break;
+                    QString filePath = url.toLocalFile();
+                    if (filePath.endsWith(".blend", Qt::CaseInsensitive))
+                    {
+                        hasBlendFile = true;
+                        break;
+                    }
                 }
             }
-        }
 
-        if (hasBlendFile)
-        {
-            event->acceptProposedAction();
+            if (hasBlendFile)
+            {
+                event->acceptProposedAction();
+            }
         }
+    }
+    else
+    {
+        event->ignore();
     }
 }
 
 void Widget::dropEvent(QDropEvent *event)
 {
-    if (event->mimeData()->hasUrls())
+    if (addFileButton->isEnabled())
     {
-        bool hasBlendFile = false;
-        for (const QUrl &url : event->mimeData()->urls())
+        if (event->mimeData()->hasUrls())
         {
-            if (url.isLocalFile())
+            bool hasBlendFile = false;
+            for (const QUrl &url : event->mimeData()->urls())
             {
-                QString filePath = url.toLocalFile();
-                if (filePath.endsWith(".blend", Qt::CaseInsensitive))
+                if (url.isLocalFile())
                 {
-                    hasBlendFile = true;
+                    QString filePath = url.toLocalFile();
+                    if (filePath.endsWith(".blend", Qt::CaseInsensitive))
+                    {
+                        hasBlendFile = true;
 
-                    QFileInfo fileInfo(filePath);
-                    QString fileName = fileInfo.completeBaseName();
-                    newFileBar(fileName, filePath);
+                        QFileInfo fileInfo(filePath);
+                        QString fileName = fileInfo.completeBaseName();
+                        newFileBar(fileName, filePath);
+                    }
                 }
             }
-        }
 
-        if (hasBlendFile)
-        {
-            event->acceptProposedAction();
-            updateButtonStatus();
-            updateStatisticInfo();
+            if (hasBlendFile)
+            {
+                event->acceptProposedAction();
+                updateButtonStatus();
+                updateStatisticInfo();
+            }
         }
+    }
+    else
+    {
+        event->ignore();
     }
 }
 

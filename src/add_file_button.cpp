@@ -14,7 +14,7 @@ AddFileButton::AddFileButton(QWidget *parent, DropShadowRenderer *dropShadowRend
     setMaximumSize(60, 60);
     setStyleSheet(R"(
         QPushButton {
-            background-color: #5C6BC0;
+            background-color: rgb(90, 90, 150);
             border-radius: 30px;
             color: white;
             padding: 6px 6px;
@@ -22,17 +22,17 @@ AddFileButton::AddFileButton(QWidget *parent, DropShadowRenderer *dropShadowRend
         }
 
         QPushButton:hover {
-            background-color: #7986CB;
+            background-color: rgb(120, 120, 180);
             color: white;
         }
 
         QPushButton:pressed {
-            background-color: #3F51B5;
+            background-color: rgb(70, 70, 130);
             color: white;
         }
 
         QPushButton:disabled {
-            background-color: #55595F;
+            background-color: rgb(85, 89, 95);
             color: #888888;
         }
     )");

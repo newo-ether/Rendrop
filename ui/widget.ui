@@ -464,25 +464,25 @@ QComboBox QAbstractItemView::item:selected {
                   </property>
                   <property name="styleSheet">
                    <string notr="true">QPushButton {
-    background-color: #333842;
+	background-color: rgb(90, 90, 150);
     border-radius: 8px;
-	border: 1px solid rgb(65, 65, 85);
     color: white;
+    border: none;
 }
 
 QPushButton:hover {
-    background-color: #4B5362;
+    background-color: rgb(120, 120, 180);
     color: white;
 }
 
 QPushButton:pressed {
-    background-color: #2B2F38;
+	background-color: rgb(70, 70, 130);
     color: white;
 }
 
 QPushButton:disabled {
-    background-color: #55595F;
-    color: #AAAAAA;
+    background-color: rgb(85, 89, 95);
+    color: #888888;
 }</string>
                   </property>
                   <property name="text">
@@ -516,25 +516,25 @@ QPushButton:disabled {
                   </property>
                   <property name="styleSheet">
                    <string notr="true">QPushButton {
-    background-color: #333842;
+	background-color: rgb(90, 90, 150);
     border-radius: 8px;
-	border: 1px solid rgb(65, 65, 85);
     color: white;
+    border: none;
 }
 
 QPushButton:hover {
-    background-color: #4B5362;
+    background-color: rgb(120, 120, 180);
     color: white;
 }
 
 QPushButton:pressed {
-    background-color: #2B2F38;
+	background-color: rgb(70, 70, 130);
     color: white;
 }
 
 QPushButton:disabled {
-    background-color: #55595F;
-    color: #AAAAAA;
+    background-color: rgb(85, 89, 95);
+    color: #888888;
 }</string>
                   </property>
                   <property name="text">
@@ -975,18 +975,19 @@ QScrollBar:vertical, QScrollBar:horizontal {
 }
 
 QScrollBar::handle:vertical, QScrollBar::handle:horizontal {
-    background: #5C6BC0;
+    background: rgb(110, 110, 180);
     min-height: 20px;
     min-width: 20px;
     border-radius: 6px;
 }
 
 QScrollBar::handle:hover {
-    background: #7986CB;
+    background: rgb(125, 125, 195);
 }
 
+
 QScrollBar::handle:pressed {
-    background: #3F51B5;
+    background: rgb(90, 90, 160);
 }
 
 QScrollBar::sub-line,
@@ -1133,7 +1134,7 @@ background-color: #2C313C;</string>
              </property>
              <property name="styleSheet">
               <string notr="true">border-radius: 15px;
-background-color: rgb(80, 80, 120);
+background-color: rgb(80, 80, 130);
 color: rgb(200, 200, 240);</string>
              </property>
              <property name="text">
@@ -1170,6 +1171,7 @@ color: rgb(200, 200, 240);</string>
              <property name="styleSheet">
               <string notr="true">padding-left: 10px;
 padding-right: 10px;
+background-color: transparent;
 color: rgb(180, 180, 200);</string>
              </property>
              <property name="text">
