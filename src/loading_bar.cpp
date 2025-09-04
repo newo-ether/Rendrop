@@ -9,8 +9,8 @@
 
 #include "loading_bar.h"
 
-LoadingBar::LoadingBar(QWidget *parent)
-    : QWidget(parent),
+LoadingBar::LoadingBar(QWidget *parent):
+    QWidget(parent),
     timer(new QTimer()),
     elapsedTimer(new QElapsedTimer()),
     lastElapsed(0),

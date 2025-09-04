@@ -4,6 +4,7 @@
 #define BLENDER_FILE_INFO_H
 
 #include <QMetaType>
+#include <QString>
 
 struct BlenderFileInfo
 {
@@ -16,7 +17,8 @@ struct BlenderFileInfo
         int frameStart,
         int frameEnd,
         int frameStep,
-        int renderEngine
+        int renderEngine,
+        const QString &outputPath
     );
 
     int resolutionX;
@@ -26,6 +28,7 @@ struct BlenderFileInfo
     int frameEnd;
     int frameStep;
     int renderEngine;
+    QString outputPath;
 };
 
 Q_DECLARE_METATYPE(BlenderFileInfo)

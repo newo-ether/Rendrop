@@ -1,18 +1,18 @@
 // process.h
 
-#ifndef PROCESS_H
-#define PROCESS_H
+#ifndef SIMPLE_PROCESS_H
+#define SIMPLE_PROCESS_H
 
 #include <QString>
 
 #define NOMINMAX
 #include <windows.h>
 
-class Process
+class SimpleProcess
 {
 public:
-    Process();
-    ~Process();
+    SimpleProcess();
+    ~SimpleProcess();
 
     int start(const QString& program, const QStringList& args);
     void kill();
@@ -32,4 +32,4 @@ private:
     bool running = false;
 };
 
-#endif // PROCESS_H
+#endif // SIMPLE_PROCESS_H

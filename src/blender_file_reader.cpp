@@ -9,7 +9,7 @@
 
 #include "blender_file_reader.h"
 #include "blender_file_info.h"
-#include "process.h"
+#include "simple_process.h"
 
 BlenderFileReader::BlenderFileReader(QObject *parent):
     QThread(parent), stopped(false) {}
@@ -80,7 +80,8 @@ void BlenderFileReader::run()
         "    \"frameStart\": scene.frame_start,\n"
         "    \"frameEnd\": scene.frame_end,\n"
         "    \"frameStep\": scene.frame_step,\n"
-        "    \"renderEngine\": engine_map.get(render.engine, -1)\n"
+        "    \"renderEngine\": engine_map.get(render.engine, -1),\n"
+        "    \"outputPath\": scene.render.filepath\n"
         "}\n"
         "\n"
         "with open(\"%1\", \"w\") as f:\n"
@@ -91,6 +92,7 @@ void BlenderFileReader::run()
         "    f.write(str(info['frameEnd']) + \"\\n\")\n"
         "    f.write(str(info['frameStep']) + \"\\n\")\n"
         "    f.write(str(info['renderEngine']) + \"\\n\")\n"
+        "    f.write(str(info['outputPath']) + \"\\n\")\n"
         "bpy.ops.wm.quit_blender()\n";
 
     script = script.arg(outputFile.fileName());
@@ -98,7 +100,7 @@ void BlenderFileReader::run()
     out.flush();
     readerFile.close();
 
-    Process process;
+    SimpleProcess process;
 
     QStringList args;
     args << "-b"
@@ -154,7 +156,7 @@ void BlenderFileReader::run()
     }
     outputFile.close();
 
-    if (lines.size() < 6)
+    if (lines.size() < 7)
     {
         readerFile.remove();
         outputFile.remove();
@@ -169,6 +171,7 @@ void BlenderFileReader::run()
     int frameEnd = lines[4].toInt();
     int frameStep = lines[5].toInt();
     int renderEngine = lines[6].toInt();
+    QString outputPath = lines[7].trimmed();
 
     BlenderFileInfo info(
         resolutionX,
@@ -177,7 +180,8 @@ void BlenderFileReader::run()
         frameStart,
         frameEnd,
         frameStep,
-        renderEngine
+        renderEngine,
+        outputPath
     );
 
     readerFile.remove();

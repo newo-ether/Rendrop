@@ -6,7 +6,6 @@
 #include <QThread>
 #include <QReadWriteLock>
 #include <QEventLoop>
-
 #include <QOpenGLContext>
 #include <QOffscreenSurface>
 #include <QOpenGLFunctions>

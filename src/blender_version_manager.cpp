@@ -8,10 +8,10 @@
 #include <QDir>
 
 #include "blender_version_manager.h"
-#include "process.h"
+#include "simple_process.h"
 
-BlenderVersionManager::BlenderVersionManager(QString versionConfigPath)
-    : versionConfigPath(versionConfigPath)
+BlenderVersionManager::BlenderVersionManager(QString versionConfigPath):
+    versionConfigPath(versionConfigPath)
 {
     QDir configDir = QFileInfo(versionConfigPath).absoluteDir();
     if (!configDir.exists())
@@ -51,7 +51,7 @@ int BlenderVersionManager::addBlenderVersion(QString path)
         return -1;
     }
 
-    Process process;
+    SimpleProcess process;
     QString program = path;
     QStringList arguments = {"--version"};
 
@@ -140,7 +140,7 @@ QString BlenderVersionManager::getBlenderPath(QString version) const
     {
         if (v.version == version)
         {
-            return v.path;
+            return QDir::toNativeSeparators(v.path);
         }
     }
     return "";

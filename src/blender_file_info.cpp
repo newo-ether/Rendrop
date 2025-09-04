@@ -1,5 +1,7 @@
 // blender_file_info.cpp
 
+#include <QString>
+
 #include "blender_file_info.h"
 
 BlenderFileInfo::BlenderFileInfo():
@@ -9,8 +11,7 @@ BlenderFileInfo::BlenderFileInfo():
     frameBegin(0),
     frameEnd(0),
     frameStep(0),
-    renderEngine(0)
-{}
+    renderEngine(0) {}
 
 BlenderFileInfo::BlenderFileInfo(
     int resolutionX,
@@ -19,7 +20,8 @@ BlenderFileInfo::BlenderFileInfo(
     int frameBegin,
     int frameEnd,
     int frameStep,
-    int renderEngine
+    int renderEngine,
+    const QString &outputPath
 ):
     resolutionX(resolutionX),
     resolutionY(resolutionY),
@@ -27,5 +29,5 @@ BlenderFileInfo::BlenderFileInfo(
     frameBegin(frameBegin),
     frameEnd(frameEnd),
     frameStep(frameStep),
-    renderEngine(renderEngine)
-{}
+    renderEngine(renderEngine),
+    outputPath(outputPath) {}

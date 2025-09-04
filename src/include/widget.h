@@ -15,11 +15,10 @@
 
 #include "file_bar.h"
 #include "add_file_button.h"
-
 #include "drop_shadow_renderer.h"
 #include "drop_file_tip.h"
-
 #include "blender_version_manager.h"
+#include "http_server.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -47,11 +46,13 @@ private:
     DropFileTip *dropFileTip;
     BlenderVersionManager *blenderVersionManager;
     std::vector<FileBar *> fileBars;
+    int fileBarID;
     std::vector<DropShadowWidget *> dropShadowWidgets;
     DropShadowRenderer *dropShadowRenderer;
     QPixmap fileBarShadowPixmap;
     bool isRendering;
     int handle;
+    HttpServer *httpServer;
 
 private:
     QMessageBox::StandardButton errorMessageBox(QString title, QString text, QMessageBox::StandardButtons buttons = QMessageBox::Ok);

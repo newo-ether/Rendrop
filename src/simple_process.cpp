@@ -3,19 +3,19 @@
 #include <QString>
 #include <QStringList>
 
-#include "process.h"
+#include "simple_process.h"
 
-Process::Process()
+SimpleProcess::SimpleProcess()
 {
     ZeroMemory(&pi, sizeof(pi));
 }
 
-Process::~Process()
+SimpleProcess::~SimpleProcess()
 {
     kill();
 }
 
-int Process::start(const QString& program, const QStringList& args)
+int SimpleProcess::start(const QString& program, const QStringList& args)
 {
     if (running)
     {
@@ -92,7 +92,7 @@ int Process::start(const QString& program, const QStringList& args)
     return 0;
 }
 
-void Process::kill()
+void SimpleProcess::kill()
 {
     if (pi.hProcess)
     {
@@ -102,7 +102,7 @@ void Process::kill()
     running = false;
 }
 
-void Process::terminate()
+void SimpleProcess::terminate()
 {
     if (pi.hProcess)
     {
@@ -112,7 +112,7 @@ void Process::terminate()
     running = false;
 }
 
-void Process::updateState()
+void SimpleProcess::updateState()
 {
     if (!pi.hProcess)
     {
@@ -130,7 +130,7 @@ void Process::updateState()
     cleanUp();
 }
 
-void Process::cleanUp()
+void SimpleProcess::cleanUp()
 {
     if (pi.hProcess)
     {
@@ -159,7 +159,7 @@ void Process::cleanUp()
     }
 }
 
-bool Process::waitForFinished(int msec)
+bool SimpleProcess::waitForFinished(int msec)
 {
     if (!running || !pi.hProcess)
     {
@@ -177,12 +177,12 @@ bool Process::waitForFinished(int msec)
     return !running;
 }
 
-bool Process::isRunning() const
+bool SimpleProcess::isRunning() const
 {
     return running;
 }
 
-QString Process::readStandardOutput()
+QString SimpleProcess::readStandardOutput()
 {
     if (!hRead)
     {
@@ -210,7 +210,10 @@ QString Process::readStandardOutput()
         return QString();
     }
 
-    buffer[bytesRead] = '\0';
+    int i = bytesRead - 1;
+    for (; i > 0 && buffer[i] != '\n'; i--) {}
+
+    buffer[i] = '\0';
     output += QString::fromUtf8(buffer);
 
     return output;

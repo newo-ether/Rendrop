@@ -11,15 +11,12 @@
 
 #include "drop_shadow_widget.h"
 #include "drop_shadow_renderer.h"
-
 #include "blender_file_info.h"
 #include "blender_file_reader.h"
-
 #include "blender_renderer.h"
-
 #include "loading_bar.h"
-
 #include "style.h"
+#include "project_info.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -32,32 +29,36 @@ class FileBar : public QWidget
     Q_OBJECT
 
 public:
-    enum State
-    {
-        Loading,
-        Queued,
-        Error,
-        Rendering,
-        Finished
-    };
-
     FileBar(
         QWidget *parent,
         DropShadowRenderer *dropShadowRenderer,
+        int id,
         QString fileName,
         QString filePath,
         QString blenderPath
     );
     ~FileBar();
 
+    int getID() const;
     void setFileName(QString fileName);
+    void setFilePath(QString filePath);
     QString getFileName() const;
     QString getFilePath() const;
     void stopReading();
     DropShadowWidget *getDropShadowWidget() const;
-    State getState() const;
+    ProjectState getState() const;
+    int getFrameStart() const;
+    int getFrameEnd() const;
+    int getFrameStep() const;
+    int getResolutionX() const;
+    int getResolutionY() const;
+    int getResolutionScale() const;
+    int getRenderEngine() const;
     int getFinishedFrame() const;
     int getTotalFrame() const;
+    void setOutputPath(const QString &outputPath);
+    QString getOutputPath() const;
+    QString getImagePathFromFrame(int frame);
     void render();
     void stopRender();
 
@@ -70,16 +71,20 @@ private:
     void setRenderEngine(int renderEngine);
     void showLoadingBar();
     void hideLoadingBar();
-    void setState(State state);
+    void setState(ProjectState state);
 
 private:
     Ui::fileBar *ui;
     BlenderFileReader *blenderFileReader;
     DropShadowWidget *dropShadowWidget;
     QString filePath;
-    State state;
+    ProjectState state;
+    int id;
     int frameStart, frameEnd, frameStep;
+    int resolutionX, resolutionY, resolutionScale;
+    int renderEngine;
     int finishedFrame, totalFrame;
+    QString outputPath;
     BlenderRenderer *blenderRenderer;
     LoadingBar *frameLoadingBar, *resolutionLoadingBar, *renderEngineLoadingBar;
 

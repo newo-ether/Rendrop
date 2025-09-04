@@ -6,8 +6,8 @@
 #include "drop_shadow_widget.h"
 #include "drop_shadow_renderer.h"
 
-AddFileButton::AddFileButton(QWidget *parent, DropShadowRenderer *dropShadowRenderer)
-    : QPushButton(parent), dropShadowRenderer(dropShadowRenderer)
+AddFileButton::AddFileButton(QWidget *parent, DropShadowRenderer *dropShadowRenderer):
+    QPushButton(parent), dropShadowRenderer(dropShadowRenderer)
 {
     resize(60, 60);
     setMinimumSize(60, 60);

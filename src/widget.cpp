@@ -18,17 +18,17 @@
 #include <QDir>
 
 #include <vector>
+#include <functional>
 
 #include "widget.h"
 #include "ui_widget.h"
-
 #include "file_bar.h"
 #include "add_file_button.h"
-
 #include "drop_shadow_widget.h"
 #include "drop_shadow_renderer.h"
-
 #include "drop_file_tip.h"
+#include "http_server.h"
+#include "project_info.h"
 
 Widget::Widget(int languageIndex, QWidget *parent):
     QWidget(parent),
@@ -40,6 +40,86 @@ Widget::Widget(int languageIndex, QWidget *parent):
 
     ui->languageComboBox->setCurrentIndex(languageIndex);
     QObject::connect(ui->languageComboBox, &QComboBox::currentIndexChanged, this, &Widget::onLanguageChanged);
+
+    fileBarID = 0;
+
+    httpServer = new HttpServer(
+        [this]() -> std::vector<ProjectInfo> {
+            std::vector<ProjectInfo> projectInfo;
+
+            for (auto fileBar : fileBars)
+            {
+                projectInfo.push_back(
+                    ProjectInfo(
+                        fileBar->getID(),
+                        fileBar->getFileName(),
+                        fileBar->getFilePath(),
+                        fileBar->getOutputPath(),
+                        fileBar->getState(),
+                        fileBar->getFrameStart(),
+                        fileBar->getFrameEnd(),
+                        fileBar->getFrameStep(),
+                        fileBar->getResolutionX(),
+                        fileBar->getResolutionY(),
+                        fileBar->getResolutionScale(),
+                        fileBar->getRenderEngine(),
+                        fileBar->getFinishedFrame(),
+                        fileBar->getTotalFrame()
+                    )
+                );
+            }
+
+            return projectInfo;
+        },
+
+        [this](int id) -> ProjectInfo {
+            auto iter = std::find_if(fileBars.begin(), fileBars.end(), [id](const FileBar *fileBar) {
+                return fileBar->getID() == id;
+            });
+
+            if (iter == fileBars.end())
+            {
+                return ProjectInfo();
+            }
+
+            FileBar *fileBar = *iter;
+
+            ProjectInfo projectInfo(
+                fileBar->getID(),
+                fileBar->getFileName(),
+                fileBar->getFilePath(),
+                fileBar->getOutputPath(),
+                fileBar->getState(),
+                fileBar->getFrameStart(),
+                fileBar->getFrameEnd(),
+                fileBar->getFrameStep(),
+                fileBar->getResolutionX(),
+                fileBar->getResolutionY(),
+                fileBar->getResolutionScale(),
+                fileBar->getRenderEngine(),
+                fileBar->getFinishedFrame(),
+                fileBar->getTotalFrame()
+            );
+
+            return projectInfo;
+        },
+
+        [this](int id, int frame) -> QString {
+            auto iter = std::find_if(fileBars.begin(), fileBars.end(), [id](const FileBar *fileBar) {
+                return fileBar->getID() == id;
+            });
+
+            if (iter == fileBars.end())
+            {
+                return "";
+            }
+
+            FileBar *fileBar = *iter;
+
+            return fileBar->getImagePathFromFrame(frame);
+        }
+    );
+    httpServer->start(QThread::LowestPriority);
 
     blenderVersionManager = new BlenderVersionManager("config/blender_versions.cfg");
     updateBlenderVersions();
@@ -100,12 +180,12 @@ Widget::~Widget()
 
     for (auto fileBar: fileBars)
     {
-        FileBar::State state = fileBar->getState();
-        if (state == FileBar::State::Loading)
+        ProjectState state = fileBar->getState();
+        if (state == ProjectState::Loading)
         {
             fileBar->stopReading();
         }
-        else if (state == FileBar::State::Rendering)
+        else if (state == ProjectState::Rendering)
         {
             fileBar->stopRender();
         }
@@ -121,6 +201,10 @@ Widget::~Widget()
     dropShadowRenderer->deleteWidgetBuffer(handle);
     delete dropShadowRenderer;
     delete blenderVersionManager;
+
+    httpServer->stop();
+    httpServer->wait();
+    delete httpServer;
 }
 
 bool Widget::eventFilter(QObject *watched, QEvent *event)
@@ -197,8 +281,8 @@ void Widget::closeEvent(QCloseEvent *event)
     {
         for (auto fileBar : fileBars)
         {
-            FileBar::State state = fileBar->getState();
-            if (state == FileBar::State::Loading)
+            ProjectState state = fileBar->getState();
+            if (state == ProjectState::Loading)
             {
                 isLoading = true;
                 break;
@@ -362,6 +446,7 @@ FileBar *Widget::newFileBar(QString fileName, QString filePath)
     FileBar *fileBar = new FileBar(
         ui->scrollAreaContent,
         dropShadowRenderer,
+        ++fileBarID,
         fileName,
         filePath,
         blenderPath
@@ -493,7 +578,7 @@ void Widget::onFileBarDown(FileBar *fileBar)
 
 void Widget::onFileBarDelete(FileBar *fileBar)
 {
-    if (fileBar->getState() == FileBar::State::Loading)
+    if (fileBar->getState() == ProjectState::Loading)
     {
         auto result = warningMessageBox(
             tr("Warning"),
@@ -507,7 +592,7 @@ void Widget::onFileBarDelete(FileBar *fileBar)
         }
     }
 
-    if (fileBar->getState() == FileBar::State::Rendering)
+    if (fileBar->getState() == ProjectState::Rendering)
     {
         auto result = warningMessageBox(
             tr("Warning"),
@@ -574,7 +659,7 @@ void Widget::onAddFileButtonClicked()
         {
             QFileInfo fileInfo(filePath);
             QString fileName = fileInfo.completeBaseName();
-            newFileBar(fileName, filePath);
+            newFileBar(fileName, QDir::toNativeSeparators(filePath));
         }
     }
 
@@ -646,7 +731,7 @@ void Widget::onRenderButtonClicked()
         FileBar *firstRender = nullptr;
         for (auto fileBar: fileBars)
         {
-            if (fileBar->getState() == FileBar::State::Queued)
+            if (fileBar->getState() == ProjectState::Queued)
             {
                 firstRender = fileBar;
                 break;
@@ -667,7 +752,7 @@ void Widget::onRenderButtonClicked()
     {
         for (auto fileBar: fileBars)
         {
-            if (fileBar->getState() == FileBar::State::Rendering)
+            if (fileBar->getState() == ProjectState::Rendering)
             {
                 fileBar->stopRender();
             }
@@ -687,7 +772,7 @@ void Widget::onFinishedRendering()
     FileBar *nextRender = nullptr;
     for (auto fileBar: fileBars)
     {
-        if (fileBar->getState() == FileBar::State::Queued)
+        if (fileBar->getState() == ProjectState::Queued)
         {
             nextRender = fileBar;
             break;
@@ -746,7 +831,7 @@ void Widget::updateButtonStatus()
     bool isLoading = false;
     for (auto fileBar: fileBars)
     {
-        if (fileBar->getState() == FileBar::State::Loading)
+        if (fileBar->getState() == ProjectState::Loading)
         {
             isLoading = true;
             break;
@@ -756,7 +841,7 @@ void Widget::updateButtonStatus()
     bool isQueued = false;
     for (auto fileBar: fileBars)
     {
-        if (fileBar->getState() == FileBar::State::Queued)
+        if (fileBar->getState() == ProjectState::Queued)
         {
             isQueued = true;
             break;
@@ -787,8 +872,8 @@ void Widget::updateStatisticInfo()
 
     for (auto fileBar: fileBars)
     {
-        FileBar::State state = fileBar->getState();
-        if (state == FileBar::State::Finished)
+        ProjectState state = fileBar->getState();
+        if (state == ProjectState::Finished)
         {
             projectFinished++;
         }

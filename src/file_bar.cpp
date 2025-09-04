@@ -4,33 +4,40 @@
 #include <QElapsedTimer>
 #include <QThread>
 #include <QObject>
+#include <QFileInfo>
+#include <QRegularExpression>
+#include <QDir>
 
 #include "file_bar.h"
 #include "ui_file_bar.h"
-
 #include "drop_shadow_widget.h"
 #include "drop_shadow_renderer.h"
-
 #include "blender_file_info.h"
 #include "blender_file_reader.h"
-
 #include "blender_renderer.h"
-
 #include "loading_bar.h"
+#include "project_info.h"
 
 FileBar::FileBar(
     QWidget *parent,
     DropShadowRenderer *dropShadowRenderer,
+    int id,
     QString fileName,
     QString filePath,
     QString blenderPath
 ):
     QWidget(parent),
     ui(new Ui::fileBar),
-    state(State::Loading),
+    filePath(filePath),
+    state(ProjectState::Loading),
+    id(id),
     frameStart(0),
     frameEnd(0),
     frameStep(0),
+    resolutionX(0),
+    resolutionY(0),
+    resolutionScale(0),
+    renderEngine(0),
     finishedFrame(0),
     totalFrame(0),
     loadingStyle(Style(Color(80, 150, 210))),
@@ -101,7 +108,7 @@ FileBar::FileBar(
     elapsedTimer->start();
     lastElapsed = 0;
 
-    setState(State::Loading);
+    setState(ProjectState::Loading);
 
     show();
     dropShadowWidget->show();
@@ -132,14 +139,29 @@ FileBar::~FileBar()
     delete ui;
 }
 
+int FileBar::getID() const
+{
+    return id;
+}
+
 void FileBar::setFileName(QString fileName)
 {
     ui->fileNameLabel->setText(fileName);
 }
 
+void FileBar::setFilePath(QString filePath)
+{
+    this->filePath = filePath;
+}
+
 QString FileBar::getFileName() const
 {
     return ui->fileNameLabel->text();
+}
+
+QString FileBar::getFilePath() const
+{
+    return filePath;
 }
 
 void FileBar::stopReading()
@@ -165,7 +187,7 @@ int FileBar::getTotalFrame() const
 void FileBar::render()
 {
     blenderRenderer->start(QThread::LowestPriority);
-    setState(State::Rendering);
+    setState(ProjectState::Rendering);
 
     ui->reloadButton->setEnabled(false);
     ui->deleteButton->setEnabled(false);
@@ -174,7 +196,7 @@ void FileBar::render()
 void FileBar::stopRender()
 {
     blenderRenderer->stop();
-    setState(State::Queued);
+    setState(ProjectState::Queued);
 
     ui->reloadButton->setEnabled(true);
     ui->deleteButton->setEnabled(true);
@@ -205,6 +227,10 @@ void FileBar::setFrame(int frameStart, int frameEnd, int frameStep)
         + QString::number(frameStep)
         + ")"
     );
+
+    this->frameStart = frameStart;
+    this->frameEnd = frameEnd;
+    this->frameStep = frameStep;
 }
 
 void FileBar::setResolution(int resolutionX, int resolutionY, int resolutionScale)
@@ -217,6 +243,10 @@ void FileBar::setResolution(int resolutionX, int resolutionY, int resolutionScal
         + QString::number(resolutionScale)
         + "%"
     );
+
+    this->resolutionX = resolutionX;
+    this->resolutionY = resolutionY;
+    this->resolutionScale = resolutionScale;
 }
 
 void FileBar::setRenderEngine(int renderEngine)
@@ -240,6 +270,7 @@ void FileBar::setRenderEngine(int renderEngine)
     }
 
     ui->renderEngineLabel->setText(renderEngineText);
+    this->renderEngine = renderEngine;
 }
 
 void FileBar::showLoadingBar()
@@ -256,29 +287,29 @@ void FileBar::hideLoadingBar()
     renderEngineLoadingBar->hide();
 }
 
-void FileBar::setState(FileBar::State state)
+void FileBar::setState(ProjectState state)
 {
     this->state = state;
 
     switch (state)
     {
-        case State::Loading:
+        case ProjectState::Loading:
             targetStyle = loadingStyle;
             break;
 
-        case State::Queued:
+        case ProjectState::Queued:
             targetStyle = queueStyle;
             break;
 
-        case State::Error:
+        case ProjectState::Error:
             targetStyle = errorStyle;
             break;
 
-        case State::Rendering:
+        case ProjectState::Rendering:
             targetStyle = renderingStyle;
             break;
 
-        case State::Finished:
+        case ProjectState::Finished:
             targetStyle = finishedStyle;
             break;
 
@@ -293,9 +324,135 @@ void FileBar::setState(FileBar::State state)
     }
 }
 
-FileBar::State FileBar::getState() const
+ProjectState FileBar::getState() const
 {
     return state;
+}
+
+int FileBar::getFrameStart() const
+{
+    return frameStart;
+}
+
+int FileBar::getFrameEnd() const
+{
+    return frameEnd;
+}
+
+int FileBar::getFrameStep() const
+{
+    return frameStep;
+}
+
+int FileBar::getResolutionX() const
+{
+    return resolutionX;
+}
+
+int FileBar::getResolutionY() const
+{
+    return resolutionY;
+}
+
+int FileBar::getResolutionScale() const
+{
+    return resolutionScale;
+}
+
+int FileBar::getRenderEngine() const
+{
+    return renderEngine;
+}
+
+void FileBar::setOutputPath(const QString &outputPath)
+{
+    this->outputPath = outputPath;
+}
+
+QString FileBar::getOutputPath() const
+{
+    return outputPath;
+}
+
+// Format frame number with zero padding like Blender.
+static QString frameString(int frame, int minWidth) {
+    const bool neg = frame < 0;
+    quint64 n = static_cast<quint64>(neg ? -(qint64)frame : frame);
+    QString digits = QString::number(n);
+    if (digits.size() < minWidth) digits.prepend(QString(minWidth - digits.size(), QChar('0')));
+    if (neg) digits.prepend('-');
+    return digits;
+}
+
+QString FileBar::getImagePathFromFrame(int frame)
+{
+    // Convert to native seperators
+    const QString originalPath = QDir::fromNativeSeparators(outputPath);
+    QString path = originalPath;
+
+    // Get the blend file directory
+    QFileInfo blendInfo(filePath);
+    const QString blendDir = blendInfo.absolutePath();
+
+    // Resolve Blender-style relative path "//"
+    if (path.startsWith("//"))
+        path = QDir(blendDir).filePath(path.mid(2));
+
+    // Get original path flags
+    const bool hasHash = originalPath.contains('#');
+    const bool endsWithSlash = originalPath.endsWith('/');
+    const bool isDoubleSlash = (originalPath == "//");
+
+    // If the original path indicates a directory, append default "####"
+    if (endsWithSlash)
+    {
+        path += "####";
+    }
+    else if (isDoubleSlash)
+    {
+        path += "/####";
+    }
+
+    // Replace all '#' groups with frame numbers, zero-padded to match the group length
+    static QRegularExpression re(R"(#+)");
+    QRegularExpressionMatchIterator it = re.globalMatch(path);
+    QList<QPair<int,int>> spans;
+    while (it.hasNext()) {
+        auto m = it.next();
+        spans.append({m.capturedStart(0), m.capturedLength(0)});
+    }
+    for (int i = spans.size() - 1; i >= 0; --i) {
+        const int start = spans[i].first;
+        const int len = spans[i].second;
+        path.replace(start, len, frameString(frame, len));
+    }
+
+    // If no '#' in original path and not a directory, append 4-digit frame
+    if (!hasHash && !endsWithSlash && !isDoubleSlash) {
+        QFileInfo fileInfo(path);
+        const QString dir = fileInfo.path();
+        const QString base = fileInfo.completeBaseName();
+        const QString ext  = fileInfo.suffix();
+        const QString numbered = base + frameString(frame, 4);
+
+        // Ensure directory separator is correct
+        if (ext.isEmpty())
+            path = QDir(dir).filePath(numbered);
+        else
+            path = QDir(dir).filePath(numbered + "." + ext);
+    }
+
+    // Ensure the file has an extension, defaults to ".png"
+    QFileInfo outFileInfo(path);
+    if (outFileInfo.suffix().isEmpty()) {
+        // Remove a single trailing dot, but keep multiple dots
+        if (path.endsWith('.') && !path.endsWith(".."))
+            path.chop(1);
+        path += ".png";
+    }
+
+    // Return path with native separators for the platform
+    return QDir::toNativeSeparators(path);
 }
 
 void FileBar::onUpButtonClicked()
@@ -323,7 +480,7 @@ void FileBar::onReloadButtonClicked()
         blenderFileReader->wait();
     }
 
-    setState(State::Loading);
+    setState(ProjectState::Loading);
     finishedFrame = 0;
     totalFrame = 0;
 
@@ -348,12 +505,13 @@ void FileBar::onFinishedReading(int status, BlenderFileInfo info)
         setResolution(info.resolutionX, info.resolutionY, info.resolutionScale);
         setRenderEngine(info.renderEngine);
 
-        setState(State::Queued);
+        setState(ProjectState::Queued);
         frameStart = info.frameBegin;
         frameEnd = info.frameEnd;
         frameStep = info.frameStep;
         finishedFrame = 0;
         totalFrame = info.frameStep == 0 ? 0 : (info.frameEnd - info.frameBegin) / info.frameStep + 1;
+        outputPath = info.outputPath;
 
         blenderRenderer->setFrame(frameStart, frameEnd, frameStep);
         blenderRenderer->setCurrentFrame(frameStart);
@@ -371,7 +529,7 @@ void FileBar::onFinishedReading(int status, BlenderFileInfo info)
     }
     else
     {
-        setState(State::Error);
+        setState(ProjectState::Error);
         frameStart = 0;
         frameEnd = 0;
         frameStep = 0;
@@ -411,11 +569,11 @@ void FileBar::onFinishedRendering(int status)
 {
     if (status != 0)
     {
-        setState(State::Error);
+        setState(ProjectState::Error);
     }
     else
     {
-        setState(State::Finished);
+        setState(ProjectState::Finished);
     }
 
     ui->reloadButton->setEnabled(true);

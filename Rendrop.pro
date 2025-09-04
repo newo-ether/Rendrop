@@ -6,12 +6,10 @@ CONFIG += c++20
 
 QMAKE_CXXFLAGS_RELEASE += -O2
 
-# You can make your code fail to compile if it uses deprecated APIs.
-# In order to do so, uncomment the following line.
-#DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
-
 INCLUDEPATH += \
-    $$PWD/src/include
+    $$PWD/src/include \
+    $$PWD/thirdparty/cpp-httplib \
+    $$PWD/thirdparty/json/include
 
 SOURCES += \
     src/add_file_button.cpp \
@@ -22,10 +20,11 @@ SOURCES += \
     src/drop_shadow_widget.cpp \
     src/file_bar.cpp \
     src/blender_version_manager.cpp \
+    src/http_server.cpp \
     src/loading_bar.cpp \
     src/main.cpp \
-    src/process.cpp \
     src/progress_bar.cpp \
+    src/simple_process.cpp \
     src/widget.cpp \
     src/drop_file_tip.cpp \
     src/ring_progress_bar.cpp
@@ -40,7 +39,9 @@ HEADERS += \
     src/include/drop_shadow_renderer.h \
     src/include/drop_shadow_widget.h \
     src/include/file_bar.h \
-    src/include/process.h \
+    src/include/http_server.h \
+    src/include/project_info.h \
+    src/include/simple_process.h \
     src/include/style.h \
     src/include/widget.h \
     src/include/drop_file_tip.h \

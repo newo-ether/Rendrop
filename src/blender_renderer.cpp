@@ -6,7 +6,7 @@
 #include <QRegularExpression>
 
 #include "blender_renderer.h"
-#include "process.h"
+#include "simple_process.h"
 
 BlenderRenderer::BlenderRenderer(QObject *parent):
     QThread(parent),
@@ -60,7 +60,7 @@ void BlenderRenderer::run()
         return;
     }
 
-    Process process;
+    SimpleProcess process;
 
     QStringList args;
     args << "-b"
@@ -132,7 +132,7 @@ void BlenderRenderer::parseOutput(QString output)
     QString outputText;
     bool hasMatch = false;
 
-    for (const QString &line: lines)
+    for (QString &line: lines)
     {
         auto frameMatch = reFrame.match(line);
         if (frameMatch.hasMatch()) {

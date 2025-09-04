@@ -8,7 +8,6 @@
 #include <QObject>
 #include <QThread>
 #include <QReadWriteLock>
-
 #include <QOpenGLContext>
 #include <QOffscreenSurface>
 #include <QOpenGLFunctions>
