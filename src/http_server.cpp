@@ -42,17 +42,17 @@ void HttpServer::run()
         {
             js.push_back({
                 {"id", project.id},
-                {"state", ProjectStateToString(project.state).toStdWString()},
-                {"name", project.name.toStdWString()},
-                {"path", project.path.toStdWString()},
-                {"outputPath", project.outputPath.toStdWString()},
+                {"state", ProjectStateToString(project.state).toUtf8().toStdString()},
+                {"name", project.name.toUtf8().toStdString()},
+                {"path", project.path.toUtf8().toStdString()},
+                {"outputPath", project.outputPath.toUtf8().toStdString()},
                 {"frameStart", project.frameStart},
                 {"frameEnd", project.frameEnd},
                 {"frameStep", project.frameStep},
                 {"resolutionX", project.resolutionX},
                 {"resolutionX", project.resolutionY},
                 {"resolutionScale", project.resolutionScale},
-                {"renderEngine", project.renderEngine},
+                {"renderEngine", project.renderEngine.toUtf8().toStdString()},
                 {"finishedFrame", project.finishedFrame},
                 {"totalFrame", project.totalFrame}
             });
@@ -77,17 +77,17 @@ void HttpServer::run()
 
         json js = {
             {"id", project.id},
-            {"state", ProjectStateToString(project.state).toStdWString()},
-            {"name", project.name.toStdWString()},
-            {"path", project.path.toStdWString()},
-            {"outputPath", project.outputPath.toStdWString()},
+            {"state", ProjectStateToString(project.state).toUtf8().toStdString()},
+            {"name", project.name.toUtf8().toStdString()},
+            {"path", project.path.toUtf8().toStdString()},
+            {"outputPath", project.outputPath.toUtf8().toStdString()},
             {"frameStart", project.frameStart},
             {"frameEnd", project.frameEnd},
             {"frameStep", project.frameStep},
             {"resolutionX", project.resolutionX},
             {"resolutionX", project.resolutionY},
             {"resolutionScale", project.resolutionScale},
-            {"renderEngine", project.renderEngine},
+            {"renderEngine", project.renderEngine.toUtf8().toStdString()},
             {"finishedFrame", project.finishedFrame},
             {"totalFrame", project.totalFrame}
         };

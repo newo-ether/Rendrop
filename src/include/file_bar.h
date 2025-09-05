@@ -53,7 +53,7 @@ public:
     int getResolutionX() const;
     int getResolutionY() const;
     int getResolutionScale() const;
-    int getRenderEngine() const;
+    QString getRenderEngine() const;
     int getFinishedFrame() const;
     int getTotalFrame() const;
     void setOutputPath(const QString &outputPath);
@@ -68,7 +68,7 @@ protected:
 private:
     void setFrame(int frameStart, int frameEnd, int frameStep);
     void setResolution(int resolutionX, int resolutionY, int resolutionScale);
-    void setRenderEngine(int renderEngine);
+    void setRenderEngine(const QString &renderEngine);
     void showLoadingBar();
     void hideLoadingBar();
     void setState(ProjectState state);
@@ -82,7 +82,7 @@ private:
     int id;
     int frameStart, frameEnd, frameStep;
     int resolutionX, resolutionY, resolutionScale;
-    int renderEngine;
+    QString renderEngine;
     int finishedFrame, totalFrame;
     QString outputPath;
     BlenderRenderer *blenderRenderer;

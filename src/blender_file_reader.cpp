@@ -173,6 +173,24 @@ void BlenderFileReader::run()
     int renderEngine = lines[6].toInt();
     QString outputPath = lines[7].trimmed();
 
+    QString renderEngineText;
+    if (renderEngine == 0)
+    {
+        renderEngineText = "Cycles";
+    }
+    else if (renderEngine == 1)
+    {
+        renderEngineText = "EEVEE";
+    }
+    else if (renderEngine == 2)
+    {
+        renderEngineText = "Workbench";
+    }
+    else
+    {
+        renderEngineText = "Unknown";
+    }
+
     BlenderFileInfo info(
         resolutionX,
         resolutionY,
@@ -180,7 +198,7 @@ void BlenderFileReader::run()
         frameStart,
         frameEnd,
         frameStep,
-        renderEngine,
+        renderEngineText,
         outputPath
     );
 

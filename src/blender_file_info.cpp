@@ -11,7 +11,7 @@ BlenderFileInfo::BlenderFileInfo():
     frameBegin(0),
     frameEnd(0),
     frameStep(0),
-    renderEngine(0) {}
+    renderEngine() {}
 
 BlenderFileInfo::BlenderFileInfo(
     int resolutionX,
@@ -20,7 +20,7 @@ BlenderFileInfo::BlenderFileInfo(
     int frameBegin,
     int frameEnd,
     int frameStep,
-    int renderEngine,
+    const QString &renderEngine,
     const QString &outputPath
 ):
     resolutionX(resolutionX),

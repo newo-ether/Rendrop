@@ -37,7 +37,7 @@ FileBar::FileBar(
     resolutionX(0),
     resolutionY(0),
     resolutionScale(0),
-    renderEngine(0),
+    renderEngine(),
     finishedFrame(0),
     totalFrame(0),
     loadingStyle(Style(Color(80, 150, 210))),
@@ -249,27 +249,9 @@ void FileBar::setResolution(int resolutionX, int resolutionY, int resolutionScal
     this->resolutionScale = resolutionScale;
 }
 
-void FileBar::setRenderEngine(int renderEngine)
+void FileBar::setRenderEngine(const QString &renderEngine)
 {
-    QString renderEngineText;
-    if (renderEngine == 0)
-    {
-        renderEngineText = "Cycles";
-    }
-    else if (renderEngine == 1)
-    {
-        renderEngineText = "EEVEE";
-    }
-    else if (renderEngine == 2)
-    {
-        renderEngineText = "Workbench";
-    }
-    else
-    {
-        renderEngineText = "Unknown";
-    }
-
-    ui->renderEngineLabel->setText(renderEngineText);
+    ui->renderEngineLabel->setText(renderEngine);
     this->renderEngine = renderEngine;
 }
 
@@ -359,7 +341,7 @@ int FileBar::getResolutionScale() const
     return resolutionScale;
 }
 
-int FileBar::getRenderEngine() const
+QString FileBar::getRenderEngine() const
 {
     return renderEngine;
 }
@@ -376,11 +358,20 @@ QString FileBar::getOutputPath() const
 
 // Format frame number with zero padding like Blender.
 static QString frameString(int frame, int minWidth) {
-    const bool neg = frame < 0;
-    quint64 n = static_cast<quint64>(neg ? -(qint64)frame : frame);
+    const bool isNeg = frame < 0;
+    int n = std::abs(frame);
+
     QString digits = QString::number(n);
-    if (digits.size() < minWidth) digits.prepend(QString(minWidth - digits.size(), QChar('0')));
-    if (neg) digits.prepend('-');
+    if (digits.size() < minWidth)
+    {
+        digits.prepend(QString(minWidth - digits.size(), QChar('0')));
+    }
+
+    if (isNeg)
+    {
+        digits.prepend('-');
+    }
+
     return digits;
 }
 
@@ -396,7 +387,9 @@ QString FileBar::getImagePathFromFrame(int frame)
 
     // Resolve Blender-style relative path "//"
     if (path.startsWith("//"))
+    {
         path = QDir(blendDir).filePath(path.mid(2));
+    }
 
     // Get original path flags
     const bool hasHash = originalPath.contains('#');
@@ -417,18 +410,21 @@ QString FileBar::getImagePathFromFrame(int frame)
     static QRegularExpression re(R"(#+)");
     QRegularExpressionMatchIterator it = re.globalMatch(path);
     QList<QPair<int,int>> spans;
-    while (it.hasNext()) {
+    while (it.hasNext())
+    {
         auto m = it.next();
         spans.append({m.capturedStart(0), m.capturedLength(0)});
     }
-    for (int i = spans.size() - 1; i >= 0; --i) {
+    for (int i = spans.size() - 1; i >= 0; i--)
+    {
         const int start = spans[i].first;
         const int len = spans[i].second;
         path.replace(start, len, frameString(frame, len));
     }
 
     // If no '#' in original path and not a directory, append 4-digit frame
-    if (!hasHash && !endsWithSlash && !isDoubleSlash) {
+    if (!hasHash && !endsWithSlash && !isDoubleSlash)
+    {
         QFileInfo fileInfo(path);
         const QString dir = fileInfo.path();
         const QString base = fileInfo.completeBaseName();
@@ -437,17 +433,19 @@ QString FileBar::getImagePathFromFrame(int frame)
 
         // Ensure directory separator is correct
         if (ext.isEmpty())
+        {
             path = QDir(dir).filePath(numbered);
+        }
         else
+        {
             path = QDir(dir).filePath(numbered + "." + ext);
+        }
     }
 
     // Ensure the file has an extension, defaults to ".png"
     QFileInfo outFileInfo(path);
-    if (outFileInfo.suffix().isEmpty()) {
-        // Remove a single trailing dot, but keep multiple dots
-        if (path.endsWith('.') && !path.endsWith(".."))
-            path.chop(1);
+    if (outFileInfo.suffix().isEmpty())
+    {
         path += ".png";
     }
 

@@ -42,7 +42,7 @@ struct ProjectInfo
     int resolutionX;
     int resolutionY;
     int resolutionScale;
-    int renderEngine;
+    QString renderEngine;
     int finishedFrame;
     int totalFrame;
 
@@ -59,7 +59,7 @@ struct ProjectInfo
         resolutionX(0),
         resolutionY(0),
         resolutionScale(0),
-        renderEngine(0),
+        renderEngine(),
         finishedFrame(0),
         totalFrame(0) {}
 
@@ -75,7 +75,7 @@ struct ProjectInfo
         int resolutionX,
         int resolutionY,
         int resolutionScale,
-        int renderEngine,
+        QString renderEngine,
         int finishedFrame,
         int totalFrame
     ):

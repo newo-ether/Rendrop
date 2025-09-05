@@ -17,7 +17,7 @@ struct BlenderFileInfo
         int frameStart,
         int frameEnd,
         int frameStep,
-        int renderEngine,
+        const QString &renderEngine,
         const QString &outputPath
     );
 
@@ -27,7 +27,7 @@ struct BlenderFileInfo
     int frameBegin;
     int frameEnd;
     int frameStep;
-    int renderEngine;
+    QString renderEngine;
     QString outputPath;
 };
 
