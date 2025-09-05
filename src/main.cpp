@@ -7,6 +7,7 @@
 #include <QFileInfo>
 #include <QString>
 #include <QDir>
+#include <QSharedMemory>
 
 #include "widget.h"
 
@@ -50,6 +51,17 @@ int main(int argc, char *argv[])
             }
             configFile.close();
         }
+    }
+
+    QSharedMemory sharedMemory("RendropAppKey");
+    if (!sharedMemory.create(1)) {
+        QMessageBox messageBox;
+        QFont font("Pixel Mixed", 12);
+        messageBox.setIcon(QMessageBox::Warning);
+        messageBox.setText(QCoreApplication::translate("main", "The application is already running."));
+        messageBox.setWindowTitle(QCoreApplication::translate("main", "Warning"));
+        messageBox.setFont(font);
+        return messageBox.exec();
     }
 
     Widget widget(languageIndex);

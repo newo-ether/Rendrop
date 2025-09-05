@@ -2,6 +2,19 @@
 <!DOCTYPE TS>
 <TS version="2.1" language="zh" sourcelanguage="en">
 <context>
+    <name>main</name>
+    <message>
+        <location filename="src/main.cpp"/>
+        <source>Warning</source>
+        <translation>警告</translation>
+    </message>
+    <message>
+        <location filename="src/main.cpp"/>
+        <source>The application is already running.</source>
+        <translation>该应用已在运行.</translation>
+    </message>
+</context>
+<context>
     <name>DropFileTip</name>
     <message>
         <location filename="ui/drop_file_tip.ui"/>
