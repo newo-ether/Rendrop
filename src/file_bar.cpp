@@ -285,7 +285,7 @@ bool FileBar::eventFilter(QObject *object, QEvent *event)
         // Draw border
         painter.setPen(QPen(style.borderColor.toQColor(), 1));
         painter.setBrush(Qt::NoBrush);
-        painter.drawRoundedRect(ui->fileBarContentWidget->rect().adjusted(0, 0, -1, -1), 16, 16);
+        painter.drawRoundedRect(ui->fileBarContentWidget->rect().adjusted(1, 1, -1, -1), 16, 16);
         return true;
     }
 
