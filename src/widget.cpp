@@ -884,6 +884,7 @@ void Widget::onFinishedRendering()
 
 void Widget::onProgressChanged()
 {
+    updateButtonStatus();
     updateStatisticInfo();
 }
 
