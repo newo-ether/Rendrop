@@ -61,6 +61,7 @@ public:
     void setOutputPath(const QString &outputPath);
     QString getOutputPath() const;
     QString getImagePathFromFrame(int frame);
+    void setBlenderPath(const QString &blenderPath);
     void render();
     void stopRender();
 

@@ -134,7 +134,7 @@ void HttpServer::run()
 
         if (thumb)
         {
-            image = image.scaled(128, 128, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+            image = image.scaled(512, 512, Qt::KeepAspectRatio, Qt::SmoothTransformation);
         }
 
         QByteArray byteArray;

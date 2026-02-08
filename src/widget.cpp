@@ -144,6 +144,15 @@ Widget::Widget(int languageIndex, QWidget *parent):
             return;
         }
 
+        QString blenderPath = blenderVersionManager->getBlenderPath(text);
+        {
+            QReadLocker locker(&fileBarsLock);
+            for (auto fileBar : fileBars)
+            {
+                fileBar->setBlenderPath(blenderPath);
+            }
+        }
+
         QDir configDir = QFileInfo("config/blender_selection.cfg").absoluteDir();
         if (!configDir.exists()) {
             configDir.mkpath(configDir.absolutePath());
@@ -652,6 +661,8 @@ void Widget::onFileBarDelete(FileBar *fileBar)
         }
     }
 
+    bool wasRendering = fileBar->getState() == ProjectState::Rendering;
+
     auto iter = std::find(fileBars.begin(), fileBars.end(), fileBar);
     if (iter == fileBars.end())
     {
@@ -668,6 +679,11 @@ void Widget::onFileBarDelete(FileBar *fileBar)
         fileBars.erase(iter);
     }
 
+    if (wasRendering)
+    {
+        onFinishedRendering();
+    }
+
     if (fileBars.empty())
     {
         dropFileTip->show();
@@ -682,10 +698,20 @@ void Widget::onFileBarDelete(FileBar *fileBar)
     clearOutputText();
 }
 
-void Widget::onFileBarReload(FileBar *)
+void Widget::onFileBarReload(FileBar *fileBar)
 {
+    bool wasRendering = fileBar->getState() == ProjectState::Rendering;
+    
+    QString blenderPath = blenderVersionManager->getBlenderPath(ui->selectorComboBox->currentText());
+    fileBar->setBlenderPath(blenderPath);
+
     updateButtonStatus();
     updateStatisticInfo();
+
+    if (wasRendering)
+    {
+        onFinishedRendering();
+    }
 }
 
 void Widget::onFinishedReading()

@@ -98,7 +98,7 @@ FileBar::FileBar(
     QObject::connect(ui->reloadButton, &QPushButton::clicked, this, &FileBar::onReloadButtonClicked);
     
     QObject::connect(ui->frameButton, &QPushButton::clicked, this, [this]() {
-        if (state != ProjectState::Rendering && state != ProjectState::Loading)
+        if (state != ProjectState::Rendering && state != ProjectState::Loading && state != ProjectState::Error)
         {
             FrameRangeDialog dialog(frameStart, frameEnd, frameStep, this);
             if (dialog.exec() == QDialog::Accepted)
@@ -117,17 +117,15 @@ FileBar::FileBar(
                 blenderRenderer->setCurrentFrame(newStart);
                 
                 // Refresh Progress Bar
-                float progress = totalFrame == 0 ? 0 : static_cast<float>(finishedFrame) / totalFrame * 100.0f;
                 ui->progressBar->setProgressBar(0.0f);
                 ui->progressBarLabel->setText(
                     QString::number(finishedFrame)
                     + "/"
                     + QString::number(totalFrame)
-                    + " ("
-                    + QString::number(static_cast<int>(progress))
-                    + "%)"
+                    + " (0%)"
                 );
                 
+                setState(ProjectState::Queued);
                 emit progressChanged();
             }
         }
@@ -359,7 +357,7 @@ void FileBar::setState(ProjectState state)
 {
     this->state = state;
 
-    ui->frameButton->setEnabled(state != ProjectState::Loading && state != ProjectState::Rendering);
+    ui->frameButton->setEnabled(state != ProjectState::Loading && state != ProjectState::Rendering && state != ProjectState::Error);
 
     switch (state)
     {
@@ -445,6 +443,12 @@ QString FileBar::getOutputPath() const
 {
     QReadLocker locker(&dataLock);
     return outputPath;
+}
+
+void FileBar::setBlenderPath(const QString &blenderPath)
+{
+    blenderFileReader->setParameter(filePath, blenderPath);
+    blenderRenderer->setParameter(blenderPath, filePath, frameStart, frameEnd, frameStep);
 }
 
 // Format frame number with zero padding like Blender.
@@ -603,10 +607,18 @@ void FileBar::onFinishedReading(int status, BlenderFileInfo info)
         setResolution(info.resolutionX, info.resolutionY, info.resolutionScale);
         setRenderEngine(info.renderEngine);
 
-        setState(ProjectState::Queued);
-
         finishedFrame = 0;
         totalFrame = info.frameStep == 0 ? 0 : (info.frameEnd - info.frameBegin) / info.frameStep + 1;
+
+        if (info.outputPath.isEmpty() || totalFrame <= 0)
+        {
+            setState(ProjectState::Error);
+        }
+        else
+        {
+            setState(ProjectState::Queued);
+        }
+
         {
             QWriteLocker locker(&dataLock);
             outputPath = info.outputPath;
@@ -615,7 +627,7 @@ void FileBar::onFinishedReading(int status, BlenderFileInfo info)
         blenderRenderer->setFrame(info.frameBegin, info.frameEnd, info.frameStep);
         blenderRenderer->setCurrentFrame(info.frameBegin);
 
-        float progress = static_cast<float>(finishedFrame) / totalFrame * 100.0f;
+        float progress = totalFrame <= 0 ? 0.0f : static_cast<float>(finishedFrame) / totalFrame * 100.0f;
         ui->progressBar->setProgressBar(0.0f);
         ui->progressBarLabel->setText(
             QString::number(finishedFrame)

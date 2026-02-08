@@ -54,7 +54,7 @@ void BlenderRenderer::run()
     stopped = false;
     currentFrameFinished = false;
 
-    if (!isParameterSet)
+    if (!isParameterSet || blenderPath.isEmpty())
     {
         emit finishedRendering(-1);
         return;
@@ -122,7 +122,8 @@ void BlenderRenderer::run()
 
 int BlenderRenderer::getFinishedFrame() const
 {
-    return currentFrame - frameStart + (currentFrameFinished ? 1 : 0);
+    if (frameStep <= 0) return 0;
+    return (currentFrame - frameStart) / frameStep + (currentFrameFinished ? 1 : 0);
 }
 
 int BlenderRenderer::getTotalFrame() const
