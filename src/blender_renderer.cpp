@@ -86,6 +86,7 @@ void BlenderRenderer::run()
         if (stopped)
         {
             process.kill();
+            emit finishedRendering(-1);
             return;
         }
 
@@ -102,6 +103,12 @@ void BlenderRenderer::run()
         }
 
         process.waitForFinished(50);
+    }
+
+    QString remaining = process.readRemaining();
+    if (!remaining.isEmpty())
+    {
+        parseOutput(remaining);
     }
 
     if (getFinishedFrame() < getTotalFrame())

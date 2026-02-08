@@ -228,3 +228,15 @@ QString SimpleProcess::readStandardOutput()
 
     return QString::fromUtf8(completeLines);
 }
+
+QString SimpleProcess::readRemaining()
+{
+    if (buffer.isEmpty())
+    {
+        return QString();
+    }
+
+    QString remaining = QString::fromUtf8(buffer);
+    buffer.clear();
+    return remaining;
+}

@@ -66,6 +66,8 @@ int BlenderVersionManager::addBlenderVersion(QString path)
     }
 
     QString output = process.readStandardOutput();
+    output += process.readRemaining();
+
     if (output.isEmpty())
     {
         return -2;

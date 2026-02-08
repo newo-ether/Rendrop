@@ -7,6 +7,8 @@
 #include <QFileInfo>
 #include <QRegularExpression>
 #include <QDir>
+#include <QPainter>
+#include <QPen>
 
 #include "file_bar.h"
 #include "ui_file_bar.h"
@@ -161,6 +163,13 @@ FileBar::FileBar(
     elapsedTimer->start();
     lastElapsed = 0;
 
+    ui->fileBarContentWidget->installEventFilter(this);
+    ui->fileBarContentWidget->setStyleSheet(
+        "background-color: rgb(43, 45, 48);\n"
+        "border: none;\n"
+        "border-radius: 16px;\n"
+    );
+
     setState(ProjectState::Loading);
 
     show();
@@ -264,6 +273,22 @@ void FileBar::stopRender()
 
 bool FileBar::eventFilter(QObject *object, QEvent *event)
 {
+    if (object == ui->fileBarContentWidget && event->type() == QEvent::Paint) {
+        QPainter painter(ui->fileBarContentWidget);
+        painter.setRenderHint(QPainter::Antialiasing);
+
+        // Draw background
+        painter.setBrush(QColor(43, 45, 48));
+        painter.setPen(Qt::NoPen);
+        painter.drawRoundedRect(ui->fileBarContentWidget->rect(), 16, 16);
+
+        // Draw border
+        painter.setPen(QPen(style.borderColor.toQColor(), 1));
+        painter.setBrush(Qt::NoBrush);
+        painter.drawRoundedRect(ui->fileBarContentWidget->rect().adjusted(0, 0, -1, -1), 16, 16);
+        return true;
+    }
+
     if (object == ui->frameButton && event->type() == QEvent::Resize) {
         frameLoadingBar->setGeometry(0, 0, ui->frameButton->width(), ui->frameButton->height());
     }
@@ -643,7 +668,10 @@ void FileBar::onFinishedRendering(int status)
 {
     if (status != 0)
     {
-        setState(ProjectState::Error);
+        if (state != ProjectState::Queued)
+        {
+            setState(ProjectState::Error);
+        }
     }
     else
     {
@@ -683,12 +711,5 @@ void FileBar::updateStyle()
         }
     }
 
-    ui->fileBarContentWidget->setStyleSheet(
-        QString("background-color: rgb(43, 45, 48);\n")
-        + "border: 1px solid "
-        + style.borderColor.toText()
-        + ";\n"
-        + "border-radius: 16px;\n"
-    );
     ui->fileBarContentWidget->update();
 }

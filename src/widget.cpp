@@ -821,6 +821,11 @@ void Widget::onRenderButtonClicked()
 
 void Widget::onFinishedRendering()
 {
+    if (!isRendering)
+    {
+        return;
+    }
+
     FileBar *nextRender = nullptr;
     for (auto fileBar: fileBars)
     {

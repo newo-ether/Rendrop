@@ -4,6 +4,7 @@
 #define COLOR_H
 
 #include <QString>
+#include <QColor>
 
 #include <algorithm>
 
@@ -24,6 +25,16 @@ struct Color
         g(std::clamp(g / 255.0f, 0.0f, 1.0f)),
         b(std::clamp(b / 255.0f, 0.0f, 1.0f)),
         a(std::clamp(a / 255.0f, 0.0f, 1.0f)) {}
+
+    inline QColor toQColor() const
+    {
+        return QColor::fromRgbF(
+            std::clamp(r, 0.0f, 1.0f),
+            std::clamp(g, 0.0f, 1.0f),
+            std::clamp(b, 0.0f, 1.0f),
+            std::clamp(a, 0.0f, 1.0f)
+        );
+    }
 
     inline Color operator+(const Color &color)
     {

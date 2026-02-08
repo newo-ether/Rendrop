@@ -20,6 +20,7 @@ public:
     bool waitForFinished(int msec);
     bool isRunning() const;
     QString readStandardOutput();
+    QString readRemaining();
 
 private:
     void updateState();

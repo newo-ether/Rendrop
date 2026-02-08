@@ -6,6 +6,7 @@
 #include <QThread>
 #include <QReadWriteLock>
 #include <QEventLoop>
+#include <QCoreApplication>
 #include <QOpenGLContext>
 #include <QOffscreenSurface>
 #include <QOpenGLFunctions>
@@ -19,18 +20,22 @@
 #include "drop_shadow_renderer.h"
 
 DropShadowRenderer::DropShadowRenderer(QObject *parent):
-    QThread(parent)
+    QThread(parent),
+    glContext(new QOpenGLContext()),
+    glSurface(new QOffscreenSurface()),
+    glFunctions(nullptr),
+    program(nullptr),
+    vbo(0)
 {
-    glContext = new QOpenGLContext();
     glContext->setFormat(QSurfaceFormat::defaultFormat());
     glContext->create();
 
-    glSurface = new QOffscreenSurface();
     glSurface->setFormat(glContext->format());
     glSurface->create();
 
     glContext->moveToThread(this);
     glSurface->moveToThread(this);
+
     start();
 }
 
@@ -40,16 +45,25 @@ DropShadowRenderer::~DropShadowRenderer()
     emit stopRequested();
     wait();
 
-    delete glSurface;
-    delete glContext;
+    if (glSurface) {
+        delete glSurface;
+        glSurface = nullptr;
+    }
+    if (glContext) {
+        delete glContext;
+        glContext = nullptr;
+    }
 }
 
 void DropShadowRenderer::run()
 {
     if (!glContext->makeCurrent(glSurface))
     {
+        glContext->moveToThread(QCoreApplication::instance()->thread());
+        glSurface->moveToThread(QCoreApplication::instance()->thread());
         return;
     }
+
     initializeOpenGL();
 
     QEventLoop loop;
@@ -96,7 +110,23 @@ void DropShadowRenderer::run()
         }
     }
 
-    glContext->doneCurrent();
+    // Cleanup OpenGL resources in the worker thread
+    if (glContext && glSurface) {
+        glContext->makeCurrent(glSurface);
+        if (vbo) {
+            glFunctions->glDeleteBuffers(1, &vbo);
+            vbo = 0;
+        }
+        if (program) {
+            delete program;
+            program = nullptr;
+        }
+        glContext->doneCurrent();
+
+        // Move back to GUI thread before the worker thread finishes
+        glContext->moveToThread(QCoreApplication::instance()->thread());
+        glSurface->moveToThread(QCoreApplication::instance()->thread());
+    }
 }
 
 int DropShadowRenderer::createWidgetBuffer(std::function<void ()> updateFunc)
@@ -356,7 +386,10 @@ QImage DropShadowRenderer::render(WidgetInfo info)
 
 void DropShadowRenderer::onSaveImage(int handle, QImage image, std::function<void ()> updateFunc)
 {
-    lock.lockForRead();
+    bool found = false;
+    float dpr = 1.0f;
+
+    lock.lockForWrite();
 
     auto iter = std::find_if(widgetBuffers.begin(), widgetBuffers.end(), [handle](const auto &widgetBuffer) {
         return widgetBuffer.handle == handle;
@@ -364,11 +397,17 @@ void DropShadowRenderer::onSaveImage(int handle, QImage image, std::function<voi
 
     if (iter != widgetBuffers.end())
     {
+        found = true;
+        dpr = (*iter).info.devicePixelRatio;
         QPixmap pixmap = QPixmap::fromImage(image);
-        pixmap.setDevicePixelRatio((*iter).info.devicePixelRatio);
+        pixmap.setDevicePixelRatio(dpr);
         (*iter).pixmap = pixmap;
-        updateFunc();
     }
 
     lock.unlock();
+
+    if (found && updateFunc)
+    {
+        updateFunc();
+    }
 }
