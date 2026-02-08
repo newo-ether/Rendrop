@@ -45,6 +45,7 @@ Widget::Widget(int languageIndex, QWidget *parent):
 
     httpServer = new HttpServer(
         [this]() -> std::vector<ProjectInfo> {
+            QReadLocker locker(&fileBarsLock);
             std::vector<ProjectInfo> projectInfo;
 
             for (auto fileBar : fileBars)
@@ -73,6 +74,7 @@ Widget::Widget(int languageIndex, QWidget *parent):
         },
 
         [this](int id) -> ProjectInfo {
+            QReadLocker locker(&fileBarsLock);
             auto iter = std::find_if(fileBars.begin(), fileBars.end(), [id](const FileBar *fileBar) {
                 return fileBar->getID() == id;
             });
@@ -105,6 +107,7 @@ Widget::Widget(int languageIndex, QWidget *parent):
         },
 
         [this](int id, int frame) -> QString {
+            QReadLocker locker(&fileBarsLock);
             auto iter = std::find_if(fileBars.begin(), fileBars.end(), [id](const FileBar *fileBar) {
                 return fileBar->getID() == id;
             });
@@ -123,6 +126,36 @@ Widget::Widget(int languageIndex, QWidget *parent):
 
     blenderVersionManager = new BlenderVersionManager("config/blender_versions.cfg");
     updateBlenderVersions();
+
+    // Load saved Blender version selection
+    QFile selectionFile("config/blender_selection.cfg");
+    if (selectionFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        QString savedVersion = selectionFile.readLine().trimmed();
+        int index = ui->selectorComboBox->findText(savedVersion);
+        if (index != -1) {
+            ui->selectorComboBox->setCurrentIndex(index);
+        }
+        selectionFile.close();
+    }
+
+    // Auto-save selection on change
+    QObject::connect(ui->selectorComboBox, &QComboBox::currentTextChanged, this, [this](const QString &text) {
+        if (text.isEmpty() || text == tr("-- Add A Blender Version --")) {
+            return;
+        }
+
+        QDir configDir = QFileInfo("config/blender_selection.cfg").absoluteDir();
+        if (!configDir.exists()) {
+            configDir.mkpath(configDir.absolutePath());
+        }
+
+        QFile file("config/blender_selection.cfg");
+        if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+            file.write(text.toUtf8());
+            file.write("\n");
+            file.close();
+        }
+    });
 
     qRegisterMetaType<BlenderFileInfo>("BlenderFileInfo");
 
@@ -170,6 +203,9 @@ Widget::Widget(int languageIndex, QWidget *parent):
 
 Widget::~Widget()
 {
+    httpServer->stop();
+    httpServer->wait();
+
     for (auto dropShadowWidget : dropShadowWidgets)
     {
         delete dropShadowWidget;
@@ -202,8 +238,6 @@ Widget::~Widget()
     delete dropShadowRenderer;
     delete blenderVersionManager;
 
-    httpServer->stop();
-    httpServer->wait();
     delete httpServer;
 }
 
@@ -243,10 +277,15 @@ bool Widget::eventFilter(QObject *watched, QEvent *event)
         float shadowWidth = fileBarWidth + marginX * 2;
         float shadowHeight = fileBarHeight + marginY * 2;
 
+        float dpr = devicePixelRatio();
+        int expectedWidth = std::ceil(shadowWidth * dpr);
+        int expectedHeight = std::ceil(shadowHeight * dpr);
+
         fileBarShadowPixmap = dropShadowRenderer->getPixmap(handle);
         if (fileBarShadowPixmap.isNull() ||
-            fileBarShadowPixmap.width() != static_cast<int>(fileBarWidth) ||
-            fileBarShadowPixmap.height() != static_cast<int>(fileBarHeight)
+            fileBarShadowPixmap.width() != expectedWidth ||
+            fileBarShadowPixmap.height() != expectedHeight ||
+            !qFuzzyCompare(static_cast<float>(fileBarShadowPixmap.devicePixelRatio()), dpr)
         ) {
             dropShadowRenderer->setWidgetBuffer(
                 handle,
@@ -256,17 +295,19 @@ bool Widget::eventFilter(QObject *watched, QEvent *event)
                 offsetX,
                 offsetY,
                 alphaMax,
-                blurRadius
+                blurRadius,
+                dpr
             );
 
             if (!fileBarShadowPixmap.isNull())
             {
                 fileBarShadowPixmap = fileBarShadowPixmap.scaled(
-                    shadowWidth,
-                    shadowHeight,
+                    shadowWidth * dpr,
+                    shadowHeight * dpr,
                     Qt::IgnoreAspectRatio,
                     Qt::SmoothTransformation
                 );
+                fileBarShadowPixmap.setDevicePixelRatio(dpr);
             }
         }
     }
@@ -330,7 +371,8 @@ void Widget::dragEnterEvent(QDragEnterEvent *event)
         if (event->mimeData()->hasUrls())
         {
             bool hasBlendFile = false;
-            for (const QUrl &url : event->mimeData()->urls())
+            const QList<QUrl> &urls = event->mimeData()->urls();
+            for (const QUrl &url : urls)
             {
                 if (url.isLocalFile())
                 {
@@ -362,7 +404,8 @@ void Widget::dropEvent(QDropEvent *event)
         if (event->mimeData()->hasUrls())
         {
             bool hasBlendFile = false;
-            for (const QUrl &url : event->mimeData()->urls())
+            const QList<QUrl> &urls = event->mimeData()->urls();
+            for (const QUrl &url : urls)
             {
                 if (url.isLocalFile())
                 {
@@ -469,6 +512,7 @@ FileBar *Widget::newFileBar(QString fileName, QString filePath)
     QObject::connect(fileBar, &FileBar::progressChanged, this, &Widget::onProgressChanged);
     QObject::connect(fileBar, &FileBar::outputTextUpdate, this, &Widget::onOutputTextUpdate);
 
+    QWriteLocker locker(&fileBarsLock);
     fileBars.push_back(fileBar);
     dropFileTip->hide();
 
@@ -517,10 +561,7 @@ void Widget::onLanguageChanged(int index)
 
     if (result == QMessageBox::Yes)
     {
-        QString program = QCoreApplication::applicationFilePath();
-        QStringList arguments = QCoreApplication::arguments();
-        QProcess::startDetached(program, arguments);
-        QCoreApplication::quit();
+        QCoreApplication::exit(773);
     }
 }
 
@@ -546,6 +587,7 @@ void Widget::onFileBarUp(FileBar *fileBar)
         lastFileBar->show();
         fileBar->show();
 
+        QWriteLocker locker(&fileBarsLock);
         std::swap(*iter, *(iter - 1));
     }
 }
@@ -572,6 +614,7 @@ void Widget::onFileBarDown(FileBar *fileBar)
         fileBar->show();
         nextFileBar->show();
 
+        QWriteLocker locker(&fileBarsLock);
         std::swap(*iter, *(iter + 1));
     }
 }
@@ -616,7 +659,11 @@ void Widget::onFileBarDelete(FileBar *fileBar)
     layout->removeWidget(fileBar);
 
     fileBar->deleteLater();
-    fileBars.erase(iter);
+
+    {
+        QWriteLocker locker(&fileBarsLock);
+        fileBars.erase(iter);
+    }
 
     if (fileBars.empty())
     {
@@ -701,6 +748,11 @@ void Widget::onAddBlenderVersionButtonClicked()
         else
         {
             updateBlenderVersions();
+            int count = ui->selectorComboBox->count();
+            if (count > 0)
+            {
+                ui->selectorComboBox->setCurrentIndex(count - 1);
+            }
         }
     }
 

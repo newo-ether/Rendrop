@@ -1,0 +1,308 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>FrameRangeDialog</class>
+ <widget class="QDialog" name="FrameRangeDialog">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>240</width>
+    <height>190</height>
+   </rect>
+  </property>
+  <property name="minimumSize">
+   <size>
+    <width>240</width>
+    <height>190</height>
+   </size>
+  </property>
+  <property name="maximumSize">
+   <size>
+    <width>240</width>
+    <height>190</height>
+   </size>
+  </property>
+  <property name="windowTitle">
+   <string>Set Frame Range</string>
+  </property>
+  <property name="styleSheet">
+   <string notr="true">QDialog {
+    background-color: rgb(43, 45, 48);
+    color: white;
+}
+
+QLabel {
+    color: white;
+    font-family: &quot;Pixel Mixed&quot;;
+    font-size: 12px;
+}
+
+QSpinBox {
+    background-color: rgb(43, 45, 48);
+    color: white;
+    padding-left: 5px;
+    padding-right: 20px;
+    border: 1px solid rgb(85, 90, 102);
+    border-radius: 6px;
+    font-family: &quot;Pixel Mixed&quot;;
+    font-size: 12px;
+}
+
+QSpinBox::up-button {
+    subcontrol-origin: border;
+    subcontrol-position: top right;
+    width: 18px;
+    height: 14px;
+    border-top-right-radius: 6px;
+    border-left: 1px solid rgb(85, 90, 102);
+    border-bottom: 1px solid rgb(85, 90, 102);
+    background: transparent;
+}
+
+QSpinBox::down-button {
+    subcontrol-origin: border;
+    subcontrol-position: bottom right;
+    width: 18px;
+    height: 14px;
+    border-bottom-right-radius: 6px;
+    border-left: 1px solid rgb(85, 90, 102);
+    background: transparent;
+}
+
+QSpinBox::up-button:hover, QSpinBox::down-button:hover {
+    background-color: #4B5362;
+}
+
+QSpinBox::up-button:pressed, QSpinBox::down-button:pressed {
+    background-color: #2B2F38;
+}
+
+QSpinBox::up-arrow {
+    image: url(:/icon/up_arrow.ico);
+    width: 8px;
+    height: 8px;
+}
+
+QSpinBox::down-arrow {
+    image: url(:/icon/down_arrow.ico);
+    width: 8px;
+    height: 8px;
+}
+
+QPushButton {
+    background-color: #333842;
+    border: 1px solid #555A66;
+    border-radius: 6px;
+    color: white;
+    padding: 6px 6px;
+    font-family: &quot;Pixel Mixed&quot;;
+    font-size: 12px;
+}
+
+QPushButton:hover {
+    background-color: #4B5362;
+    color: white;
+}
+
+QPushButton:pressed {
+    background-color: #2B2F38;
+    color: white;
+}</string>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <property name="spacing">
+    <number>8</number>
+   </property>
+   <property name="leftMargin">
+    <number>11</number>
+   </property>
+   <property name="topMargin">
+    <number>11</number>
+   </property>
+   <property name="rightMargin">
+    <number>11</number>
+   </property>
+   <property name="bottomMargin">
+    <number>9</number>
+   </property>
+   <item>
+    <layout class="QFormLayout" name="formLayout">
+     <property name="verticalSpacing">
+      <number>14</number>
+     </property>
+     <item row="0" column="0">
+      <widget class="QLabel" name="label_start">
+       <property name="text">
+        <string>Frame Start:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="1">
+      <widget class="QSpinBox" name="startSpin">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="minimumSize">
+        <size>
+         <width>0</width>
+         <height>28</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>16777215</width>
+         <height>28</height>
+        </size>
+       </property>
+       <property name="minimum">
+        <number>0</number>
+       </property>
+       <property name="maximum">
+        <number>100000</number>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="0">
+      <widget class="QLabel" name="label_end">
+       <property name="text">
+        <string>Frame End:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="1">
+      <widget class="QSpinBox" name="endSpin">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="minimumSize">
+        <size>
+         <width>0</width>
+         <height>28</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>16777215</width>
+         <height>28</height>
+        </size>
+       </property>
+       <property name="minimum">
+        <number>0</number>
+       </property>
+       <property name="maximum">
+        <number>100000</number>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="0">
+      <widget class="QLabel" name="label_step">
+       <property name="text">
+        <string>Frame Step:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="1">
+      <widget class="QSpinBox" name="stepSpin">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="minimumSize">
+        <size>
+         <width>0</width>
+         <height>28</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>16777215</width>
+         <height>28</height>
+        </size>
+       </property>
+       <property name="minimum">
+        <number>1</number>
+       </property>
+       <property name="maximum">
+        <number>10000</number>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="horizontalLayout_buttons">
+     <property name="spacing">
+      <number>11</number>
+     </property>
+     <property name="topMargin">
+      <number>7</number>
+     </property>
+     <item>
+      <spacer name="horizontalSpacer">
+       <property name="orientation">
+        <enum>Qt::Orientation::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+     <item>
+      <widget class="QPushButton" name="okButton">
+       <property name="minimumSize">
+        <size>
+         <width>70</width>
+         <height>28</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>70</width>
+         <height>28</height>
+        </size>
+       </property>
+       <property name="text">
+        <string>OK</string>
+       </property>
+       <property name="default">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="cancelButton">
+       <property name="minimumSize">
+        <size>
+         <width>70</width>
+         <height>28</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>70</width>
+         <height>28</height>
+        </size>
+       </property>
+       <property name="text">
+        <string>Cancel</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

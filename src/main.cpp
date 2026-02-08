@@ -18,53 +18,63 @@ int main(int argc, char *argv[])
     QFontDatabase::addApplicationFont(":/font/PixelMixed.ttf");
     QFontDatabase::addApplicationFont(":/font/BitcountSingle-Bold.ttf");
 
-    QTranslator translator;
-    int languageIndex = 0;
+    int exitCode = 0;
+    do {
+        QTranslator translator;
+        int languageIndex = 0;
 
-    QDir configDir = QFileInfo("config/language.cfg").absoluteDir();
-    if (!configDir.exists())
-    {
-        configDir.mkpath(configDir.absolutePath());
-    }
-
-    QFile configFile("config/language.cfg");
-    if (!configFile.exists())
-    {
-        if (configFile.open(QIODevice::WriteOnly | QIODevice::Text))
+        QDir configDir = QFileInfo("config/language.cfg").absoluteDir();
+        if (!configDir.exists())
         {
-            configFile.write("en_US\n");
-            configFile.close();
+            configDir.mkpath(configDir.absolutePath());
         }
-    }
-    else
-    {
-        if (configFile.open(QIODevice::ReadOnly | QIODevice::Text))
+
+        QFile configFile("config/language.cfg");
+        if (!configFile.exists())
         {
-            QString language = configFile.readLine().trimmed();
-            if (language == "zh_CN")
+            if (configFile.open(QIODevice::WriteOnly | QIODevice::Text))
             {
-                if (translator.load(":/i18n/zh_CN.qm"))
-                {
-                    app.installTranslator(&translator);
-                    languageIndex = 1;
-                }
+                configFile.write("en_US\n");
+                configFile.close();
             }
-            configFile.close();
         }
-    }
+        else
+        {
+            if (configFile.open(QIODevice::ReadOnly | QIODevice::Text))
+            {
+                QString language = configFile.readLine().trimmed();
+                if (language == "zh_CN")
+                {
+                    if (translator.load(":/i18n/zh_CN.qm"))
+                    {
+                        app.installTranslator(&translator);
+                        languageIndex = 1;
+                    }
+                }
+                configFile.close();
+            }
+        }
 
-    QSharedMemory sharedMemory("RendropAppKey");
-    if (!sharedMemory.create(1)) {
-        QMessageBox messageBox;
-        QFont font("Pixel Mixed", 12);
-        messageBox.setIcon(QMessageBox::Warning);
-        messageBox.setText(QCoreApplication::translate("main", "The application is already running."));
-        messageBox.setWindowTitle(QCoreApplication::translate("main", "Warning"));
-        messageBox.setFont(font);
-        return messageBox.exec();
-    }
+        {
+            QSharedMemory sharedMemory("RendropAppKey");
+            if (!sharedMemory.create(1)) {
+                QMessageBox messageBox;
+                QFont font("Pixel Mixed", 12);
+                messageBox.setIcon(QMessageBox::Warning);
+                messageBox.setText(QCoreApplication::translate("main", "The application is already running."));
+                messageBox.setWindowTitle(QCoreApplication::translate("main", "Warning"));
+                messageBox.setFont(font);
+                return messageBox.exec();
+            }
 
-    Widget widget(languageIndex);
-    widget.show();
-    return app.exec();
+            Widget widget(languageIndex);
+            widget.show();
+            exitCode = app.exec();
+        }
+
+        app.removeTranslator(&translator);
+
+    } while (exitCode == 773);
+
+    return exitCode;
 }

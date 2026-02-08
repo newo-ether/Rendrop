@@ -171,4 +171,73 @@
         <translation>正在启动 Blender...</translation>
     </message>
 </context>
+<context>
+    <name>FileBar</name>
+    <message>
+        <location filename="src/file_bar.cpp"/>
+        <source>Click to edit frame range</source>
+        <translation>点击修改帧范围</translation>
+    </message>
+    <message>
+        <location filename="src/file_bar.cpp"/>
+        <source>Click to rename project</source>
+        <translation>点击重命名项目</translation>
+    </message>
+</context>
+<context>
+    <name>FrameRangeDialog</name>
+    <message>
+        <location filename="ui/frame_range_dialog.ui"/>
+        <source>Set Frame Range</source>
+        <translation>设置帧范围</translation>
+    </message>
+    <message>
+        <location filename="ui/frame_range_dialog.ui"/>
+        <source>Frame Start:</source>
+        <translation>起始帧: </translation>
+    </message>
+    <message>
+        <location filename="ui/frame_range_dialog.ui"/>
+        <source>Frame End:</source>
+        <translation>结束帧: </translation>
+    </message>
+    <message>
+        <location filename="ui/frame_range_dialog.ui"/>
+        <source>Frame Step:</source>
+        <translation>帧步长: </translation>
+    </message>
+    <message>
+        <location filename="ui/frame_range_dialog.ui"/>
+        <source>OK</source>
+        <translation>确定</translation>
+    </message>
+    <message>
+        <location filename="ui/frame_range_dialog.ui"/>
+        <source>Cancel</source>
+        <translation>取消</translation>
+    </message>
+</context>
+<context>
+    <name>RenameDialog</name>
+    <message>
+        <location filename="ui/rename_dialog.ui"/>
+        <source>Rename Project</source>
+        <translation>重命名项目</translation>
+    </message>
+    <message>
+        <location filename="ui/rename_dialog.ui"/>
+        <source>New Name:</source>
+        <translation>新名称:</translation>
+    </message>
+    <message>
+        <location filename="ui/rename_dialog.ui"/>
+        <source>OK</source>
+        <translation>确定</translation>
+    </message>
+    <message>
+        <location filename="ui/rename_dialog.ui"/>
+        <source>Cancel</source>
+        <translation>取消</translation>
+    </message>
+</context>
 </TS>

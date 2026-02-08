@@ -35,8 +35,14 @@ void DropShadowWidget::paintEvent(QPaintEvent *)
     if (updateEnabled)
     {
         shadowCache = dropShadowRenderer->getPixmap(handle);
-        if (shadowCache.isNull() || shadowCache.width() != width() || shadowCache.height() != height())
-        {
+        int expectedWidth = std::ceil(width() * devicePixelRatio());
+        int expectedHeight = std::ceil(height() * devicePixelRatio());
+
+        if (shadowCache.isNull() ||
+            shadowCache.width() != expectedWidth ||
+            shadowCache.height() != expectedHeight ||
+            !qFuzzyCompare(static_cast<float>(shadowCache.devicePixelRatio()), static_cast<float>(devicePixelRatio()))
+        ) {
             dropShadowRenderer->setWidgetBuffer(
                 handle,
                 width(),
@@ -45,13 +51,15 @@ void DropShadowWidget::paintEvent(QPaintEvent *)
                 offsetX,
                 offsetY,
                 alphaMax,
-                blurRadius
+                blurRadius,
+                devicePixelRatio()
             );
             if (shadowCache.isNull())
             {
                 return;
             }
-            shadowCache = shadowCache.scaled(QSize(width(), height()), Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+            shadowCache = shadowCache.scaled(QSize(expectedWidth, expectedHeight), Qt::IgnoreAspectRatio, Qt::FastTransformation);
+            shadowCache.setDevicePixelRatio(devicePixelRatio());
         }
         painter.drawPixmap(QPoint(0, 0), shadowCache);
     }

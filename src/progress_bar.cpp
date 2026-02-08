@@ -92,6 +92,7 @@ void ProgressBar::updateProgressBar()
     lastElapsed = elapsed;
 
     int iteration = std::max(1, (int)(dt / 0.01f));
+    iteration = std::min(iteration, 10);
     dt /= iteration;
 
     for (int i = 0; i < iteration; i++)

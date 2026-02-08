@@ -30,6 +30,7 @@ LoadingBar::~LoadingBar()
 void LoadingBar::showEvent(QShowEvent *event)
 {
     QWidget::showEvent(event);
+    lastElapsed = elapsedTimer->elapsed();
     if (!timer->isActive())
     {
         timer->start(20);

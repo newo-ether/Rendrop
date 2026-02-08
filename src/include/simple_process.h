@@ -30,6 +30,7 @@ private:
     HANDLE hRead = nullptr;
     HANDLE hWrite = nullptr;
     bool running = false;
+    QByteArray buffer;
 };
 
 #endif // SIMPLE_PROCESS_H

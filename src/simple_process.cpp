@@ -2,6 +2,7 @@
 
 #include <QString>
 #include <QStringList>
+#include <QByteArray>
 
 #include "simple_process.h"
 
@@ -86,6 +87,11 @@ int SimpleProcess::start(const QString& program, const QStringList& args)
         }
 
         return -2;
+    }
+
+    if (hWrite) {
+        CloseHandle(hWrite);
+        hWrite = nullptr;
     }
 
     running = true;
@@ -200,21 +206,25 @@ QString SimpleProcess::readStandardOutput()
     }
 
     DWORD bytesRead = 0;
-    char buffer[4096] = {0};
-    QString output;
+    char readBuffer[4096];
 
-    BOOL result = ReadFile(hRead, buffer, sizeof(buffer) - 1, &bytesRead, nullptr);
+    BOOL result = ReadFile(hRead, readBuffer, sizeof(readBuffer), &bytesRead, nullptr);
 
     if (!result || bytesRead == 0)
     {
         return QString();
     }
 
-    int i = bytesRead - 1;
-    for (; i > 0 && buffer[i] != '\n'; i--) {}
+    buffer.append(readBuffer, bytesRead);
 
-    buffer[i] = '\0';
-    output += QString::fromUtf8(buffer);
+    int lastNewLine = buffer.lastIndexOf('\n');
+    if (lastNewLine == -1)
+    {
+        return QString();
+    }
 
-    return output;
+    QByteArray completeLines = buffer.left(lastNewLine + 1);
+    buffer = buffer.mid(lastNewLine + 1);
+
+    return QString::fromUtf8(completeLines);
 }

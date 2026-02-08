@@ -27,7 +27,9 @@ SOURCES += \
     src/simple_process.cpp \
     src/widget.cpp \
     src/drop_file_tip.cpp \
-    src/ring_progress_bar.cpp
+    src/ring_progress_bar.cpp \
+    src/frame_range_dialog.cpp \
+    src/rename_dialog.cpp
 
 HEADERS += \
     src/include/blender_renderer.h \
@@ -47,12 +49,16 @@ HEADERS += \
     src/include/drop_file_tip.h \
     src/include/ring_progress_bar.h \
     src/include/progress_bar.h \
-    src/include/loading_bar.h
+    src/include/loading_bar.h \
+    src/include/frame_range_dialog.h \
+    src/include/rename_dialog.h
 
 FORMS += \
     ui/drop_file_tip.ui \
     ui/file_bar.ui \
-    ui/widget.ui
+    ui/widget.ui \
+    ui/frame_range_dialog.ui \
+    ui/rename_dialog.ui
 
 
 # Default rules for deployment.

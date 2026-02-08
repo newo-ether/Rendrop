@@ -8,6 +8,8 @@
 #include <QTimer>
 #include <QElapsedTimer>
 #include <QColor>
+#include <QReadWriteLock>
+#include <atomic>
 
 #include "drop_shadow_widget.h"
 #include "drop_shadow_renderer.h"
@@ -77,13 +79,15 @@ private:
     Ui::fileBar *ui;
     BlenderFileReader *blenderFileReader;
     DropShadowWidget *dropShadowWidget;
+    mutable QReadWriteLock dataLock;
+    QString fileName;
     QString filePath;
-    ProjectState state;
-    int id;
-    int frameStart, frameEnd, frameStep;
-    int resolutionX, resolutionY, resolutionScale;
+    std::atomic<ProjectState> state;
+    std::atomic_int id;
+    std::atomic_int frameStart, frameEnd, frameStep;
+    std::atomic_int resolutionX, resolutionY, resolutionScale;
     QString renderEngine;
-    int finishedFrame, totalFrame;
+    std::atomic_int finishedFrame, totalFrame;
     QString outputPath;
     BlenderRenderer *blenderRenderer;
     LoadingBar *frameLoadingBar, *resolutionLoadingBar, *renderEngineLoadingBar;

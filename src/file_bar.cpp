@@ -10,6 +10,8 @@
 
 #include "file_bar.h"
 #include "ui_file_bar.h"
+#include "frame_range_dialog.h"
+#include "rename_dialog.h"
 #include "drop_shadow_widget.h"
 #include "drop_shadow_renderer.h"
 #include "blender_file_info.h"
@@ -28,6 +30,7 @@ FileBar::FileBar(
 ):
     QWidget(parent),
     ui(new Ui::fileBar),
+    fileName(fileName),
     filePath(filePath),
     state(ProjectState::Loading),
     id(id),
@@ -53,17 +56,19 @@ FileBar::FileBar(
 {
     ui->setupUi(this);
 
-    ui->fileNameLabel->setText(fileName);
-    ui->frameLabel->setText("");
+    ui->fileNameButton->setText(fileName);
+    ui->fileNameButton->setToolTip(tr("Click to rename project"));
+    ui->frameButton->setText("");
+    ui->frameButton->setToolTip(tr("Click to edit frame range"));
     ui->resolutionLabel->setText("");
     ui->renderEngineLabel->setText("");
     ui->reloadButton->setEnabled(false);
     ui->progressBar->setProgressBar(0.0f);
     ui->progressBarLabel->setText("");
 
-    frameLoadingBar = new LoadingBar(ui->frameLabel);
-    frameLoadingBar->setGeometry(0, 0, ui->frameLabel->width(), ui->frameLabel->height());
-    ui->frameLabel->installEventFilter(this);
+    frameLoadingBar = new LoadingBar(ui->frameButton);
+    frameLoadingBar->setGeometry(0, 0, ui->frameButton->width(), ui->frameButton->height());
+    ui->frameButton->installEventFilter(this);
 
     resolutionLoadingBar = new LoadingBar(ui->resolutionLabel);
     resolutionLoadingBar->setGeometry(0, 0, ui->resolutionLabel->width(), ui->resolutionLabel->height());
@@ -89,6 +94,54 @@ FileBar::FileBar(
     QObject::connect(ui->downButton, &QPushButton::clicked, this, &FileBar::onDownButtonClicked);
     QObject::connect(ui->deleteButton, &QPushButton::clicked, this, &FileBar::onDeleteButtonClicked);
     QObject::connect(ui->reloadButton, &QPushButton::clicked, this, &FileBar::onReloadButtonClicked);
+    
+    QObject::connect(ui->frameButton, &QPushButton::clicked, this, [this]() {
+        if (state != ProjectState::Rendering && state != ProjectState::Loading)
+        {
+            FrameRangeDialog dialog(frameStart, frameEnd, frameStep, this);
+            if (dialog.exec() == QDialog::Accepted)
+            {
+                int newStart = dialog.getStart();
+                int newEnd = dialog.getEnd();
+                int newStep = dialog.getStep();
+
+                setFrame(newStart, newEnd, newStep);
+                
+                // Update Blender Renderer and Logic
+                finishedFrame = 0;
+                totalFrame = newStep == 0 ? 0 : (newEnd - newStart) / newStep + 1;
+                
+                blenderRenderer->setFrame(newStart, newEnd, newStep);
+                blenderRenderer->setCurrentFrame(newStart);
+                
+                // Refresh Progress Bar
+                float progress = totalFrame == 0 ? 0 : static_cast<float>(finishedFrame) / totalFrame * 100.0f;
+                ui->progressBar->setProgressBar(0.0f);
+                ui->progressBarLabel->setText(
+                    QString::number(finishedFrame)
+                    + "/"
+                    + QString::number(totalFrame)
+                    + " ("
+                    + QString::number(static_cast<int>(progress))
+                    + "%)"
+                );
+                
+                emit progressChanged();
+            }
+        }
+    });
+
+    QObject::connect(ui->fileNameButton, &QPushButton::clicked, this, [this]() {
+        RenameDialog dialog(getFileName(), this);
+        if (dialog.exec() == QDialog::Accepted)
+        {
+            QString newName = dialog.getName();
+            if (!newName.isEmpty())
+            {
+                setFileName(newName);
+            }
+        }
+    });
 
     dropShadowWidget = new DropShadowWidget(
         parent,
@@ -146,21 +199,28 @@ int FileBar::getID() const
 
 void FileBar::setFileName(QString fileName)
 {
-    ui->fileNameLabel->setText(fileName);
+    {
+        QWriteLocker locker(&dataLock);
+        this->fileName = fileName;
+    }
+    ui->fileNameButton->setText(fileName);
 }
 
 void FileBar::setFilePath(QString filePath)
 {
+    QWriteLocker locker(&dataLock);
     this->filePath = filePath;
 }
 
 QString FileBar::getFileName() const
 {
-    return ui->fileNameLabel->text();
+    QReadLocker locker(&dataLock);
+    return fileName;
 }
 
 QString FileBar::getFilePath() const
 {
+    QReadLocker locker(&dataLock);
     return filePath;
 }
 
@@ -204,8 +264,8 @@ void FileBar::stopRender()
 
 bool FileBar::eventFilter(QObject *object, QEvent *event)
 {
-    if (object == ui->frameLabel && event->type() == QEvent::Resize) {
-        frameLoadingBar->setGeometry(0, 0, ui->frameLabel->width(), ui->frameLabel->height());
+    if (object == ui->frameButton && event->type() == QEvent::Resize) {
+        frameLoadingBar->setGeometry(0, 0, ui->frameButton->width(), ui->frameButton->height());
     }
     else if (object == ui->resolutionLabel && event->type() == QEvent::Resize) {
         resolutionLoadingBar->setGeometry(0, 0, ui->resolutionLabel->width(), ui->resolutionLabel->height());
@@ -219,7 +279,7 @@ bool FileBar::eventFilter(QObject *object, QEvent *event)
 
 void FileBar::setFrame(int frameStart, int frameEnd, int frameStep)
 {
-    ui->frameLabel->setText(
+    ui->frameButton->setText(
         QString::number(frameStart)
         + "-"
         + QString::number(frameEnd)
@@ -252,6 +312,7 @@ void FileBar::setResolution(int resolutionX, int resolutionY, int resolutionScal
 void FileBar::setRenderEngine(const QString &renderEngine)
 {
     ui->renderEngineLabel->setText(renderEngine);
+    QWriteLocker locker(&dataLock);
     this->renderEngine = renderEngine;
 }
 
@@ -272,6 +333,8 @@ void FileBar::hideLoadingBar()
 void FileBar::setState(ProjectState state)
 {
     this->state = state;
+
+    ui->frameButton->setEnabled(state != ProjectState::Loading && state != ProjectState::Rendering);
 
     switch (state)
     {
@@ -343,16 +406,19 @@ int FileBar::getResolutionScale() const
 
 QString FileBar::getRenderEngine() const
 {
+    QReadLocker locker(&dataLock);
     return renderEngine;
 }
 
 void FileBar::setOutputPath(const QString &outputPath)
 {
+    QWriteLocker locker(&dataLock);
     this->outputPath = outputPath;
 }
 
 QString FileBar::getOutputPath() const
 {
+    QReadLocker locker(&dataLock);
     return outputPath;
 }
 
@@ -377,12 +443,20 @@ static QString frameString(int frame, int minWidth) {
 
 QString FileBar::getImagePathFromFrame(int frame)
 {
+    QString currentOutputPath;
+    QString currentFilePath;
+    {
+        QReadLocker locker(&dataLock);
+        currentOutputPath = outputPath;
+        currentFilePath = filePath;
+    }
+
     // Convert to native seperators
-    const QString originalPath = QDir::fromNativeSeparators(outputPath);
+    const QString originalPath = QDir::fromNativeSeparators(currentOutputPath);
     QString path = originalPath;
 
     // Get the blend file directory
-    QFileInfo blendInfo(filePath);
+    QFileInfo blendInfo(currentFilePath);
     const QString blendDir = blendInfo.absolutePath();
 
     // Resolve Blender-style relative path "//"
@@ -479,12 +553,13 @@ void FileBar::onReloadButtonClicked()
     }
 
     setState(ProjectState::Loading);
+
     finishedFrame = 0;
     totalFrame = 0;
 
     blenderFileReader->start(QThread::LowestPriority);
 
-    ui->frameLabel->setText("");
+    ui->frameButton->setText("");
     ui->resolutionLabel->setText("");
     ui->renderEngineLabel->setText("");
     ui->progressBar->setProgressBar(0.0f);
@@ -504,15 +579,16 @@ void FileBar::onFinishedReading(int status, BlenderFileInfo info)
         setRenderEngine(info.renderEngine);
 
         setState(ProjectState::Queued);
-        frameStart = info.frameBegin;
-        frameEnd = info.frameEnd;
-        frameStep = info.frameStep;
+
         finishedFrame = 0;
         totalFrame = info.frameStep == 0 ? 0 : (info.frameEnd - info.frameBegin) / info.frameStep + 1;
-        outputPath = info.outputPath;
+        {
+            QWriteLocker locker(&dataLock);
+            outputPath = info.outputPath;
+        }
 
-        blenderRenderer->setFrame(frameStart, frameEnd, frameStep);
-        blenderRenderer->setCurrentFrame(frameStart);
+        blenderRenderer->setFrame(info.frameBegin, info.frameEnd, info.frameStep);
+        blenderRenderer->setCurrentFrame(info.frameBegin);
 
         float progress = static_cast<float>(finishedFrame) / totalFrame * 100.0f;
         ui->progressBar->setProgressBar(0.0f);
@@ -587,6 +663,7 @@ void FileBar::updateStyle()
     lastElapsed = elapsed;
 
     int iteration = std::max(1, (int)(dt / 0.01f));
+    iteration = std::min(iteration, 10);
     dt /= iteration;
 
     for (int i = 0; i < iteration; i++)

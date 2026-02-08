@@ -36,7 +36,8 @@ public:
         float offsetX,
         float offsetY,
         float alphaMax,
-        float blurRadius
+        float blurRadius,
+        float devicePixelRatio
     );
     void setWidgetBufferUpdateEnabled(int handle, bool enabled);
     QPixmap getPixmap(int handle);
@@ -54,6 +55,7 @@ private:
         std::atomic<float> offsetY;
         std::atomic<float> alphaMax;
         std::atomic<float> blurRadius;
+        std::atomic<float> devicePixelRatio;
 
         inline WidgetInfo():
             widgetWidth(0),
@@ -62,7 +64,8 @@ private:
             offsetX(0),
             offsetY(0),
             alphaMax(0),
-            blurRadius(0) {}
+            blurRadius(0),
+            devicePixelRatio(1.0f) {}
 
         inline WidgetInfo(
             float widgetWidth,
@@ -71,7 +74,8 @@ private:
             float offsetX,
             float offsetY,
             float alphaMax,
-            float blurRadius
+            float blurRadius,
+            float devicePixelRatio
         ):
             widgetWidth(widgetWidth),
             widgetHeight(widgetHeight),
@@ -79,7 +83,8 @@ private:
             offsetX(offsetX),
             offsetY(offsetY),
             alphaMax(alphaMax),
-            blurRadius(blurRadius) {}
+            blurRadius(blurRadius),
+            devicePixelRatio(devicePixelRatio) {}
 
         inline WidgetInfo(const WidgetInfo &info):
             widgetWidth(info.widgetWidth.load()),
@@ -88,7 +93,8 @@ private:
             offsetX(info.offsetX.load()),
             offsetY(info.offsetY.load()),
             alphaMax(info.alphaMax.load()),
-            blurRadius(info.blurRadius.load()) {}
+            blurRadius(info.blurRadius.load()),
+            devicePixelRatio(info.devicePixelRatio.load()) {}
 
         inline WidgetInfo(WidgetInfo &&info):
             widgetWidth(info.widgetWidth.load()),
@@ -97,7 +103,8 @@ private:
             offsetX(info.offsetX.load()),
             offsetY(info.offsetY.load()),
             alphaMax(info.alphaMax.load()),
-            blurRadius(info.blurRadius.load()) {}
+            blurRadius(info.blurRadius.load()),
+            devicePixelRatio(info.devicePixelRatio.load()) {}
 
         inline WidgetInfo &operator=(const WidgetInfo &info)
         {
@@ -108,6 +115,7 @@ private:
             offsetY = info.offsetY.load();
             alphaMax = info.alphaMax.load();
             blurRadius = info.blurRadius.load();
+            devicePixelRatio = info.devicePixelRatio.load();
 
             return *this;
         }
@@ -121,6 +129,7 @@ private:
             offsetY = info.offsetY.load();
             alphaMax = info.alphaMax.load();
             blurRadius = info.blurRadius.load();
+            devicePixelRatio = info.devicePixelRatio.load();
 
             return *this;
         }
@@ -134,7 +143,8 @@ private:
                 std::abs(offsetX - info.offsetX) < epsilon &&
                 std::abs(offsetY - info.offsetY) < epsilon &&
                 std::abs(alphaMax - info.alphaMax) < epsilon &&
-                std::abs(blurRadius - info.blurRadius) < epsilon
+                std::abs(blurRadius - info.blurRadius) < epsilon &&
+                std::abs(devicePixelRatio - info.devicePixelRatio) < epsilon
             );
         }
 

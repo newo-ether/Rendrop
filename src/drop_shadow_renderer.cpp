@@ -30,6 +30,7 @@ DropShadowRenderer::DropShadowRenderer(QObject *parent):
     glSurface->create();
 
     glContext->moveToThread(this);
+    glSurface->moveToThread(this);
     start();
 }
 
@@ -45,7 +46,10 @@ DropShadowRenderer::~DropShadowRenderer()
 
 void DropShadowRenderer::run()
 {
-    glContext->makeCurrent(glSurface);
+    if (!glContext->makeCurrent(glSurface))
+    {
+        return;
+    }
     initializeOpenGL();
 
     QEventLoop loop;
@@ -176,9 +180,10 @@ void DropShadowRenderer::setWidgetBuffer(
     float offsetX,
     float offsetY,
     float alphaMax,
-    float blurRadius
+    float blurRadius,
+    float devicePixelRatio
 ) {
-    lock.lockForRead();
+    lock.lockForWrite();
 
     auto iter = std::find_if(widgetBuffers.begin(), widgetBuffers.end(), [handle](const auto &widgetBuffer) {
         return widgetBuffer.handle == handle;
@@ -194,7 +199,8 @@ void DropShadowRenderer::setWidgetBuffer(
             offsetX,
             offsetY,
             alphaMax,
-            blurRadius
+            blurRadius,
+            devicePixelRatio
         );
     }
 
@@ -296,31 +302,43 @@ void DropShadowRenderer::initializeOpenGL()
 
 QImage DropShadowRenderer::render(WidgetInfo info)
 {
+    float dpr = info.devicePixelRatio;
+    int width = std::ceil(info.widgetWidth * dpr);
+    int height = std::ceil(info.widgetHeight * dpr);
+
     QOpenGLFramebufferObjectFormat fboFormat;
     fboFormat.setAttachment(QOpenGLFramebufferObject::NoAttachment);
     fboFormat.setInternalTextureFormat(GL_RGBA8);
 
-    QOpenGLFramebufferObject fbo(info.widgetWidth, info.widgetHeight, fboFormat);
+    QOpenGLFramebufferObject fbo(width, height, fboFormat);
+
+    if (!fbo.isValid())
+    {
+        QImage emptyImage(width, height, QImage::Format_ARGB32);
+        emptyImage.fill(Qt::transparent);
+        return emptyImage;
+    }
+
     fbo.bind();
 
-    glFunctions->glViewport(0, 0, info.widgetWidth, info.widgetHeight);
+    glFunctions->glViewport(0, 0, width, height);
     glFunctions->glClearColor(0, 0, 0, 0);
     glFunctions->glClear(GL_COLOR_BUFFER_BIT);
 
     program->bind();
 
-    float marginX = std::abs(info.offsetX) + info.blurRadius * 0.5f;
-    float marginY = std::abs(info.offsetY) + info.blurRadius * 0.5f;
+    float marginX = (std::abs(info.offsetX) + info.blurRadius * 0.5f) * dpr;
+    float marginY = (std::abs(info.offsetY) + info.blurRadius * 0.5f) * dpr;
 
-    program->setUniformValue("borderRadius", info.borderRadius);
-    program->setUniformValue("widgetWidth", static_cast<float>(info.widgetWidth));
-    program->setUniformValue("widgetHeight", static_cast<float>(info.widgetHeight));
-    program->setUniformValue("rectWidth", static_cast<float>(info.widgetWidth - marginX * 2));
-    program->setUniformValue("rectHeight", static_cast<float>(info.widgetHeight - marginY * 2));
-    program->setUniformValue("offsetX", info.offsetX);
-    program->setUniformValue("offsetY", info.offsetY);
+    program->setUniformValue("borderRadius", info.borderRadius * dpr);
+    program->setUniformValue("widgetWidth", static_cast<float>(width));
+    program->setUniformValue("widgetHeight", static_cast<float>(height));
+    program->setUniformValue("rectWidth", static_cast<float>(width) - marginX * 2);
+    program->setUniformValue("rectHeight", static_cast<float>(height) - marginY * 2);
+    program->setUniformValue("offsetX", info.offsetX * dpr);
+    program->setUniformValue("offsetY", info.offsetY * dpr);
     program->setUniformValue("alphaMax", info.alphaMax);
-    program->setUniformValue("blurRadius", info.blurRadius);
+    program->setUniformValue("blurRadius", info.blurRadius * dpr);
 
     glFunctions->glBindBuffer(GL_ARRAY_BUFFER, vbo);
     glFunctions->glEnableVertexAttribArray(0);
@@ -347,6 +365,7 @@ void DropShadowRenderer::onSaveImage(int handle, QImage image, std::function<voi
     if (iter != widgetBuffers.end())
     {
         QPixmap pixmap = QPixmap::fromImage(image);
+        pixmap.setDevicePixelRatio((*iter).info.devicePixelRatio);
         (*iter).pixmap = pixmap;
         updateFunc();
     }

@@ -95,9 +95,26 @@ void HttpServer::run()
     });
 
     server.Get("/frame", [this](const httplib::Request& req, httplib::Response& res) {
-        int id = std::stoi(req.get_param_value("id"));
-        int frame = std::stoi(req.get_param_value("frame"));
-        int thumb = std::stoi(req.get_param_value("thumb"));
+        int id = 0;
+        int frame = 0;
+        int thumb = 0;
+
+        try {
+            if (!req.has_param("id") || !req.has_param("frame")) {
+                throw std::invalid_argument("Missing parameters");
+            }
+            id = std::stoi(req.get_param_value("id"));
+            frame = std::stoi(req.get_param_value("frame"));
+            if (req.has_param("thumb")) {
+                thumb = std::stoi(req.get_param_value("thumb"));
+            }
+        } catch (...) {
+            json js = {{"error", "invalid parameters"}};
+            res.status = 400;
+            res.set_content(js.dump(4), "application/json");
+            return;
+        }
+
         QString framePath = this->getFramePath(id, frame);
         if (framePath.isEmpty())
         {

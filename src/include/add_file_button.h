@@ -4,6 +4,7 @@
 #define ADD_FILE_BUTTON_H
 
 #include <QPushButton>
+#include <QPointer>
 
 #include "drop_shadow_widget.h"
 #include "drop_shadow_renderer.h"
@@ -17,7 +18,7 @@ public:
     ~AddFileButton();
 
 private:
-    DropShadowWidget *dropShadowWidget;
+    QPointer<DropShadowWidget> dropShadowWidget;
     DropShadowRenderer *dropShadowRenderer;
 
 };

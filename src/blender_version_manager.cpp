@@ -66,8 +66,18 @@ int BlenderVersionManager::addBlenderVersion(QString path)
     }
 
     QString output = process.readStandardOutput();
+    if (output.isEmpty())
+    {
+        return -2;
+    }
+
     QString versionString = output.split("\n").first().trimmed();
     QString version = versionString;
+
+    if (version.isEmpty())
+    {
+        return -2;
+    }
 
     bool duplicated = std::any_of(
         blenderVersions.begin(),

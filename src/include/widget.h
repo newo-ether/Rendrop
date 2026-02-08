@@ -10,6 +10,7 @@
 #include <QCloseEvent>
 #include <QDragEnterEvent>
 #include <QDropEvent>
+#include <QReadWriteLock>
 
 #include <vector>
 
@@ -53,6 +54,7 @@ private:
     bool isRendering;
     int handle;
     HttpServer *httpServer;
+    QReadWriteLock fileBarsLock;
 
 private:
     QMessageBox::StandardButton errorMessageBox(QString title, QString text, QMessageBox::StandardButtons buttons = QMessageBox::Ok);

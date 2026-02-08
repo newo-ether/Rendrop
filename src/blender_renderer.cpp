@@ -125,8 +125,10 @@ int BlenderRenderer::getTotalFrame() const
 
 void BlenderRenderer::parseOutput(QString output)
 {
-    static QRegularExpression reFrame("^Fra:\\s*(\\d+).+$");
-    static QRegularExpression reSave("^Saved:.+$");
+    static QRegularExpression reFrameOld("^Fra:\\s*(\\d+).+$");
+    static QRegularExpression reFrameNew("^\\d+:\\d+\\.\\d+\\s+render\\s+\\|\\s+(Fra:\\s*(\\d+).+)$");
+    static QRegularExpression reSaveOld("^Saved:.+$");
+    static QRegularExpression reSaveNew("^\\d+:\\d+\\.\\d+\\s+render\\s+\\|\\s+(Saved:.+)$");
 
     QStringList lines = output.split('\n');
     QString outputText;
@@ -134,19 +136,43 @@ void BlenderRenderer::parseOutput(QString output)
 
     for (QString &line: lines)
     {
-        auto frameMatch = reFrame.match(line);
-        if (frameMatch.hasMatch()) {
-            hasMatch = true;
-            currentFrame = frameMatch.captured(1).toInt();
-            currentFrameFinished = false;
-            outputText = frameMatch.captured().trimmed();
+        auto frameMatch = reFrameOld.match(line);
+        if (!frameMatch.hasMatch()) {
+            frameMatch = reFrameNew.match(line);
         }
 
-        auto saveMatch = reSave.match(line);
+        if (frameMatch.hasMatch()) {
+            hasMatch = true;
+            if (frameMatch.lastCapturedIndex() == 2)
+            {
+                currentFrame = frameMatch.captured(2).toInt();
+                outputText = frameMatch.captured(1).trimmed();
+            }
+            else
+            {
+                currentFrame = frameMatch.captured(1).toInt();
+                outputText = frameMatch.captured(0).trimmed();
+            }
+            currentFrameFinished = false;
+        }
+
+        auto saveMatch = reSaveOld.match(line);
+        if (!saveMatch.hasMatch()) {
+            saveMatch = reSaveNew.match(line);
+        }
+
         if (saveMatch.hasMatch()) {
             hasMatch = true;
+            if (saveMatch.lastCapturedIndex() == 1)
+            {
+                outputText = saveMatch.captured(1).trimmed();
+            }
+            else
+            {
+                outputText = saveMatch.captured(0).trimmed();
+            }
             currentFrameFinished = true;
-            outputText = saveMatch.captured().trimmed();
+
         }
     }
 

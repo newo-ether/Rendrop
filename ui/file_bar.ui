@@ -193,7 +193,7 @@ QPushButton:pressed {
        </widget>
       </item>
       <item>
-       <widget class="QLabel" name="fileNameLabel">
+       <widget class="QPushButton" name="fileNameButton">
         <property name="minimumSize">
          <size>
           <width>200</width>
@@ -214,26 +214,34 @@ QPushButton:pressed {
          </font>
         </property>
         <property name="styleSheet">
-         <string notr="true">background-color: #333842;
-border: 1px solid #555A66;
-padding-left: 12px;
-padding-right: 12px;
-border-radius: 8px;
+         <string notr="true">QPushButton {
+	background-color: #333842;
+	border: 1px solid #555A66;
+	padding-left: 12px;
+	padding-right: 12px;
+	border-radius: 8px;
+    color: white;
+    text-align: left;
+}
+
+QPushButton:hover {
+    background-color: #4B5362;
+    color: white;
+}
+
+QPushButton:pressed {
+    background-color: #2B2F38;
+    color: white;
+}
 </string>
         </property>
         <property name="text">
          <string>File</string>
         </property>
-        <property name="margin">
-         <number>0</number>
-        </property>
-        <property name="indent">
-         <number>-1</number>
-        </property>
        </widget>
       </item>
       <item>
-       <widget class="QLabel" name="frameLabel">
+       <widget class="QPushButton" name="frameButton">
         <property name="minimumSize">
          <size>
           <width>150</width>
@@ -254,24 +262,28 @@ border-radius: 8px;
          </font>
         </property>
         <property name="styleSheet">
-         <string notr="true">background-color: rgb(40, 42, 42);
-border: 1px solid #555A66;
-padding-left: 0px;
-padding-right: 0px;
-border-radius: 8px;
+         <string notr="true">QPushButton {
+	background-color: rgb(40, 42, 42);
+	border: 1px solid #555A66;
+	padding-left: 0px;
+	padding-right: 0px;
+	border-radius: 8px;
+    color: white;
+}
+
+QPushButton:hover {
+    background-color: rgb(50, 52, 52);
+    color: white;
+}
+
+QPushButton:pressed {
+    background-color: rgb(30, 32, 32);
+    color: white;
+}
 </string>
         </property>
         <property name="text">
          <string>...</string>
-        </property>
-        <property name="alignment">
-         <set>Qt::AlignmentFlag::AlignCenter</set>
-        </property>
-        <property name="margin">
-         <number>0</number>
-        </property>
-        <property name="indent">
-         <number>-1</number>
         </property>
        </widget>
       </item>
