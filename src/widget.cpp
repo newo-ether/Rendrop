@@ -162,7 +162,10 @@ Widget::Widget(int languageIndex, QWidget *parent):
     dropShadowRenderer = new DropShadowRenderer();
     ui->scrollAreaContent->installEventFilter(this);
 
-    handle = dropShadowRenderer->createWidgetBuffer([this]() { this->updateAllFileBarShadow(); });
+    QPointer<Widget> weakThis(this);
+    handle = dropShadowRenderer->createWidgetBuffer([weakThis]() { 
+        if (weakThis) weakThis->updateAllFileBarShadow(); 
+    });
 
     addFileButton = new AddFileButton(ui->ContentWidget, dropShadowRenderer);
     QObject::connect(addFileButton, &AddFileButton::clicked, this, &Widget::onAddFileButtonClicked);

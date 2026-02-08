@@ -18,7 +18,12 @@ DropShadowWidget::DropShadowWidget(
 {
     setAttribute(Qt::WA_TransparentForMouseEvents);
     updateEnabled = true;
-    handle = dropShadowRenderer->createWidgetBuffer([this]() { this->update(); });
+    
+    QPointer<DropShadowWidget> weakThis(this);
+    handle = dropShadowRenderer->createWidgetBuffer([weakThis]() { 
+        if (weakThis) weakThis->update(); 
+    });
+    
     stackUnder(targetWidget);
     targetWidget->installEventFilter(this);
 }

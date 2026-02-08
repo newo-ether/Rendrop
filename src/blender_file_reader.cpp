@@ -44,6 +44,7 @@ void BlenderFileReader::run()
     }
 
     QTemporaryFile readerFile(QDir::temp().filePath("blender_reader_XXXXXX.py"));
+    readerFile.setAutoRemove(true);
     if (!readerFile.open())
     {
         emit finishedReading(-1, BlenderFileInfo());
@@ -51,6 +52,7 @@ void BlenderFileReader::run()
     }
 
     QTemporaryFile outputFile(QDir::temp().filePath("blender_output_XXXXXX.txt"));
+    outputFile.setAutoRemove(true);
     if (!outputFile.open())
     {
         emit finishedReading(-1, BlenderFileInfo());

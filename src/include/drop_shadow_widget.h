@@ -6,6 +6,7 @@
 #include <QWidget>
 #include <QPaintEvent>
 #include <QPixmap>
+#include <QPointer>
 
 #include "drop_shadow_renderer.h"
 

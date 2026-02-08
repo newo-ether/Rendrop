@@ -506,7 +506,7 @@ QString FileBar::getImagePathFromFrame(int frame)
     }
 
     // Replace all '#' groups with frame numbers, zero-padded to match the group length
-    static QRegularExpression re(R"(#+)");
+    static const QRegularExpression re(R"(#+)");
     QRegularExpressionMatchIterator it = re.globalMatch(path);
     QList<QPair<int,int>> spans;
     while (it.hasNext())

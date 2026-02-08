@@ -129,7 +129,10 @@ void SimpleProcess::updateState()
     DWORD code = 0;
     if (GetExitCodeProcess(pi.hProcess, &code))
     {
-        running = (code == STILL_ACTIVE);
+        if (code != STILL_ACTIVE) {
+            running = false;
+            cleanUp();
+        }
         return;
     }
     running = false;

@@ -12,7 +12,15 @@ FrameRangeDialog::FrameRangeDialog(int start, int end, int step, QWidget *parent
     ui->endSpin->setValue(end);
     ui->stepSpin->setValue(step);
 
-    connect(ui->okButton, &QPushButton::clicked, this, &QDialog::accept);
+    connect(ui->okButton, &QPushButton::clicked, this, [this]() {
+        if (ui->startSpin->value() > ui->endSpin->value()) {
+            ui->endSpin->setValue(ui->startSpin->value());
+        }
+        if (ui->stepSpin->value() < 1) {
+            ui->stepSpin->setValue(1);
+        }
+        accept();
+    });
     connect(ui->cancelButton, &QPushButton::clicked, this, &QDialog::reject);
 }
 
