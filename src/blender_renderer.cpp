@@ -54,7 +54,7 @@ void BlenderRenderer::run()
     stopped = false;
     currentFrameFinished = false;
 
-    if (!isParameterSet || blenderPath.isEmpty())
+    if (!isParameterSet)
     {
         emit finishedRendering(-1);
         return;
@@ -86,7 +86,6 @@ void BlenderRenderer::run()
         if (stopped)
         {
             process.kill();
-            emit finishedRendering(-1);
             return;
         }
 
@@ -105,6 +104,12 @@ void BlenderRenderer::run()
         process.waitForFinished(50);
     }
 
+    if (getFinishedFrame() < getTotalFrame())
+    {
+        emit finishedRendering(-1);
+        return;
+    }
+
     emit finishedRendering(0);
 }
 
@@ -116,7 +121,8 @@ int BlenderRenderer::getFinishedFrame() const
 
 int BlenderRenderer::getTotalFrame() const
 {
-    return frameStep == 0 ? 0 : (frameEnd - frameStart) / frameStep + 1;
+    if (frameStep <= 0) return 0;
+    return (frameEnd - frameStart) / frameStep + 1;
 }
 
 void BlenderRenderer::parseOutput(QString output)
