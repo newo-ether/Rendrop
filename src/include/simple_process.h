@@ -20,7 +20,6 @@ public:
     bool waitForFinished(int msec);
     bool isRunning() const;
     QString readStandardOutput();
-    QString readRemaining();
 
 private:
     void updateState();
@@ -31,7 +30,6 @@ private:
     HANDLE hRead = nullptr;
     HANDLE hWrite = nullptr;
     bool running = false;
-    QByteArray buffer;
 };
 
 #endif // SIMPLE_PROCESS_H

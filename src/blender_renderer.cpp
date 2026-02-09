@@ -105,18 +105,6 @@ void BlenderRenderer::run()
         process.waitForFinished(50);
     }
 
-    QString remaining = process.readRemaining();
-    if (!remaining.isEmpty())
-    {
-        parseOutput(remaining);
-    }
-
-    if (getFinishedFrame() < getTotalFrame())
-    {
-        emit finishedRendering(-1);
-        return;
-    }
-
     emit finishedRendering(0);
 }
 
@@ -180,7 +168,6 @@ void BlenderRenderer::parseOutput(QString output)
                 outputText = saveMatch.captured(0).trimmed();
             }
             currentFrameFinished = true;
-
         }
     }
 

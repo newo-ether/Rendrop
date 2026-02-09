@@ -2,7 +2,6 @@
 
 #include <QString>
 #include <QStringList>
-#include <QByteArray>
 
 #include "simple_process.h"
 
@@ -75,7 +74,7 @@ int SimpleProcess::start(const QString& program, const QStringList& args)
             nullptr,               // Current directory
             &si,                   // Startup info
             &pi                    // Process information
-    )) {
+            )) {
         if (hRead) {
             CloseHandle(hRead);
             hRead = nullptr;
@@ -87,11 +86,6 @@ int SimpleProcess::start(const QString& program, const QStringList& args)
         }
 
         return -2;
-    }
-
-    if (hWrite) {
-        CloseHandle(hWrite);
-        hWrite = nullptr;
     }
 
     running = true;
@@ -129,10 +123,7 @@ void SimpleProcess::updateState()
     DWORD code = 0;
     if (GetExitCodeProcess(pi.hProcess, &code))
     {
-        if (code != STILL_ACTIVE) {
-            running = false;
-            cleanUp();
-        }
+        running = (code == STILL_ACTIVE);
         return;
     }
     running = false;
@@ -209,37 +200,21 @@ QString SimpleProcess::readStandardOutput()
     }
 
     DWORD bytesRead = 0;
-    char readBuffer[4096];
+    char buffer[4096] = {0};
+    QString output;
 
-    BOOL result = ReadFile(hRead, readBuffer, sizeof(readBuffer), &bytesRead, nullptr);
+    BOOL result = ReadFile(hRead, buffer, sizeof(buffer) - 1, &bytesRead, nullptr);
 
     if (!result || bytesRead == 0)
     {
         return QString();
     }
 
-    buffer.append(readBuffer, bytesRead);
+    int i = bytesRead - 1;
+    for (; i > 0 && buffer[i] != '\n'; i--) {}
 
-    int lastNewLine = buffer.lastIndexOf('\n');
-    if (lastNewLine == -1)
-    {
-        return QString();
-    }
+    buffer[i] = '\0';
+    output += QString::fromUtf8(buffer);
 
-    QByteArray completeLines = buffer.left(lastNewLine + 1);
-    buffer = buffer.mid(lastNewLine + 1);
-
-    return QString::fromUtf8(completeLines);
-}
-
-QString SimpleProcess::readRemaining()
-{
-    if (buffer.isEmpty())
-    {
-        return QString();
-    }
-
-    QString remaining = QString::fromUtf8(buffer);
-    buffer.clear();
-    return remaining;
+    return output;
 }
