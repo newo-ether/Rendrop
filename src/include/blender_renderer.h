@@ -21,7 +21,8 @@ public:
         QString filePath,
         int frameStart,
         int frameEnd,
-        int frameStep
+        int frameStep,
+        bool resetCurrentFrame
     );
     void setFrame(int frameStart, int frameEnd, int frameStep);
     void setCurrentFrame(int currentFrame);

@@ -20,14 +20,15 @@ void BlenderRenderer::setParameter(
     QString filePath,
     int frameStart,
     int frameEnd,
-    int frameStep
+    int frameStep,
+    bool resetCurrentFrame
 ) {
     this->blenderPath = blenderPath;
     this->filePath = filePath;
     this->frameStart = frameStart;
     this->frameEnd = frameEnd;
     this->frameStep = frameStep;
-    this->currentFrame = frameStart;
+    if (resetCurrentFrame) this->currentFrame = frameStart;
     this->currentFrameFinished = false;
     isParameterSet = true;
 }
@@ -104,6 +105,12 @@ void BlenderRenderer::run()
         process.waitForFinished(50);
     }
 
+    QString output = process.readStandardOutput();
+    if (!output.isEmpty())
+    {
+        parseOutput(output);
+    }
+
     if (getFinishedFrame() < getTotalFrame())
     {
         emit finishedRendering(-1);
@@ -127,10 +134,8 @@ int BlenderRenderer::getTotalFrame() const
 
 void BlenderRenderer::parseOutput(QString output)
 {
-    static QRegularExpression reFrameOld("^Fra:\\s*(\\d+).+$");
-    static QRegularExpression reFrameNew("^\\d+:\\d+\\.\\d+\\s+render\\s+\\|\\s+(Fra:\\s*(\\d+).+)$");
-    static QRegularExpression reSaveOld("^Saved:.+$");
-    static QRegularExpression reSaveNew("^\\d+:\\d+\\.\\d+\\s+render\\s+\\|\\s+(Saved:.+)$");
+    static QRegularExpression reFrame("^.*(Fra:\\s*(\\d+).+)$");
+    static QRegularExpression reSave("^.*(Saved:.+)$");
 
     QStringList lines = output.split('\n');
     QString outputText;
@@ -138,41 +143,18 @@ void BlenderRenderer::parseOutput(QString output)
 
     for (QString &line: lines)
     {
-        auto frameMatch = reFrameOld.match(line);
-        if (!frameMatch.hasMatch()) {
-            frameMatch = reFrameNew.match(line);
-        }
-
+        auto frameMatch = reFrame.match(line);
         if (frameMatch.hasMatch()) {
             hasMatch = true;
-            if (frameMatch.lastCapturedIndex() == 2)
-            {
-                currentFrame = frameMatch.captured(2).toInt();
-                outputText = frameMatch.captured(1).trimmed();
-            }
-            else
-            {
-                currentFrame = frameMatch.captured(1).toInt();
-                outputText = frameMatch.captured(0).trimmed();
-            }
+            currentFrame = frameMatch.captured(2).toInt();
+            outputText = frameMatch.captured(1).trimmed();
             currentFrameFinished = false;
         }
 
-        auto saveMatch = reSaveOld.match(line);
-        if (!saveMatch.hasMatch()) {
-            saveMatch = reSaveNew.match(line);
-        }
-
+        auto saveMatch = reSave.match(line);
         if (saveMatch.hasMatch()) {
             hasMatch = true;
-            if (saveMatch.lastCapturedIndex() == 1)
-            {
-                outputText = saveMatch.captured(1).trimmed();
-            }
-            else
-            {
-                outputText = saveMatch.captured(0).trimmed();
-            }
+            outputText = saveMatch.captured(1).trimmed();
             currentFrameFinished = true;
         }
     }

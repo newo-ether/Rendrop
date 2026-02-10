@@ -74,7 +74,7 @@ int SimpleProcess::start(const QString& program, const QStringList& args)
             nullptr,               // Current directory
             &si,                   // Startup info
             &pi                    // Process information
-            )) {
+    )) {
         if (hRead) {
             CloseHandle(hRead);
             hRead = nullptr;
@@ -127,7 +127,6 @@ void SimpleProcess::updateState()
         return;
     }
     running = false;
-    cleanUp();
 }
 
 void SimpleProcess::cleanUp()

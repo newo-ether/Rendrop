@@ -87,7 +87,7 @@ FileBar::FileBar(
     blenderFileReader->start(QThread::LowestPriority);
 
     blenderRenderer = new BlenderRenderer();
-    blenderRenderer->setParameter(blenderPath, filePath, frameStart, frameEnd, frameStep);
+    blenderRenderer->setParameter(blenderPath, filePath, frameStart, frameEnd, frameStep, true);
     QObject::connect(blenderRenderer, &BlenderRenderer::progressChanged, this, &FileBar::onProgressChanged);
     QObject::connect(blenderRenderer, &BlenderRenderer::outputTextUpdate, this, &FileBar::onOutputTextUpdate);
     QObject::connect(blenderRenderer, &BlenderRenderer::finishedRendering, this, &FileBar::onFinishedRendering);
@@ -448,7 +448,7 @@ QString FileBar::getOutputPath() const
 void FileBar::setBlenderPath(const QString &blenderPath)
 {
     blenderFileReader->setParameter(filePath, blenderPath);
-    blenderRenderer->setParameter(blenderPath, filePath, frameStart, frameEnd, frameStep);
+    blenderRenderer->setParameter(blenderPath, filePath, frameStart, frameEnd, frameStep, false);
 }
 
 // Format frame number with zero padding like Blender.
