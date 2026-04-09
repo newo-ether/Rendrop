@@ -60,16 +60,18 @@ int BlenderVersionManager::addBlenderVersion(QString path)
         return -2;
     }
 
-    if (!process.waitForFinished(3000))
-    {
-        return -2;
-    }
+    int result = process.waitForFinished(3000);
 
     QString output = process.readStandardOutput();
 
     if (output.isEmpty())
     {
         return -2;
+    }
+
+    if (!result)
+    {
+        process.kill();
     }
 
     QString versionString = output.split("\n").first().trimmed();

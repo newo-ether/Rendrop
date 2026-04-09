@@ -89,6 +89,10 @@ int SimpleProcess::start(const QString& program, const QStringList& args)
     }
 
     running = true;
+
+    CloseHandle(hWrite);
+    hWrite = nullptr;
+
     return 0;
 }
 
