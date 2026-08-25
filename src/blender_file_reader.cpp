@@ -12,13 +12,22 @@
 #include "simple_process.h"
 
 BlenderFileReader::BlenderFileReader(QObject *parent):
-    QThread(parent), stopped(false) {}
+    QThread(parent),
+    isParameterSet(false),
+    stopped(false)
+{
+}
 
 void BlenderFileReader::setParameter(QString filePath, QString blenderPath)
 {
     this->filePath = filePath;
     this->blenderPath = blenderPath;
     isParameterSet = true;
+}
+
+void BlenderFileReader::prepareStart()
+{
+    stopped = false;
 }
 
 void BlenderFileReader::stop()
@@ -28,8 +37,6 @@ void BlenderFileReader::stop()
 
 void BlenderFileReader::run()
 {
-    stopped = false;
-
     if (!isParameterSet)
     {
         emit finishedReading(-1, BlenderFileInfo());

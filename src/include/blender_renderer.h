@@ -3,19 +3,18 @@
 #ifndef BLENDER_RENDERER_H
 #define BLENDER_RENDERER_H
 
-#include <QString>
-#include <QProcess>
-#include <QThread>
 #include <atomic>
+
+#include <QString>
+#include <QThread>
 
 class BlenderRenderer : public QThread
 {
     Q_OBJECT
 
 public:
-    BlenderRenderer(QObject *parent = nullptr);
-    ~BlenderRenderer();
-
+    explicit BlenderRenderer(QObject *parent = nullptr);
+    ~BlenderRenderer() override;
     void setParameter(
         QString blenderPath,
         QString filePath,
@@ -28,6 +27,7 @@ public:
     void setCurrentFrame(int currentFrame);
     int getFinishedFrame() const;
     int getTotalFrame() const;
+    void prepareStart();
     void stop();
 
 protected:
@@ -41,9 +41,11 @@ signals:
 private:
     void parseOutput(QString output);
 
-private:
-    QString blenderPath, filePath;
-    std::atomic_int frameStart, frameEnd, frameStep;
+    QString blenderPath;
+    QString filePath;
+    std::atomic_int frameStart;
+    std::atomic_int frameEnd;
+    std::atomic_int frameStep;
     std::atomic_int currentFrame;
     std::atomic_bool currentFrameFinished;
     std::atomic_bool isParameterSet;

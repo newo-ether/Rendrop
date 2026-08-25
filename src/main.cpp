@@ -4,16 +4,17 @@
 #include <QFontDatabase>
 #include <QTranslator>
 #include <QFile>
-#include <QFileInfo>
 #include <QString>
-#include <QDir>
 #include <QSharedMemory>
 
+#include "app_paths.h"
 #include "widget.h"
 
 int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
+    QCoreApplication::setApplicationName(QStringLiteral("Rendrop"));
+    QCoreApplication::setApplicationVersion(QStringLiteral("1.0.34"));
 
     QFontDatabase::addApplicationFont(":/font/PixelMixed.ttf");
     QFontDatabase::addApplicationFont(":/font/BitcountSingle-Bold.ttf");
@@ -23,13 +24,12 @@ int main(int argc, char *argv[])
         QTranslator translator;
         int languageIndex = 0;
 
-        QDir configDir = QFileInfo("config/language.cfg").absoluteDir();
-        if (!configDir.exists())
+        QFile configFile(AppPaths::configFile(QStringLiteral("language.cfg")));
+        if (!AppPaths::ensureConfigDirectory())
         {
-            configDir.mkpath(configDir.absolutePath());
+            return 1;
         }
 
-        QFile configFile("config/language.cfg");
         if (!configFile.exists())
         {
             if (configFile.open(QIODevice::WriteOnly | QIODevice::Text))

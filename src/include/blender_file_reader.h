@@ -16,6 +16,7 @@ class BlenderFileReader : public QThread
 public:
     BlenderFileReader(QObject *parent = nullptr);
     void setParameter(QString filePath, QString blenderPath);
+    void prepareStart();
     void stop();
 
 protected:

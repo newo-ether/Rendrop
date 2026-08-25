@@ -1,8 +1,10 @@
-QT       += core gui opengl
+QT       += core gui
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
 CONFIG += c++20
+
+VERSION = 1.0.34
 
 QMAKE_CXXFLAGS_RELEASE += -O2
 
@@ -24,6 +26,9 @@ SOURCES += \
     src/loading_bar.cpp \
     src/main.cpp \
     src/progress_bar.cpp \
+    src/project_info.cpp \
+    src/render_job.cpp \
+    src/render_queue.cpp \
     src/simple_process.cpp \
     src/widget.cpp \
     src/drop_file_tip.cpp \
@@ -32,6 +37,7 @@ SOURCES += \
     src/rename_dialog.cpp
 
 HEADERS += \
+    src/include/app_paths.h \
     src/include/blender_renderer.h \
     src/include/blender_file_info.h \
     src/include/blender_file_reader.h \
@@ -43,6 +49,8 @@ HEADERS += \
     src/include/file_bar.h \
     src/include/http_server.h \
     src/include/project_info.h \
+    src/include/render_job.h \
+    src/include/render_queue.h \
     src/include/simple_process.h \
     src/include/style.h \
     src/include/widget.h \
@@ -60,8 +68,6 @@ FORMS += \
     ui/frame_range_dialog.ui \
     ui/rename_dialog.ui
 
-
-# Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target

@@ -8,15 +8,14 @@
 #include <QObject>
 #include <QThread>
 #include <QReadWriteLock>
-#include <QOpenGLContext>
-#include <QOffscreenSurface>
-#include <QOpenGLFunctions>
-#include <QOpenGLShaderProgram>
+#include <QMutex>
+#include <QWaitCondition>
 
 #include <vector>
 #include <limits>
 #include <atomic>
 #include <functional>
+#include <cmath>
 
 class DropShadowRenderer : public QThread
 {
@@ -206,25 +205,19 @@ private:
         }
     };
 
-    void initializeOpenGL();
+    void requestDraw();
     QImage render(WidgetInfo info);
 
 signals:
-    void stopRequested();
-    void drawRequested();
-    void saveImage(int handle, QImage image, std::function<void ()> updateFunc);
+    void saveImage(int handle, QImage image);
 
 private slots:
-    void onSaveImage(int handle, QImage image, std::function<void ()> updateFunc);
+    void onSaveImage(int handle, QImage image);
 
 private:
-    QOpenGLContext *glContext;
-    QOffscreenSurface *glSurface;
-    QOpenGLFunctions *glFunctions;
-    QOpenGLShaderProgram *program;
-    GLuint vbo;
-
     QReadWriteLock lock;
+    QMutex wakeMutex;
+    QWaitCondition wakeCondition;
     std::vector<WidgetBuffer> widgetBuffers;
     std::vector<WidgetBuffer> disabledWidgetBuffers;
     std::atomic_int handleCounter = 0;

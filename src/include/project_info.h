@@ -3,7 +3,12 @@
 #ifndef PROJECT_INFO_H
 #define PROJECT_INFO_H
 
+#include <optional>
+
+#include <QJsonObject>
+#include <QMetaType>
 #include <QString>
+#include <QUuid>
 
 enum ProjectState
 {
@@ -18,20 +23,19 @@ inline QString ProjectStateToString(ProjectState state)
 {
     switch (state)
     {
-        case Loading: return "Loading";
-        case Queued: return "Queued";
-        case Error: return "Error";
-        case Rendering: return "Rendering";
-        case Finished: return "Finished";
+        case Loading: return QStringLiteral("Loading");
+        case Queued: return QStringLiteral("Queued");
+        case Error: return QStringLiteral("Error");
+        case Rendering: return QStringLiteral("Rendering");
+        case Finished: return QStringLiteral("Finished");
     }
-
-    return "";
+    return QString();
 }
 
 struct ProjectInfo
 {
     bool isNull;
-    int id;
+    QUuid id;
     QString name;
     QString path;
     QString outputPath;
@@ -48,7 +52,7 @@ struct ProjectInfo
 
     inline ProjectInfo():
         isNull(true),
-        id(0),
+        id(),
         name(),
         path(),
         outputPath(),
@@ -64,7 +68,7 @@ struct ProjectInfo
         totalFrame(0) {}
 
     inline ProjectInfo(
-        int id,
+        const QUuid &id,
         const QString &name,
         const QString &path,
         const QString &outputPath,
@@ -94,6 +98,12 @@ struct ProjectInfo
         renderEngine(renderEngine),
         finishedFrame(finishedFrame),
         totalFrame(totalFrame) {}
+
+    QJsonObject toJson() const;
+    static std::optional<ProjectInfo> fromJson(const QJsonObject &object);
+    void updateCompletionState();
 };
+
+Q_DECLARE_METATYPE(ProjectInfo)
 
 #endif // PROJECT_INFO_H

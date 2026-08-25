@@ -3,22 +3,17 @@
 #ifndef FILE_BAR_H
 #define FILE_BAR_H
 
-#include <QWidget>
+#include <QColor>
+#include <QElapsedTimer>
 #include <QString>
 #include <QTimer>
-#include <QElapsedTimer>
-#include <QColor>
-#include <QReadWriteLock>
-#include <atomic>
+#include <QWidget>
 
-#include "drop_shadow_widget.h"
 #include "drop_shadow_renderer.h"
-#include "blender_file_info.h"
-#include "blender_file_reader.h"
-#include "blender_renderer.h"
+#include "drop_shadow_widget.h"
 #include "loading_bar.h"
-#include "style.h"
 #include "project_info.h"
+#include "style.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -34,94 +29,57 @@ public:
     FileBar(
         QWidget *parent,
         DropShadowRenderer *dropShadowRenderer,
-        int id,
-        QString fileName,
-        QString filePath,
-        QString blenderPath
+        const ProjectInfo &project
     );
-    ~FileBar();
+    ~FileBar() override;
 
-    int getID() const;
-    void setFileName(QString fileName);
-    void setFilePath(QString filePath);
-    QString getFileName() const;
-    QString getFilePath() const;
-    void stopReading();
+    QUuid projectId() const;
     DropShadowWidget *getDropShadowWidget() const;
-    ProjectState getState() const;
-    int getFrameStart() const;
-    int getFrameEnd() const;
-    int getFrameStep() const;
-    int getResolutionX() const;
-    int getResolutionY() const;
-    int getResolutionScale() const;
-    QString getRenderEngine() const;
-    int getFinishedFrame() const;
-    int getTotalFrame() const;
-    void setOutputPath(const QString &outputPath);
-    QString getOutputPath() const;
-    QString getImagePathFromFrame(int frame);
-    void setBlenderPath(const QString &blenderPath);
-    void render();
-    void stopRender();
+    void applySnapshot(const ProjectInfo &project);
 
 protected:
-    bool eventFilter(QObject *object, QEvent *event);
-
-private:
-    void setFrame(int frameStart, int frameEnd, int frameStep);
-    void setResolution(int resolutionX, int resolutionY, int resolutionScale);
-    void setRenderEngine(const QString &renderEngine);
-    void showLoadingBar();
-    void hideLoadingBar();
-    void setState(ProjectState state);
-
-private:
-    Ui::fileBar *ui;
-    BlenderFileReader *blenderFileReader;
-    DropShadowWidget *dropShadowWidget;
-    mutable QReadWriteLock dataLock;
-    QString fileName;
-    QString filePath;
-    std::atomic<ProjectState> state;
-    std::atomic_int id;
-    std::atomic_int frameStart, frameEnd, frameStep;
-    std::atomic_int resolutionX, resolutionY, resolutionScale;
-    QString renderEngine;
-    std::atomic_int finishedFrame, totalFrame;
-    QString outputPath;
-    BlenderRenderer *blenderRenderer;
-    LoadingBar *frameLoadingBar, *resolutionLoadingBar, *renderEngineLoadingBar;
-
-    Style loadingStyle, queueStyle, errorStyle, renderingStyle, finishedStyle;
-
-    Style style, targetStyle, velocity;
-    float stiffness, damping;
-    qint64 lastElapsed;
-
-    QTimer *timer;
-    QElapsedTimer *elapsedTimer;
+    bool eventFilter(QObject *object, QEvent *event) override;
 
 signals:
-    void upButtonClicked(FileBar *fileBar);
-    void downButtonClicked(FileBar *fileBar);
-    void deleteButtonClicked(FileBar *fileBar);
-    void reloadButtonClicked(FileBar *fileBar);
-    void finishedReading();
-    void finishedRendering();
-    void progressChanged();
-    void outputTextUpdate(QString text);
+    void moveUpRequested(QUuid id);
+    void moveDownRequested(QUuid id);
+    void deleteRequested(QUuid id);
+    void reloadRequested(QUuid id);
+    void renameRequested(QUuid id, QString name);
+    void frameRangeRequested(QUuid id, int frameStart, int frameEnd, int frameStep);
 
 private slots:
-    void onUpButtonClicked();
-    void onDownButtonClicked();
-    void onDeleteButtonClicked();
-    void onReloadButtonClicked();
-    void onFinishedReading(int status, BlenderFileInfo info);
-    void onProgressChanged();
-    void onOutputTextUpdate(QString text);
-    void onFinishedRendering(int status);
+    void onFrameButtonClicked();
+    void onFileNameButtonClicked();
     void updateStyle();
+
+private:
+    void setState(ProjectState state);
+    void showLoadingBars();
+    void hideLoadingBars();
+    void updateProjectDetails();
+    void updateProgress();
+
+    Ui::fileBar *ui;
+    ProjectInfo project;
+    DropShadowWidget *dropShadowWidget;
+    LoadingBar *frameLoadingBar;
+    LoadingBar *resolutionLoadingBar;
+    LoadingBar *renderEngineLoadingBar;
+
+    Style loadingStyle;
+    Style queueStyle;
+    Style errorStyle;
+    Style renderingStyle;
+    Style finishedStyle;
+    Style style;
+    Style targetStyle;
+    Style velocity;
+    float stiffness;
+    float damping;
+    qint64 lastElapsed;
+    QTimer *timer;
+    QElapsedTimer *elapsedTimer;
 };
 
 #endif // FILE_BAR_H

@@ -1,8 +1,5 @@
 // blender_renderer.cpp
 
-#include <QString>
-#include <QObject>
-#include <QTimer>
 #include <QRegularExpression>
 
 #include "blender_renderer.h"
@@ -10,10 +7,24 @@
 
 BlenderRenderer::BlenderRenderer(QObject *parent):
     QThread(parent),
+    frameStart(0),
+    frameEnd(0),
+    frameStep(0),
+    currentFrame(0),
+    currentFrameFinished(false),
     isParameterSet(false),
-    stopped(false) {}
+    stopped(false)
+{
+}
 
-BlenderRenderer::~BlenderRenderer() {}
+BlenderRenderer::~BlenderRenderer()
+{
+    if (isRunning())
+    {
+        stop();
+        wait();
+    }
+}
 
 void BlenderRenderer::setParameter(
     QString blenderPath,
@@ -22,14 +33,18 @@ void BlenderRenderer::setParameter(
     int frameEnd,
     int frameStep,
     bool resetCurrentFrame
-) {
+)
+{
     this->blenderPath = blenderPath;
     this->filePath = filePath;
     this->frameStart = frameStart;
     this->frameEnd = frameEnd;
     this->frameStep = frameStep;
-    if (resetCurrentFrame) this->currentFrame = frameStart;
-    this->currentFrameFinished = false;
+    if (resetCurrentFrame)
+    {
+        currentFrame = frameStart;
+    }
+    currentFrameFinished = false;
     isParameterSet = true;
 }
 
@@ -45,6 +60,11 @@ void BlenderRenderer::setCurrentFrame(int currentFrame)
     this->currentFrame = currentFrame;
 }
 
+void BlenderRenderer::prepareStart()
+{
+    stopped = false;
+}
+
 void BlenderRenderer::stop()
 {
     stopped = true;
@@ -52,9 +72,7 @@ void BlenderRenderer::stop()
 
 void BlenderRenderer::run()
 {
-    stopped = false;
     currentFrameFinished = false;
-
     if (!isParameterSet)
     {
         emit finishedRendering(-1);
@@ -62,24 +80,21 @@ void BlenderRenderer::run()
     }
 
     SimpleProcess process;
-
-    QStringList args;
-    args << "-b"
-         << filePath
-         << "-s"
-         << QString::number(currentFrame)
-         << "-e"
-         << QString::number(frameEnd)
-         << "-j"
-         << QString::number(frameStep)
-         << "-a";
-
-    if (process.start(blenderPath, args) != 0)
+    QStringList arguments;
+    arguments << "-b"
+              << filePath
+              << "-s"
+              << QString::number(currentFrame)
+              << "-e"
+              << QString::number(frameEnd)
+              << "-j"
+              << QString::number(frameStep)
+              << "-a";
+    if (process.start(blenderPath, arguments) != 0)
     {
         emit finishedRendering(-1);
         return;
     }
-
     emit outputTextUpdate(tr("Starting Blender..."));
 
     while (process.isRunning())
@@ -87,79 +102,84 @@ void BlenderRenderer::run()
         if (stopped)
         {
             process.kill();
+            emit finishedRendering(1);
             return;
         }
-
         if (getFinishedFrame() == getTotalFrame())
         {
             process.kill();
             break;
         }
-
-        QString output = process.readStandardOutput();
+        const QString output = process.readStandardOutput();
         if (!output.isEmpty())
         {
             parseOutput(output);
         }
-
         process.waitForFinished(50);
     }
 
-    QString output = process.readStandardOutput();
+    const QString output = process.readStandardOutput();
     if (!output.isEmpty())
     {
         parseOutput(output);
     }
-
+    if (stopped)
+    {
+        emit finishedRendering(1);
+        return;
+    }
     if (getFinishedFrame() < getTotalFrame())
     {
         emit finishedRendering(-1);
         return;
     }
-
     emit finishedRendering(0);
 }
 
 int BlenderRenderer::getFinishedFrame() const
 {
-    if (frameStep <= 0) return 0;
+    if (frameStep <= 0)
+    {
+        return 0;
+    }
     return (currentFrame - frameStart) / frameStep + (currentFrameFinished ? 1 : 0);
 }
 
 int BlenderRenderer::getTotalFrame() const
 {
-    if (frameStep <= 0) return 0;
+    if (frameStep <= 0)
+    {
+        return 0;
+    }
     return (frameEnd - frameStart) / frameStep + 1;
 }
 
 void BlenderRenderer::parseOutput(QString output)
 {
-    static QRegularExpression reFrame("^.*(Fra:\\s*(\\d+).+)$");
-    static QRegularExpression reSave("^.*(Saved:.+)$");
-
-    QStringList lines = output.split('\n');
+    static const QRegularExpression framePattern("^.*(Fra:\\s*(\\d+).+)$");
+    static const QRegularExpression savePattern("^.*(Saved:.+)$");
+    const QStringList lines = output.split('\n');
     QString outputText;
-    bool hasMatch = false;
-
-    for (QString &line: lines)
+    bool matched = false;
+    for (const QString &line : lines)
     {
-        auto frameMatch = reFrame.match(line);
-        if (frameMatch.hasMatch()) {
-            hasMatch = true;
+        const QRegularExpressionMatch frameMatch = framePattern.match(line);
+        if (frameMatch.hasMatch())
+        {
+            matched = true;
             currentFrame = frameMatch.captured(2).toInt();
             outputText = frameMatch.captured(1).trimmed();
             currentFrameFinished = false;
         }
-
-        auto saveMatch = reSave.match(line);
-        if (saveMatch.hasMatch()) {
-            hasMatch = true;
+        const QRegularExpressionMatch saveMatch = savePattern.match(line);
+        if (saveMatch.hasMatch())
+        {
+            matched = true;
             outputText = saveMatch.captured(1).trimmed();
             currentFrameFinished = true;
         }
     }
-
-    if (hasMatch)
+    if (matched)
     {
         emit progressChanged();
         emit outputTextUpdate(outputText);
