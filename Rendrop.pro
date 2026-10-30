@@ -4,7 +4,7 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
 CONFIG += c++20
 
-VERSION = 1.0.34
+VERSION = 1.0.35
 
 QMAKE_CXXFLAGS_RELEASE += -O2
 
@@ -77,6 +77,6 @@ RESOURCES += \
 
 TRANSLATIONS += resource/i18n/zh_CN.ts
 
-LIBS += user32.lib
+win32: LIBS += -luser32 -lws2_32
 
 RC_ICONS = resource/icon/icon.ico

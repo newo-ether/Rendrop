@@ -29,4 +29,4 @@ HEADERS += \
     ../src/include/render_queue.h \
     ../src/include/simple_process.h
 
-LIBS += user32.lib
+win32: LIBS += -luser32 -lws2_32

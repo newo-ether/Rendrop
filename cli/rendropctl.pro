@@ -1,11 +1,11 @@
 QT += core
-QT -= gui
+QT -= gui widgets
 CONFIG += console c++20
-CONFIG -= app_bundle
+CONFIG -= windows app_bundle
 TEMPLATE = app
 TARGET = rendropctl
 
-VERSION = 1.0.34
+VERSION = 1.0.35
 
 INCLUDEPATH += \
     $$PWD/../thirdparty/cpp-httplib \
@@ -13,4 +13,4 @@ INCLUDEPATH += \
 
 SOURCES += main.cpp
 
-LIBS += user32.lib
+win32: LIBS += -lws2_32

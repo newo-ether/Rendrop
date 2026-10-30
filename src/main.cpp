@@ -14,7 +14,7 @@ int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
     QCoreApplication::setApplicationName(QStringLiteral("Rendrop"));
-    QCoreApplication::setApplicationVersion(QStringLiteral("1.0.34"));
+    QCoreApplication::setApplicationVersion(QStringLiteral("1.0.35"));
 
     QFontDatabase::addApplicationFont(":/font/PixelMixed.ttf");
     QFontDatabase::addApplicationFont(":/font/BitcountSingle-Bold.ttf");

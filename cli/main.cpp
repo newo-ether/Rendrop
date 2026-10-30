@@ -70,7 +70,7 @@ int main(int argc, char *argv[])
 {
     QCoreApplication application(argc, argv);
     QCoreApplication::setApplicationName(QStringLiteral("rendropctl"));
-    QCoreApplication::setApplicationVersion(QStringLiteral("1.0.34"));
+    QCoreApplication::setApplicationVersion(QStringLiteral("1.0.35"));
 
     QCommandLineParser parser;
     parser.setApplicationDescription(
@@ -89,8 +89,8 @@ int main(int argc, char *argv[])
             "  queue stop"
         )
     );
-    parser.addHelpOption();
-    parser.addVersionOption();
+    const QCommandLineOption helpOption = parser.addHelpOption();
+    const QCommandLineOption versionOption = parser.addVersionOption();
     parser.addOption(QCommandLineOption(
         QStringLiteral("host"),
         QStringLiteral("HTTP server host."),
@@ -114,7 +114,23 @@ int main(int argc, char *argv[])
         QStringLiteral("index")
     ));
     parser.addPositionalArgument(QStringLiteral("command"), QStringLiteral("Command and arguments."));
-    parser.process(application);
+    // Keep output on the standard streams even without a Windows console.
+    // process(), showHelp(), and showVersion() can fall back to a message box.
+    if (!parser.parse(application.arguments()))
+    {
+        return usageError(parser, parser.errorText());
+    }
+    if (parser.isSet(helpOption) || parser.isSet(QStringLiteral("help-all")))
+    {
+        printLine(stdout, parser.helpText());
+        return 0;
+    }
+    if (parser.isSet(versionOption))
+    {
+        printLine(stdout, application.applicationName() + QLatin1Char(' ')
+            + application.applicationVersion());
+        return 0;
+    }
 
     const QStringList arguments = parser.positionalArguments();
     if (arguments.isEmpty())

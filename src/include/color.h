@@ -7,6 +7,7 @@
 #include <QColor>
 
 #include <algorithm>
+#include <cmath>
 
 struct Color
 {
@@ -150,7 +151,7 @@ struct Color
 
     inline float length()
     {
-        return std::sqrtf(r * r + g * g + b * b + a * a);
+        return std::sqrt(r * r + g * g + b * b + a * a);
     }
 
     inline QString toText()
