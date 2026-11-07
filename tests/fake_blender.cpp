@@ -71,12 +71,50 @@ int renderFrames(const QStringList &arguments)
         return 7;
     }
     const bool slow = blendPath.contains(QStringLiteral("slow"), Qt::CaseInsensitive);
+    // With -o, write real files the way Blender names them: the last run of
+    // '#' becomes the zero-padded frame, otherwise four digits are appended;
+    // a missing extension becomes .png.
+    const QString outputPattern = argumentValue(arguments, QStringLiteral("-o"));
     QTextStream output(stdout, QIODevice::WriteOnly);
     for (int frame = frameStart; frame <= frameEnd; frame += frameStep)
     {
         QThread::msleep(slow ? 1000 : 80);
         output << "Fra: " << frame << " Mem: 1.00M\n";
-        output << "Saved: 'frame_" << frame << ".png'\n";
+        if (outputPattern.isEmpty())
+        {
+            output << "Saved: 'frame_" << frame << ".png'\n";
+            output.flush();
+            continue;
+        }
+        QString path = QDir::fromNativeSeparators(outputPattern);
+        const qsizetype hashEnd = path.lastIndexOf(QLatin1Char('#'));
+        if (hashEnd >= 0)
+        {
+            qsizetype hashStart = hashEnd;
+            while (hashStart > 0 && path[hashStart - 1] == QLatin1Char('#'))
+            {
+                --hashStart;
+            }
+            const int width = static_cast<int>(hashEnd - hashStart + 1);
+            path.replace(hashStart, width, QStringLiteral("%1").arg(frame, width, 10, QLatin1Char('0')));
+        }
+        else
+        {
+            path += QStringLiteral("%1").arg(frame, 4, 10, QLatin1Char('0'));
+        }
+        if (QFileInfo(path).suffix().isEmpty())
+        {
+            path += QStringLiteral(".png");
+        }
+        QDir().mkpath(QFileInfo(path).absolutePath());
+        QFile file(path);
+        if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate))
+        {
+            return 8;
+        }
+        file.write(QByteArray("fake frame ") + QByteArray::number(frame));
+        file.close();
+        output << "Saved: '" << QDir::toNativeSeparators(path) << "'\n";
         output.flush();
     }
     return 0;

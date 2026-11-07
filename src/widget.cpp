@@ -18,6 +18,8 @@
 #include <QVBoxLayout>
 
 #include "app_paths.h"
+#include "distributed_settings.h"
+#include "rounded_surface.h"
 #include "widget.h"
 #include "blender_file_info.h"
 #include "ui_widget.h"
@@ -73,9 +75,17 @@ Widget::Widget(int languageIndex, QWidget *parent):
         if (text.isEmpty() || text == tr("-- Add A Blender Version --"))
         {
             renderQueue->setBlenderPathForAll(QString());
+            if (nodeAgent)
+            {
+                nodeAgent->setBlenderPath(QString());
+            }
             return;
         }
         renderQueue->setBlenderPathForAll(blenderVersionManager->getBlenderPath(text));
+        if (nodeAgent)
+        {
+            nodeAgent->setBlenderPath(blenderVersionManager->getBlenderPath(text));
+        }
         const bool configDirectoryReady = AppPaths::ensureConfigDirectory();
         if (!configDirectoryReady)
         {
@@ -129,8 +139,34 @@ Widget::Widget(int languageIndex, QWidget *parent):
     const QString blenderPath = selectedBlenderPath();
     renderQueue->setBlenderPathForAll(blenderPath);
     renderQueue->restorePersistedJobs(blenderPath);
+    const DistributedSettings distributed = DistributedConfig::load(
+        AppPaths::configFile(QStringLiteral("distributed.json"))
+    );
+    renderQueue->setDistributedSettings(distributed);
+    loadMonitor = new LoadMonitor(distributed.load);
+    // Normal priority: a starved sampler under full render load would leave
+    // gaps that reset the window.
+    loadMonitor->start();
     httpServer = new HttpServer(renderQueue);
+    httpServer->setLoadMonitor(loadMonitor);
+    if (distributed.enabled)
+    {
+        httpServer->setWorkerToken(distributed.token);
+    }
+    nodeAgent = new NodeAgent(
+        renderQueue,
+        loadMonitor,
+        distributed,
+        AppPaths::configFile(QStringLiteral("distributed.json")),
+        this
+    );
+    nodeAgent->setBlenderPath(blenderPath);
+    nodeAgent->attachServer(httpServer);
+    QObject::connect(nodeAgent, &NodeAgent::outputText, this, &Widget::onOutputTextUpdated);
     httpServer->start(QThread::LowestPriority);
+    nodeAgent->start();
+    createNodePanel();
+    installRoundedSurfaces();
 
     onRenderingChanged(false);
     updateStatisticInfo();
@@ -140,12 +176,22 @@ Widget::Widget(int languageIndex, QWidget *parent):
 
 Widget::~Widget()
 {
+    // Hands a lease rendered for another node back before anything stops.
+    if (nodeAgent)
+    {
+        nodeAgent->shutdown();
+    }
     if (httpServer)
     {
         httpServer->stop();
         httpServer->wait();
         delete httpServer;
     }
+    // After the server: its beacon handler reads the agent's discovery.
+    delete nodeAgent;
+    nodeAgent = nullptr;
+    // After the server and the agent: both read the monitor.
+    delete loadMonitor;
     if (renderQueue)
     {
         renderQueue->shutdown();
@@ -401,6 +447,49 @@ void Widget::createDropShadowWidget(
     shadow->setAlphaMax(alphaMax);
     shadow->setBlurRadius(blurRadius);
     dropShadowWidgets.push_back(shadow);
+}
+
+void Widget::createNodePanel()
+{
+    // Third card next to the version selector and the statistics, built
+    // like them: a #2C313C frame around a darker content surface.
+    QWidget *container = new QWidget(ui->ContentWidget);
+    container->setObjectName(QStringLiteral("nodePanelContainer"));
+    container->setStyleSheet(QStringLiteral("background: transparent;\nborder: none;\ncolor: #E0E0E0;"));
+    container->setFixedHeight(210);
+    container->setMinimumWidth(260);
+    RoundedSurface::install(container, 12, QColor(0x2C, 0x31, 0x3C));
+    QVBoxLayout *layout = new QVBoxLayout(container);
+    layout->setContentsMargins(5, 5, 5, 5);
+    layout->addWidget(new NodePanel(nodeAgent, container));
+    ui->horizontalLayout_6->addWidget(container);
+    ui->horizontalLayout_6->setStretch(0, 3);
+    ui->horizontalLayout_6->setStretch(1, 3);
+    ui->horizontalLayout_6->setStretch(2, 3);
+    createDropShadowWidget(ui->ContentWidget, container, 12, 4, 4, 0.8f, 15);
+}
+
+void Widget::installRoundedSurfaces()
+{
+    // Style sheets keep text colors, fonts and the combo boxes; these
+    // surfaces replace their stepped border-radius backgrounds.
+    const QColor frame(0x2C, 0x31, 0x3C);
+    const QColor content(26, 28, 32);
+    RoundedSurface::install(ui->selectorContainer, 12, frame);
+    RoundedSurface::install(ui->selectorWidgetContent, 12, content);
+    RoundedSurface::install(ui->infoWidgetContainer, 12, frame);
+    RoundedSurface::install(ui->infoWidget, 12, content);
+    RoundedSurface::install(ui->scrollAreaContainer, 12, frame);
+    RoundedSurface::install(ui->scrollArea, 12, content);
+    ui->scrollArea->viewport()->setAutoFillBackground(false);
+    RoundedSurface::install(ui->outputContainer, 15, frame);
+    RoundedSurface::install(ui->outputText, 15, QColor(80, 80, 130));
+    RoundedSurface::install(ui->renderButton, 15, RoundedSurface::Colors {
+        QColor(0x33, 0x38, 0x42),
+        QColor(0x4B, 0x53, 0x62),
+        QColor(0x2B, 0x2F, 0x38),
+        QColor(0x55, 0x59, 0x5F)
+    });
 }
 
 QString Widget::selectedBlenderPath() const

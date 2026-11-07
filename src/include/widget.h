@@ -19,6 +19,9 @@
 #include "drop_shadow_renderer.h"
 #include "file_bar.h"
 #include "http_server.h"
+#include "load_monitor.h"
+#include "node_agent.h"
+#include "node_panel.h"
 #include "project_info.h"
 #include "render_queue.h"
 
@@ -84,6 +87,8 @@ private:
     void clearOutputText();
     void setSelectorEnabled(bool enabled);
     void updateAllFileBarShadow();
+    void installRoundedSurfaces();
+    void createNodePanel();
 
 private slots:
     void onLanguageChanged(int index);
@@ -117,6 +122,8 @@ private:
     QPixmap fileBarShadowPixmap;
     int shadowBufferHandle;
     HttpServer *httpServer;
+    LoadMonitor *loadMonitor = nullptr;
+    NodeAgent *nodeAgent = nullptr;
 };
 
 #endif // WIDGET_H

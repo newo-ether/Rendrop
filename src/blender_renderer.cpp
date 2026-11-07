@@ -60,6 +60,11 @@ void BlenderRenderer::setCurrentFrame(int currentFrame)
     this->currentFrame = currentFrame;
 }
 
+void BlenderRenderer::setOutputPath(const QString &outputPath)
+{
+    this->outputPath = outputPath;
+}
+
 void BlenderRenderer::prepareStart()
 {
     stopped = false;
@@ -82,8 +87,12 @@ void BlenderRenderer::run()
     SimpleProcess process;
     QStringList arguments;
     arguments << "-b"
-              << filePath
-              << "-s"
+              << filePath;
+    if (!outputPath.isEmpty())
+    {
+        arguments << "-o" << outputPath;
+    }
+    arguments << "-s"
               << QString::number(currentFrame)
               << "-e"
               << QString::number(frameEnd)

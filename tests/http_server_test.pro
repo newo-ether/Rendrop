@@ -14,7 +14,11 @@ SOURCES += \
     ../src/blender_file_info.cpp \
     ../src/blender_file_reader.cpp \
     ../src/blender_renderer.cpp \
+    ../src/chunk_planner.cpp \
+    ../src/dependency_packer.cpp \
+    ../src/frame_ledger.cpp \
     ../src/http_server.cpp \
+    ../src/load_monitor.cpp \
     ../src/project_info.cpp \
     ../src/render_job.cpp \
     ../src/render_queue.cpp \
@@ -24,10 +28,17 @@ HEADERS += \
     ../src/include/blender_file_info.h \
     ../src/include/blender_file_reader.h \
     ../src/include/blender_renderer.h \
+    ../src/include/chunk_planner.h \
+    ../src/include/dependency_packer.h \
+    ../src/include/distributed_settings.h \
+    ../src/include/frame_ledger.h \
     ../src/include/http_server.h \
+    ../src/include/load_monitor.h \
+    ../src/include/load_settings.h \
     ../src/include/project_info.h \
     ../src/include/render_job.h \
     ../src/include/render_queue.h \
-    ../src/include/simple_process.h
+    ../src/include/simple_process.h \
+    ../src/include/worker_auth.h
 
-win32: LIBS += -luser32 -lws2_32
+win32: LIBS += -luser32 -lws2_32 -lpdh

@@ -90,6 +90,10 @@ private slots:
     void removingCurrentJobAdvancesQueue();
     void persistedProgressRestoresAndResumes();
     void legacyIntegerIdsMigrateToUuidSchema();
+    void distributedLeasesShareFramesAndPersistGaps();
+    void stoppingRevokesRemoteLeases();
+    void expiredRemoteLeaseIsRenderedLocally();
+    void remoteWorkRejectedWhenDisabled();
 
 private:
     QString fakeBlenderPath;
@@ -449,13 +453,168 @@ void RenderQueueTest::legacyIntegerIdsMigrateToUuidSchema()
     QCOMPARE(snapshots[0].finishedFrame, 1);
 
     const QJsonObject migratedRoot = persistedRoot(directory.path());
-    QCOMPARE(migratedRoot.value(QStringLiteral("schemaVersion")).toInt(), 2);
+    QCOMPARE(migratedRoot.value(QStringLiteral("schemaVersion")).toInt(), 3);
     const QJsonArray migratedProjects = migratedRoot.value(QStringLiteral("projects")).toArray();
     QCOMPARE(migratedProjects.size(), 1);
     const QJsonObject migratedProject = migratedProjects[0].toObject();
-    QCOMPARE(migratedProject.value(QStringLiteral("schemaVersion")).toInt(), 2);
+    QCOMPARE(migratedProject.value(QStringLiteral("schemaVersion")).toInt(), 3);
     QVERIFY(migratedProject.value(QStringLiteral("id")).isString());
     QCOMPARE(migratedProject.value(QStringLiteral("id")).toString(), uuidString(snapshots[0].id));
+    // Legacy sequential progress becomes a prefix range.
+    const QJsonArray ranges = migratedProject.value(QStringLiteral("completedRanges")).toArray();
+    QCOMPARE(ranges.size(), 1);
+    QCOMPARE(ranges[0].toArray()[0].toInt(), 0);
+    QCOMPARE(ranges[0].toArray()[1].toInt(), 0);
+}
+
+namespace {
+DistributedSettings distributedSettings(int chunkSize, int leaseTimeoutSeconds)
+{
+    DistributedSettings settings;
+    settings.enabled = true;
+    settings.token = QStringLiteral("test-token-0123456789");
+    settings.chunkSize = chunkSize;
+    settings.leaseTimeoutSeconds = leaseTimeoutSeconds;
+    return settings;
+}
+}
+
+void RenderQueueTest::distributedLeasesShareFramesAndPersistGaps()
+{
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    const QString persistDirectory = persistenceDirectory(directory);
+    const QString blendPath = createBlendFile(directory, QStringLiteral("slow_distributed"));
+    QUuid id;
+    {
+        RenderQueue queue(persistDirectory);
+        queue.setDistributedSettings(distributedSettings(1, 60));
+        id = queue.addJob(QStringLiteral("distributed"), blendPath, fakeBlenderPath);
+        QVERIFY(waitUntil([&]() {
+            return queue.snapshotById(id).state == ProjectState::Queued;
+        }));
+        QVERIFY(!queue.claimWork(QStringLiteral("w1"), QStringLiteral("one"), 0).has_value());
+        QVERIFY(queue.start());
+
+        // The local renderer already holds frame 1; the worker gets frame 2.
+        const std::optional<WorkAssignment> assignment =
+            queue.claimWork(QStringLiteral("w1"), QStringLiteral("one"), 0);
+        QVERIFY(assignment.has_value());
+        QCOMPARE(assignment->projectId, id);
+        QCOMPARE(assignment->frameStart, 2);
+        QCOMPARE(assignment->frameEnd, 2);
+        QCOMPARE(assignment->frameStep, 1);
+        QCOMPARE(assignment->blendPath, blendPath);
+        QVERIFY(queue.reportWork(assignment->leaseId, 0));
+        QVERIFY(queue.completeWork(assignment->leaseId));
+        QVERIFY(!queue.completeWork(assignment->leaseId));
+        QVERIFY(!queue.reportWork(assignment->leaseId, 1));
+
+        ProjectInfo snapshot = queue.snapshotById(id);
+        QCOMPARE(snapshot.state, ProjectState::Rendering);
+        QCOMPARE(snapshot.finishedFrame, 1);
+        const QJsonArray projects = persistedProjects(persistDirectory);
+        const QJsonArray ranges = projects[0].toObject().value(QStringLiteral("completedRanges")).toArray();
+        QCOMPARE(ranges.size(), 1);
+        QCOMPARE(ranges[0].toArray()[0].toInt(), 1);
+        QCOMPARE(ranges[0].toArray()[1].toInt(), 1);
+        const std::vector<WorkerInfo> workers = queue.workers();
+        QCOMPARE(workers.size(), size_t(1));
+        QCOMPARE(workers[0].name, QStringLiteral("one"));
+        QCOMPARE(workers[0].completedLeases, 1);
+        queue.stop();
+    }
+
+    // A gap left by remote work survives a restart; only frames 1 and 3 are
+    // rendered again, and they are not contiguous.
+    RenderQueue restored(persistDirectory);
+    QCOMPARE(restored.restorePersistedJobs(fakeBlenderPath), 1);
+    ProjectInfo snapshot = restored.snapshotById(id);
+    QCOMPARE(snapshot.state, ProjectState::Queued);
+    QCOMPARE(snapshot.finishedFrame, 1);
+    QVERIFY(restored.start());
+    QVERIFY(waitUntil([&]() {
+        const ProjectInfo current = restored.snapshotById(id);
+        return current.state == ProjectState::Rendering && current.finishedFrame >= 2;
+    }, 10000));
+    QCOMPARE(restored.snapshotById(id).completedRanges, (std::vector<std::pair<int, int>>{{0, 1}}));
+    QVERIFY(waitUntil([&]() {
+        return restored.snapshotById(id).state == ProjectState::Finished && !restored.isRendering();
+    }, 10000));
+    QCOMPARE(restored.snapshotById(id).finishedFrame, 3);
+}
+
+void RenderQueueTest::stoppingRevokesRemoteLeases()
+{
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    RenderQueue queue(persistenceDirectory(directory));
+    queue.setDistributedSettings(distributedSettings(1, 60));
+    const QUuid id = queue.addJob(
+        QStringLiteral("slow"),
+        createBlendFile(directory, QStringLiteral("slow_stop")),
+        fakeBlenderPath
+    );
+    QVERIFY(waitUntil([&]() {
+        return queue.snapshotById(id).state == ProjectState::Queued;
+    }));
+    QVERIFY(queue.start());
+    const std::optional<WorkAssignment> assignment =
+        queue.claimWork(QStringLiteral("w1"), QString(), 0);
+    QVERIFY(assignment.has_value());
+    queue.stop();
+    QCOMPARE(queue.snapshotById(id).state, ProjectState::Queued);
+    QVERIFY(!queue.reportWork(assignment->leaseId, 1));
+    QVERIFY(!queue.completeWork(assignment->leaseId));
+    QVERIFY(!queue.claimWork(QStringLiteral("w1"), QString(), 0).has_value());
+}
+
+void RenderQueueTest::expiredRemoteLeaseIsRenderedLocally()
+{
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    RenderQueue queue(persistenceDirectory(directory));
+    queue.setDistributedSettings(distributedSettings(1, 1));
+    const QUuid id = queue.addJob(
+        QStringLiteral("slow"),
+        createBlendFile(directory, QStringLiteral("slow_expire")),
+        fakeBlenderPath
+    );
+    QVERIFY(waitUntil([&]() {
+        return queue.snapshotById(id).state == ProjectState::Queued;
+    }));
+    QVERIFY(queue.start());
+    const std::optional<WorkAssignment> assignment =
+        queue.claimWork(QStringLiteral("silent"), QString(), 0);
+    QVERIFY(assignment.has_value());
+    // The worker never reports; its frame returns to the pool and the local
+    // renderer picks it up.
+    // reportWork renews a live lease, so it must not be used to poll for expiry.
+    // Wait past the 1 s timeout plus a timer tick, then probe once.
+    QTest::qWait(2500);
+    QVERIFY(!queue.reportWork(assignment->leaseId, 0));
+    QVERIFY(waitUntil([&]() {
+        return queue.snapshotById(id).state == ProjectState::Finished && !queue.isRendering();
+    }, 15000));
+    QCOMPARE(queue.snapshotById(id).finishedFrame, 3);
+}
+
+void RenderQueueTest::remoteWorkRejectedWhenDisabled()
+{
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    RenderQueue queue(persistenceDirectory(directory));
+    const QUuid id = queue.addJob(
+        QStringLiteral("slow"),
+        createBlendFile(directory, QStringLiteral("slow_disabled")),
+        fakeBlenderPath
+    );
+    QVERIFY(waitUntil([&]() {
+        return queue.snapshotById(id).state == ProjectState::Queued;
+    }));
+    QVERIFY(queue.start());
+    QVERIFY(!queue.claimWork(QStringLiteral("w1"), QString(), 0).has_value());
+    queue.stop();
 }
 QTEST_GUILESS_MAIN(RenderQueueTest)
 

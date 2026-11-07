@@ -253,9 +253,8 @@ QComboBox QAbstractItemView::item:selected {
            </size>
           </property>
           <property name="styleSheet">
-           <string notr="true">background-color: #2C313C;
-border: 0px solid #555A66;
-border-radius: 12px;
+           <string notr="true">background: transparent;
+border: none;
 color: #E0E0E0;</string>
           </property>
           <layout class="QVBoxLayout" name="verticalLayout_2">
@@ -286,8 +285,7 @@ color: #E0E0E0;</string>
               </size>
              </property>
              <property name="styleSheet">
-              <string notr="true">border-radius: 12px;
-background-color: rgb(26, 28, 32);</string>
+              <string notr="true">background: transparent;</string>
              </property>
              <layout class="QVBoxLayout" name="verticalLayout_3">
               <property name="spacing">
@@ -591,9 +589,8 @@ QPushButton:disabled {
            </size>
           </property>
           <property name="styleSheet">
-           <string notr="true">background-color: #2C313C;
-border: 0px solid #555A66;
-border-radius: 12px;
+           <string notr="true">background: transparent;
+border: none;
 color: #E0E0E0;</string>
           </property>
           <layout class="QVBoxLayout" name="verticalLayout_8">
@@ -624,8 +621,7 @@ color: #E0E0E0;</string>
               </size>
              </property>
              <property name="styleSheet">
-              <string notr="true">border-radius: 12px;
-background-color: rgb(26, 28, 32);</string>
+              <string notr="true">background: transparent;</string>
              </property>
              <layout class="QHBoxLayout" name="horizontalLayout_3">
               <property name="spacing">
@@ -938,8 +934,7 @@ background-color: rgb(26, 28, 32);</string>
          </size>
         </property>
         <property name="styleSheet">
-         <string notr="true">border-radius: 12px;
-background-color: #2C313C;</string>
+         <string notr="true">background: transparent;</string>
         </property>
         <layout class="QVBoxLayout" name="verticalLayout_4">
          <property name="spacing">
@@ -961,9 +956,8 @@ background-color: #2C313C;</string>
           <widget class="QScrollArea" name="scrollArea">
            <property name="styleSheet">
             <string notr="true">QScrollArea#scrollArea {
-	background-color: rgb(26, 28, 32);
+	background: transparent;
 	border: none;
-	border-radius: 12px;
 	color: #E0E0E0;
 }
 
@@ -1024,9 +1018,8 @@ QScrollBar::add-page {
              </rect>
             </property>
             <property name="styleSheet">
-             <string notr="true">background-color: rgb(26, 28, 32);
+             <string notr="true">background: transparent;
 border: none;
-border-radius: 12px;
 color: #E0E0E0;</string>
             </property>
             <layout class="QVBoxLayout" name="scrollAreaVerticalLayout">
@@ -1093,8 +1086,7 @@ background: transparent;</string>
            </size>
           </property>
           <property name="styleSheet">
-           <string notr="true">border-radius: 15px;
-background-color: #2C313C;</string>
+           <string notr="true">background: transparent;</string>
           </property>
           <layout class="QHBoxLayout" name="horizontalLayout_5">
            <property name="spacing">
@@ -1133,8 +1125,7 @@ background-color: #2C313C;</string>
               </font>
              </property>
              <property name="styleSheet">
-              <string notr="true">border-radius: 15px;
-background-color: rgb(80, 80, 130);
+              <string notr="true">background: transparent;
 color: rgb(200, 200, 240);</string>
              </property>
              <property name="text">
@@ -1221,24 +1212,13 @@ color: rgb(180, 180, 200);</string>
           </property>
           <property name="styleSheet">
            <string notr="true">QPushButton {
-    background-color: #333842;
-    border-radius: 15px;
+    background: transparent;
+    border: none;
     color: white;
     padding: 6px 6px;
 }
 
-QPushButton:hover {
-    background-color: #4B5362;
-    color: white;
-}
-
-QPushButton:pressed {
-    background-color: #2B2F38;
-    color: white;
-}
-
 QPushButton:disabled {
-    background-color: #55595F;
     color: #AAAAAA;
 }</string>
           </property>

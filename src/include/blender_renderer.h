@@ -25,6 +25,9 @@ public:
     );
     void setFrame(int frameStart, int frameEnd, int frameStep);
     void setCurrentFrame(int currentFrame);
+    // Overrides the scene's output path with Blender's -o option. Empty keeps
+    // the path stored in the .blend file.
+    void setOutputPath(const QString &outputPath);
     int getFinishedFrame() const;
     int getTotalFrame() const;
     void prepareStart();
@@ -43,6 +46,7 @@ private:
 
     QString blenderPath;
     QString filePath;
+    QString outputPath;
     std::atomic_int frameStart;
     std::atomic_int frameEnd;
     std::atomic_int frameStep;

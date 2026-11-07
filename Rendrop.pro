@@ -1,4 +1,4 @@
-QT       += core gui
+QT       += core gui network
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -18,16 +18,25 @@ SOURCES += \
     src/blender_file_info.cpp \
     src/blender_file_reader.cpp \
     src/blender_renderer.cpp \
+    src/chunk_planner.cpp \
+    src/dependency_packer.cpp \
     src/drop_shadow_renderer.cpp \
     src/drop_shadow_widget.cpp \
     src/file_bar.cpp \
+    src/frame_ledger.cpp \
     src/blender_version_manager.cpp \
     src/http_server.cpp \
+    src/load_monitor.cpp \
     src/loading_bar.cpp \
     src/main.cpp \
+    src/node_agent.cpp \
+    src/node_discovery.cpp \
+    src/node_panel.cpp \
     src/progress_bar.cpp \
     src/project_info.cpp \
     src/render_job.cpp \
+    src/remote_worker.cpp \
+    src/rounded_surface.cpp \
     src/render_queue.cpp \
     src/simple_process.cpp \
     src/widget.cpp \
@@ -43,15 +52,27 @@ HEADERS += \
     src/include/blender_file_reader.h \
     src/include/add_file_button.h \
     src/include/blender_version_manager.h \
+    src/include/chunk_planner.h \
     src/include/color.h \
+    src/include/dependency_packer.h \
+    src/include/distributed_settings.h \
+    src/include/frame_ledger.h \
     src/include/drop_shadow_renderer.h \
     src/include/drop_shadow_widget.h \
     src/include/file_bar.h \
     src/include/http_server.h \
+    src/include/load_monitor.h \
+    src/include/load_settings.h \
+    src/include/node_agent.h \
+    src/include/node_discovery.h \
+    src/include/node_panel.h \
     src/include/project_info.h \
     src/include/render_job.h \
+    src/include/remote_worker.h \
+    src/include/rounded_surface.h \
     src/include/render_queue.h \
     src/include/simple_process.h \
+    src/include/worker_auth.h \
     src/include/style.h \
     src/include/widget.h \
     src/include/drop_file_tip.h \
@@ -77,6 +98,6 @@ RESOURCES += \
 
 TRANSLATIONS += resource/i18n/zh_CN.ts
 
-win32: LIBS += -luser32 -lws2_32
+win32: LIBS += -luser32 -lws2_32 -lpdh
 
 RC_ICONS = resource/icon/icon.ico

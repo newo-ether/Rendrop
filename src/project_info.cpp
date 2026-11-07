@@ -4,12 +4,13 @@
 #include <cmath>
 #include <limits>
 
+#include <QJsonArray>
 #include <QJsonValue>
 
 #include "project_info.h"
 
 namespace {
-constexpr int schemaVersion = 2;
+constexpr int schemaVersion = 3;
 
 bool readInt(const QJsonObject &object, const char *key, int &value)
 {
@@ -41,6 +42,64 @@ bool readString(const QJsonObject &object, const char *key, QString &value)
     return true;
 }
 
+bool readIntValue(const QJsonValue &jsonValue, int &value)
+{
+    if (!jsonValue.isDouble())
+    {
+        return false;
+    }
+    const double number = jsonValue.toDouble();
+    if (!std::isfinite(number)
+        || std::floor(number) != number
+        || number < std::numeric_limits<int>::min()
+        || number > std::numeric_limits<int>::max())
+    {
+        return false;
+    }
+    value = static_cast<int>(number);
+    return true;
+}
+
+// Accepts only sorted, non-overlapping ranges inside [0, totalFrame).
+bool readRanges(const QJsonValue &jsonValue, int totalFrame, std::vector<std::pair<int, int>> &ranges)
+{
+    if (!jsonValue.isArray())
+    {
+        return false;
+    }
+    int previousLast = -1;
+    for (const QJsonValue &item : jsonValue.toArray())
+    {
+        const QJsonArray pair = item.toArray();
+        int first = 0;
+        int last = 0;
+        if (!item.isArray()
+            || pair.size() != 2
+            || !readIntValue(pair[0], first)
+            || !readIntValue(pair[1], last)
+            || first <= previousLast
+            || first > last
+            || last >= totalFrame)
+        {
+            ranges.clear();
+            return false;
+        }
+        ranges.emplace_back(first, last);
+        previousLast = last;
+    }
+    return true;
+}
+
+int rangeCount(const std::vector<std::pair<int, int>> &ranges)
+{
+    int count = 0;
+    for (const auto &range : ranges)
+    {
+        count += range.second - range.first + 1;
+    }
+    return count;
+}
+
 std::optional<ProjectState> projectStateFromString(const QString &value)
 {
     if (value == QStringLiteral("Loading"))
@@ -69,6 +128,16 @@ std::optional<ProjectState> projectStateFromString(const QString &value)
 
 QJsonObject ProjectInfo::toJson() const
 {
+    // A snapshot built only from a frame count is treated as sequential
+    // progress, matching how schema 2 interpreted finishedFrame.
+    const std::vector<std::pair<int, int>> effectiveRanges = rangeCount(completedRanges) == finishedFrame
+        ? completedRanges
+        : prefixRanges(finishedFrame);
+    QJsonArray ranges;
+    for (const auto &range : effectiveRanges)
+    {
+        ranges.append(QJsonArray{range.first, range.second});
+    }
     return {
         {QStringLiteral("schemaVersion"), schemaVersion},
         {QStringLiteral("id"), id.toString(QUuid::WithoutBraces)},
@@ -84,7 +153,8 @@ QJsonObject ProjectInfo::toJson() const
         {QStringLiteral("resolutionScale"), resolutionScale},
         {QStringLiteral("renderEngine"), renderEngine},
         {QStringLiteral("finishedFrame"), finishedFrame},
-        {QStringLiteral("totalFrame"), totalFrame}
+        {QStringLiteral("totalFrame"), totalFrame},
+        {QStringLiteral("completedRanges"), ranges}
     };
 }
 
@@ -106,7 +176,8 @@ std::optional<ProjectInfo> ProjectInfo::fromJson(const QJsonObject &object)
     QString stateText;
     QString renderEngine;
     if (!readInt(object, "schemaVersion", version)
-        || (version != 1 && version != schemaVersion)
+        || version < 1
+        || version > schemaVersion
         || !readString(object, "name", name)
         || !readString(object, "path", path)
         || path.isEmpty()
@@ -172,7 +243,19 @@ std::optional<ProjectInfo> ProjectInfo::fromJson(const QJsonObject &object)
     project.totalFrame = project.frameStep > 0 && project.frameEnd >= project.frameStart
         ? (project.frameEnd - project.frameStart) / project.frameStep + 1
         : 0;
-    project.finishedFrame = std::min(project.finishedFrame, project.totalFrame);
+    if (version >= 3 && object.contains(QStringLiteral("completedRanges")))
+    {
+        // Invalid ranges fall back to nothing completed; re-rendering is safe,
+        // skipping frames is not.
+        readRanges(object.value(QStringLiteral("completedRanges")), project.totalFrame, project.completedRanges);
+    }
+    else
+    {
+        // Schema 1 and 2 only rendered sequentially, so progress is a prefix.
+        // The same applies to a schema 3 object written without ranges.
+        project.completedRanges = prefixRanges(std::min(project.finishedFrame, project.totalFrame));
+    }
+    project.finishedFrame = rangeCount(project.completedRanges);
     project.updateCompletionState();
     if (project.state == ProjectState::Loading
         || project.state == ProjectState::Rendering
@@ -184,11 +267,21 @@ std::optional<ProjectInfo> ProjectInfo::fromJson(const QJsonObject &object)
     return project;
 }
 
+std::vector<std::pair<int, int>> ProjectInfo::prefixRanges(int count)
+{
+    if (count <= 0)
+    {
+        return {};
+    }
+    return {{0, count - 1}};
+}
+
 void ProjectInfo::updateCompletionState()
 {
     if (totalFrame > 0 && finishedFrame >= totalFrame)
     {
         finishedFrame = totalFrame;
+        completedRanges = prefixRanges(totalFrame);
         state = ProjectState::Finished;
     }
 }

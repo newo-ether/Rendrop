@@ -5,6 +5,7 @@
 #include "add_file_button.h"
 #include "drop_shadow_widget.h"
 #include "drop_shadow_renderer.h"
+#include "rounded_surface.h"
 
 AddFileButton::AddFileButton(QWidget *parent, DropShadowRenderer *dropShadowRenderer):
     QPushButton(parent), dropShadowRenderer(dropShadowRenderer)
@@ -12,30 +13,25 @@ AddFileButton::AddFileButton(QWidget *parent, DropShadowRenderer *dropShadowRend
     resize(60, 60);
     setMinimumSize(60, 60);
     setMaximumSize(60, 60);
+    // The background is painted antialiased by RoundedSurface.
     setStyleSheet(R"(
         QPushButton {
-            background-color: rgb(90, 90, 150);
-            border-radius: 30px;
+            background: transparent;
             color: white;
             padding: 6px 6px;
             border: none;
         }
 
-        QPushButton:hover {
-            background-color: rgb(120, 120, 180);
-            color: white;
-        }
-
-        QPushButton:pressed {
-            background-color: rgb(70, 70, 130);
-            color: white;
-        }
-
         QPushButton:disabled {
-            background-color: rgb(85, 89, 95);
             color: #888888;
         }
     )");
+    RoundedSurface::install(this, 30, RoundedSurface::Colors {
+        QColor(90, 90, 150),
+        QColor(120, 120, 180),
+        QColor(70, 70, 130),
+        QColor(85, 89, 95)
+    });
     setIcon(QIcon(":/icon/plus.ico"));
     setIconSize(QSize(20, 20));
 

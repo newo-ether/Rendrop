@@ -4,6 +4,8 @@
 #define PROJECT_INFO_H
 
 #include <optional>
+#include <utility>
+#include <vector>
 
 #include <QJsonObject>
 #include <QMetaType>
@@ -49,6 +51,9 @@ struct ProjectInfo
     QString renderEngine;
     int finishedFrame;
     int totalFrame;
+    // Completed frame indices as sorted, non-overlapping inclusive ranges.
+    // finishedFrame is the number of indices covered by these ranges.
+    std::vector<std::pair<int, int>> completedRanges;
 
     inline ProjectInfo():
         isNull(true),
@@ -101,6 +106,7 @@ struct ProjectInfo
 
     QJsonObject toJson() const;
     static std::optional<ProjectInfo> fromJson(const QJsonObject &object);
+    static std::vector<std::pair<int, int>> prefixRanges(int count);
     void updateCompletionState();
 };
 
