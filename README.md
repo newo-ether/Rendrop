@@ -35,8 +35,20 @@ Rendrop hosts a REST API on port `28528` for remote integration:
 
 ### Build Instructions
 1. Open `Rendrop.pro` in Qt Creator.
-2. Ensure the submodules in `thirdparty/` are initialized.
-3. Build and run the project in Release mode for optimal performance.
+2. Ensure the submodules in `thirdparty/` are initialized recursively
+   (`git submodule update --init --recursive`).
+3. Build QWindowKit (custom title bar) once as a static library with the same
+   Qt kit. `Rendrop.pro` looks for it in `build-dist/qwindowkit/install`, or
+   pass `QWK_INSTALL=<prefix>` to qmake:
+   ```
+   cmake -S thirdparty/qwindowkit -B build-dist/qwindowkit/build -G Ninja ^
+       -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=<Qt kit dir> ^
+       -DCMAKE_INSTALL_PREFIX=build-dist/qwindowkit/install ^
+       -DQWINDOWKIT_BUILD_STATIC=ON -DQWINDOWKIT_BUILD_QUICK=OFF
+   cmake --build build-dist/qwindowkit/build
+   cmake --install build-dist/qwindowkit/build
+   ```
+4. Build and run the project in Release mode for optimal performance.
 
 ## Command-line client
 

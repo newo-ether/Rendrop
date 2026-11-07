@@ -92,11 +92,12 @@ private:
     HttpStatus ensureBlend(const Assignment &assignment, QString &blendPath);
     HttpStatus ensurePack(const Assignment &assignment, QString &blendPath);
     HttpStatus download(const std::string &path, const QString &target, const Assignment &assignment, QString *servedKey);
+    HttpStatus downloadOnce(const std::string &path, const QString &target, const Assignment &assignment, QString *servedKey, bool &mismatch);
     HttpStatus uploadFile(const Assignment &assignment, const QString &filePath, const QString &name);
     HttpStatus post(httplib::Client &client, const Assignment &assignment, const char *action, const QByteArray &body);
     bool finishFailed(const Assignment &assignment, HttpStatus status, const QString &message, Outcome &outcome);
     void heartbeatIfDue(const Assignment &assignment, qint64 &lastBeatMs);
-    std::string authorization(const char *method, const std::string &path, QByteArray *nonce = nullptr) const;
+    std::string authorization(const char *method, const std::string &path, QByteArray *nonce = nullptr, const QByteArray &contentHash = QByteArray()) const;
     void log(bool error, const QString &text) const;
     void setStatus(const Status &status);
     void setPhase(const QString &phase, int finished = -1);

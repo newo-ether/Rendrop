@@ -602,6 +602,60 @@ void HttpServerTest::signedProtocolAndPackedFiles()
     QVERIFY(traversal);
     QCOMPARE(traversal->status, 404);
 
+    // Signed downloads carry the content hash, bound to the request nonce.
+    // Bearer clients cannot verify it and do not get it.
+    const QByteArray textureHash = QCryptographicHash::hash(texture, WorkerAuth::contentHashAlgorithm).toHex();
+    QCOMPARE(QByteArray::fromStdString(listed->get_header_value(WorkerAuth::contentHashHeader)), QByteArray());
+    QByteArray fileNonce;
+    const httplib::Headers fileHeaders = signedHeaders("GET", lease + "/files/tex/a.png", &fileNonce);
+    httplib::Result hashed;
+    QVERIFY(runOffThread([&]() { hashed = client.Get(lease + "/files/tex/a.png", fileHeaders); }));
+    QVERIFY(hashed);
+    QCOMPARE(hashed->status, 200);
+    QCOMPARE(QByteArray::fromStdString(hashed->get_header_value(WorkerAuth::contentHashHeader)), textureHash);
+    QCOMPARE(QByteArray::fromStdString(hashed->get_header_value("X-Rendrop-Response")),
+        WorkerAuth::fileSignature(testToken, fileNonce, textureHash));
+    QVERIFY(WorkerAuth::fileSignature(testToken, fileNonce, QByteArray(64, 'a'))
+        != WorkerAuth::fileSignature(testToken, fileNonce, textureHash));
+
+    // Uploads: the hash is signed into the request and checked on arrival.
+    const QByteArray frameBytes = "rendered frame";
+    const QByteArray frameHash = QCryptographicHash::hash(frameBytes, WorkerAuth::contentHashAlgorithm).toHex();
+    const std::string framePath = lease + "/frames/hashcheck_0001.png";
+    const auto hashedPut = [&](const QByteArray &hash, const QByteArray &signedHash) {
+        const WorkerAuth::SignedRequest request = WorkerAuth::signRequest(testToken, "PUT", QByteArray::fromStdString(framePath), signedHash);
+        httplib::Headers headers = {{"Authorization", request.header}};
+        if (!hash.isEmpty())
+        {
+            headers.emplace(WorkerAuth::contentHashHeader, hash.toStdString());
+        }
+        return client.Put(framePath, headers, frameBytes.toStdString(), "application/octet-stream");
+    };
+    const QByteArray wrongHash(64, '0');
+    httplib::Result mismatch;
+    httplib::Result unsignedHash;
+    httplib::Result malformed;
+    httplib::Result matched;
+    QVERIFY(runOffThread([&]() {
+        mismatch = hashedPut(wrongHash, wrongHash);
+        unsignedHash = hashedPut(frameHash, QByteArray());
+        malformed = hashedPut("xyz", "xyz");
+    }));
+    QVERIFY(mismatch);
+    QCOMPARE(mismatch->status, 422);
+    QVERIFY(unsignedHash);
+    QCOMPARE(unsignedHash->status, 401);
+    QVERIFY(malformed);
+    QCOMPARE(malformed->status, 400);
+    QVERIFY(!QFileInfo::exists(QDir(directory.path()).filePath(QStringLiteral("hashcheck_0001.png"))));
+    QVERIFY(runOffThread([&]() { matched = hashedPut(frameHash, frameHash); }));
+    QVERIFY(matched);
+    QCOMPARE(matched->status, 200);
+    QFile uploaded(QDir(directory.path()).filePath(QStringLiteral("hashcheck_0001.png")));
+    QVERIFY(uploaded.open(QIODevice::ReadOnly));
+    QCOMPARE(uploaded.readAll(), frameBytes);
+    uploaded.close();
+
     // Release hands the frames back; the lease is then gone.
     httplib::Result released;
     httplib::Result releasedAgain;

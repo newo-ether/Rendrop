@@ -12,6 +12,8 @@
 
 #include <QBuffer>
 #include <QByteArray>
+#include <QCryptographicHash>
+#include <QDateTime>
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
@@ -301,7 +303,14 @@ HttpServer::~HttpServer()
 
 void HttpServer::setWorkerToken(const QString &token)
 {
+    QMutexLocker locker(&configMutex);
     workerToken = toUtf8(token);
+}
+
+std::string HttpServer::currentWorkerToken() const
+{
+    QMutexLocker locker(&configMutex);
+    return workerToken;
 }
 
 void HttpServer::setLoadMonitor(const LoadMonitor *monitor)
@@ -311,6 +320,8 @@ void HttpServer::setLoadMonitor(const LoadMonitor *monitor)
 
 void HttpServer::setBeaconProvider(std::function<QByteArray()> provider)
 {
+    // Waits for a running call: the old provider's owner may be deleted next.
+    QMutexLocker locker(&configMutex);
     beaconProvider = std::move(provider);
 }
 
@@ -331,6 +342,7 @@ void HttpServer::stop()
 
 bool HttpServer::authorizeWorker(const httplib::Request &request, httplib::Response &response, QByteArray *nonce)
 {
+    const std::string workerToken = currentWorkerToken();
     if (workerToken.empty())
     {
         setJsonError(response, 403, "distributed rendering is disabled");
@@ -343,7 +355,8 @@ bool HttpServer::authorizeWorker(const httplib::Request &request, httplib::Respo
         QByteArray::fromStdString(header),
         QByteArray::fromStdString(request.method),
         QByteArray::fromStdString(request.path),
-        requestNonce
+        requestNonce,
+        QByteArray::fromStdString(request.get_header_value(WorkerAuth::contentHashHeader))
     );
     if (signedResult == WorkerAuth::Verifier::Result::Ok)
     {
@@ -369,11 +382,74 @@ void HttpServer::signResponse(httplib::Response &response, const QByteArray &non
         return;
     }
     const QByteArray signature = WorkerAuth::responseSignature(
-        QByteArray::fromStdString(workerToken),
+        QByteArray::fromStdString(currentWorkerToken()),
         nonce,
         QByteArray::fromStdString(response.body)
     );
     response.set_header("X-Rendrop-Response", signature.toStdString());
+}
+
+QByteArray HttpServer::contentHash(const QString &path)
+{
+    const auto identity = [&path]() {
+        const QFileInfo info(path);
+        return QByteArray::number(info.size()) + '|' + QByteArray::number(info.lastModified().toMSecsSinceEpoch());
+    };
+    const QByteArray before = identity();
+    {
+        QMutexLocker locker(&hashMutex);
+        const auto cached = hashCache.constFind(path);
+        if (cached != hashCache.cend() && cached->first == before)
+        {
+            return cached->second;
+        }
+    }
+    // Hashed outside the lock; two workers fetching the same new file both
+    // pay for it once, which is cheaper than serialising every transfer.
+    const QByteArray hash = WorkerAuth::hashFile(path);
+    if (hash.isEmpty() || identity() != before)
+    {
+        return QByteArray();
+    }
+    QMutexLocker locker(&hashMutex);
+    if (hashCache.size() > 4096)
+    {
+        hashCache.clear();
+    }
+    hashCache.insert(path, {before, hash});
+    return hash;
+}
+
+bool HttpServer::serveFile(httplib::Response &response, const QString &path, const QByteArray &nonce)
+{
+    auto file = std::make_shared<QFile>(path);
+    if (!file->open(QIODevice::ReadOnly))
+    {
+        return false;
+    }
+    // Without a nonce (bearer clients) there is nothing to sign the hash to.
+    const QByteArray hash = nonce.isEmpty() ? QByteArray() : contentHash(path);
+    if (!hash.isEmpty())
+    {
+        response.set_header(WorkerAuth::contentHashHeader, hash.toStdString());
+        response.set_header("X-Rendrop-Response",
+            WorkerAuth::fileSignature(QByteArray::fromStdString(currentWorkerToken()), nonce, hash).toStdString());
+    }
+    response.set_content_provider(
+        static_cast<size_t>(file->size()),
+        "application/octet-stream",
+        [file](size_t offset, size_t length, httplib::DataSink &sink) {
+            constexpr size_t chunk = 1024 * 1024;
+            if (!file->seek(static_cast<qint64>(offset)))
+            {
+                return false;
+            }
+            const QByteArray bytes = file->read(static_cast<qint64>(std::min(length, chunk)));
+            return !bytes.isEmpty() && sink.write(bytes.constData(), static_cast<size_t>(bytes.size()));
+        },
+        [file](bool) { file->close(); }
+    );
+    return true;
 }
 
 void HttpServer::run()
@@ -427,7 +503,14 @@ void HttpServer::run()
 
     // Signed node announcement for peers that cannot hear broadcasts.
     server.Get("/node/beacon", [this](const httplib::Request &, httplib::Response &response) {
-        const QByteArray beacon = beaconProvider ? beaconProvider() : QByteArray();
+        QByteArray beacon;
+        {
+            QMutexLocker locker(&configMutex);
+            if (beaconProvider)
+            {
+                beacon = beaconProvider();
+            }
+        }
         if (beacon.isEmpty())
         {
             setJsonError(response, 404, "node is not announcing");
@@ -835,8 +918,9 @@ void HttpServer::run()
     // Streams one file of the packed set. Only paths listed in the manifest
     // are served, which rules out traversal by construction.
     server.Get(R"(/leases/([^/]+)/files/(.+))", [this](const httplib::Request &request, httplib::Response &response) {
+        QByteArray nonce;
         QUuid leaseId;
-        if (!authorizeWorker(request, response) || !parseLeaseId(request, response, leaseId))
+        if (!authorizeWorker(request, response, &nonce) || !parseLeaseId(request, response, leaseId))
         {
             return;
         }
@@ -864,33 +948,18 @@ void HttpServer::run()
             setJsonError(response, 404, "not part of the pack");
             return;
         }
-        auto file = std::make_shared<QFile>(QDir(pack.directory).filePath(relative));
-        if (!file->open(QIODevice::ReadOnly))
+        if (!serveFile(response, QDir(pack.directory).filePath(relative), nonce))
         {
             setJsonError(response, 404, "file is not readable");
-            return;
         }
-        response.set_content_provider(
-            static_cast<size_t>(file->size()),
-            "application/octet-stream",
-            [file](size_t offset, size_t length, httplib::DataSink &sink) {
-                constexpr size_t chunk = 1024 * 1024;
-                if (!file->seek(static_cast<qint64>(offset)))
-                {
-                    return false;
-                }
-                const QByteArray bytes = file->read(static_cast<qint64>(std::min(length, chunk)));
-                return !bytes.isEmpty() && sink.write(bytes.constData(), static_cast<size_t>(bytes.size()));
-            },
-            [file](bool) { file->close(); }
-        );
     });
 
     // Streams the lease's .blend. The key header lets the worker cache by the
     // file's identity at download time, even if it changed after the claim.
     server.Get(R"(/leases/([^/]+)/blend)", [this](const httplib::Request &request, httplib::Response &response) {
+        QByteArray nonce;
         QUuid leaseId;
-        if (!authorizeWorker(request, response) || !parseLeaseId(request, response, leaseId))
+        if (!authorizeWorker(request, response, &nonce) || !parseLeaseId(request, response, leaseId))
         {
             return;
         }
@@ -908,32 +977,12 @@ void HttpServer::run()
             setJsonError(response, 410, "lease is no longer valid");
             return;
         }
-        auto file = std::make_shared<QFile>((*files)->blendPath);
-        if (!file->open(QIODevice::ReadOnly))
+        if (!serveFile(response, (*files)->blendPath, nonce))
         {
             setJsonError(response, 404, "blend file is not readable");
             return;
         }
-        const qint64 size = file->size();
         response.set_header("X-Rendrop-Blend-Key", toUtf8(RenderQueue::blendKey((*files)->blendPath)));
-        response.set_content_provider(
-            static_cast<size_t>(size),
-            "application/octet-stream",
-            [file](size_t offset, size_t length, httplib::DataSink &sink) {
-                constexpr size_t chunk = 1024 * 1024;
-                if (!file->seek(static_cast<qint64>(offset)))
-                {
-                    return false;
-                }
-                const QByteArray bytes = file->read(static_cast<qint64>(std::min(length, chunk)));
-                if (bytes.isEmpty())
-                {
-                    return false;
-                }
-                return sink.write(bytes.constData(), static_cast<size_t>(bytes.size()));
-            },
-            [file](bool) { file->close(); }
-        );
     });
 
     // Receives one rendered file into the coordinator's output directory. The
@@ -983,6 +1032,13 @@ void HttpServer::run()
             reject(400, "invalid frame file name");
             return;
         }
+        // Signed into the request when present; older workers omit it.
+        const QByteArray declaredHash = QByteArray::fromStdString(request.get_header_value(WorkerAuth::contentHashHeader));
+        if (!declaredHash.isEmpty() && !WorkerAuth::isContentHash(declaredHash))
+        {
+            reject(400, "invalid content hash");
+            return;
+        }
         if (declaredLength != std::numeric_limits<uint64_t>::max()
             && declaredLength > static_cast<uint64_t>(maxFrameBytes))
         {
@@ -1018,6 +1074,7 @@ void HttpServer::run()
         }
         qint64 received = 0;
         bool tooLarge = false;
+        QCryptographicHash hash(WorkerAuth::contentHashAlgorithm);
         const bool read = contentReader([&](const char *data, size_t length) {
             received += static_cast<qint64>(length);
             if (received > maxFrameBytes)
@@ -1025,6 +1082,7 @@ void HttpServer::run()
                 tooLarge = true;
                 return false;
             }
+            hash.addData(QByteArrayView(data, static_cast<qsizetype>(length)));
             return file.write(data, static_cast<qint64>(length)) == static_cast<qint64>(length);
         });
         if (tooLarge)
@@ -1039,6 +1097,13 @@ void HttpServer::run()
             file.cancelWriting();
             setJsonError(response, 400, "upload was interrupted");
             response.set_header("Connection", "close");
+            return;
+        }
+        if (!declaredHash.isEmpty() && hash.result().toHex() != declaredHash)
+        {
+            // The existing file stays; the worker sends this one again.
+            file.cancelWriting();
+            setJsonError(response, 422, "content hash mismatch");
             return;
         }
         if (!file.commit())

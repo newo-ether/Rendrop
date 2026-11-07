@@ -7,6 +7,7 @@
 #include <QPen>
 
 #include "file_bar.h"
+#include "rounded_surface.h"
 #include "frame_range_dialog.h"
 #include "rename_dialog.h"
 #include "ui_file_bar.h"
@@ -40,6 +41,36 @@ FileBar::FileBar(
     ui->setupUi(this);
     ui->fileNameButton->setToolTip(tr("Click to rename project"));
     ui->frameButton->setToolTip(tr("Click to edit frame range"));
+
+    // Style sheets draw rounded borders without antialiasing; the pills get
+    // painted surfaces instead and their sheets keep only text and padding.
+    const QColor outline(0x55, 0x5A, 0x66);
+    const QString text = QStringLiteral("color: white; background: transparent; border: none;");
+    ui->fileNameButton->setStyleSheet(
+        QStringLiteral("QPushButton { %1 padding-left: 12px; padding-right: 12px; text-align: left; }").arg(text));
+    RoundedSurface::install(ui->fileNameButton, 8, RoundedSurface::Colors {
+        QColor(0x33, 0x38, 0x42), QColor(0x4B, 0x53, 0x62), QColor(0x2B, 0x2F, 0x38), QColor(), outline});
+    ui->frameButton->setStyleSheet(QStringLiteral("QPushButton { %1 padding: 0px; }").arg(text));
+    RoundedSurface::install(ui->frameButton, 8, RoundedSurface::Colors {
+        QColor(40, 42, 42), QColor(50, 52, 52), QColor(30, 32, 32), QColor(), outline});
+    for (QLabel *label : {ui->resolutionLabel, ui->renderEngineLabel})
+    {
+        label->setStyleSheet(QStringLiteral("QLabel { %1 padding: 0px; }").arg(text));
+        RoundedSurface::install(label, 8, RoundedSurface::Colors {
+            QColor(40, 42, 42), QColor(), QColor(), QColor(), outline});
+    }
+    for (QPushButton *button : {ui->reloadButton, ui->deleteButton})
+    {
+        button->setStyleSheet(QStringLiteral("QPushButton { %1 } QPushButton:disabled { color: #AAAAAA; }").arg(text));
+        RoundedSurface::install(button, 6, RoundedSurface::Colors {
+            QColor(0x33, 0x38, 0x42), QColor(0x4B, 0x53, 0x62), QColor(0x2B, 0x2F, 0x38), QColor(0x55, 0x59, 0x5F), outline});
+    }
+    for (QPushButton *button : {ui->upButton, ui->downButton})
+    {
+        button->setStyleSheet(QStringLiteral("QPushButton { %1 }").arg(text));
+        RoundedSurface::install(button, 6, RoundedSurface::Colors {
+            Qt::transparent, QColor(0x4B, 0x53, 0x62), QColor(0x2B, 0x2F, 0x38), QColor(), QColor()});
+    }
 
     frameLoadingBar = new LoadingBar(ui->frameButton);
     frameLoadingBar->setGeometry(0, 0, ui->frameButton->width(), ui->frameButton->height());
@@ -84,7 +115,7 @@ FileBar::FileBar(
 
     applySnapshot(project);
     show();
-    dropShadowWidget->show();
+    dropShadowWidget->setVisible(DropShadowWidget::shadowsEnabled());
 }
 
 FileBar::~FileBar()
@@ -132,6 +163,19 @@ void FileBar::applySnapshot(const ProjectInfo &newProject)
     hideLoadingBars();
 }
 
+void FileBar::setNodeCount(int count)
+{
+    if (count == nodeCount)
+    {
+        return;
+    }
+    nodeCount = count;
+    if (project.state != ProjectState::Loading)
+    {
+        updateProgress();
+    }
+}
+
 bool FileBar::eventFilter(QObject *object, QEvent *event)
 {
     if (object == ui->fileBarContentWidget && event->type() == QEvent::Paint)
@@ -141,9 +185,10 @@ bool FileBar::eventFilter(QObject *object, QEvent *event)
         painter.setBrush(QColor(43, 45, 48));
         painter.setPen(Qt::NoPen);
         painter.drawRoundedRect(ui->fileBarContentWidget->rect(), 16, 16);
+        // Half-pixel inset keeps the 1px outline on whole device pixels.
         painter.setPen(QPen(style.borderColor.toQColor(), 1));
         painter.setBrush(Qt::NoBrush);
-        painter.drawRoundedRect(ui->fileBarContentWidget->rect().adjusted(1, 1, -1, -1), 16, 16);
+        painter.drawRoundedRect(QRectF(ui->fileBarContentWidget->rect()).adjusted(0.5, 0.5, -0.5, -0.5), 15.5, 15.5);
         return true;
     }
     if (object == ui->frameButton && event->type() == QEvent::Resize)
@@ -288,6 +333,9 @@ void FileBar::updateProgress()
         + " ("
         + QString::number(static_cast<int>(progress))
         + "%)"
+        + (project.state == ProjectState::Rendering && nodeCount > 1
+            ? tr(" · %n node(s)", nullptr, nodeCount)
+            : QString())
     );
 }
 

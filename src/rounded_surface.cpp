@@ -52,6 +52,10 @@ QColor RoundedSurface::currentColor() const
     {
         return colors.pressed;
     }
+    if (button && button->isChecked() && colors.checked.isValid())
+    {
+        return colors.checked;
+    }
     if (target->underMouse() && colors.hover.isValid())
     {
         return colors.hover;
@@ -59,8 +63,22 @@ QColor RoundedSurface::currentColor() const
     return colors.normal;
 }
 
+QColor RoundedSurface::currentBorder() const
+{
+    if (colors.focusBorder.isValid() && target->isEnabled() && target->hasFocus())
+    {
+        return colors.focusBorder;
+    }
+    return colors.border;
+}
+
 bool RoundedSurface::eventFilter(QObject *watched, QEvent *event)
 {
+    if (watched == target && colors.focusBorder.isValid()
+        && (event->type() == QEvent::FocusIn || event->type() == QEvent::FocusOut))
+    {
+        target->update();
+    }
     if (watched == target && event->type() == QEvent::Paint)
     {
         const QRectF bounds = QRectF(target->rect());
@@ -69,7 +87,19 @@ bool RoundedSurface::eventFilter(QObject *watched, QEvent *event)
         painter.setRenderHint(QPainter::Antialiasing);
         painter.setPen(Qt::NoPen);
         painter.setBrush(currentColor());
-        painter.drawRoundedRect(bounds, clamped, clamped);
+        const QColor border = currentBorder();
+        if (border.isValid())
+        {
+            // A 1px stroke on the half-pixel inset lands on whole device
+            // pixels instead of smearing over two.
+            painter.setPen(QPen(border, 1.0));
+            const QRectF inset = bounds.adjusted(0.5, 0.5, -0.5, -0.5);
+            painter.drawRoundedRect(inset, std::max(0.0, clamped - 0.5), std::max(0.0, clamped - 0.5));
+        }
+        else
+        {
+            painter.drawRoundedRect(bounds, clamped, clamped);
+        }
         // Fall through: the widget paints its own content on top.
     }
     return QObject::eventFilter(watched, event);

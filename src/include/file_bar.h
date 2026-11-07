@@ -36,6 +36,9 @@ public:
     QUuid projectId() const;
     DropShadowWidget *getDropShadowWidget() const;
     void applySnapshot(const ProjectInfo &project);
+    // Machines rendering this project right now, this one included. Shown
+    // next to the progress while more than one works on it.
+    void setNodeCount(int count);
 
 protected:
     bool eventFilter(QObject *object, QEvent *event) override;
@@ -62,6 +65,7 @@ private:
 
     Ui::fileBar *ui;
     ProjectInfo project;
+    int nodeCount = 0;
     DropShadowWidget *dropShadowWidget;
     LoadingBar *frameLoadingBar;
     LoadingBar *resolutionLoadingBar;

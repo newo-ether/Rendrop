@@ -522,6 +522,13 @@ LoadStatus LoadMonitor::status() const
     return current;
 }
 
+void LoadMonitor::setSettings(const LoadSettings &settings)
+{
+    QMutexLocker locker(&mutex);
+    // Keeps the samples and the current state; only thresholds and windows move.
+    window.setSettings(settings);
+    current.settings = window.settings();
+}
 void LoadMonitor::stop()
 {
     quit();
@@ -545,14 +552,20 @@ void LoadMonitor::run()
         }
         bool changed = false;
         bool busy = false;
+        int intervalMs = 0;
         {
             QMutexLocker locker(&mutex);
+            intervalMs = window.settings().sampleIntervalMs;
             changed = window.addSample(*sample);
             busy = window.busy();
             current.busy = busy;
             current.latest = *sample;
             current.busyWindow = window.busyWindowMeans();
             current.idleWindow = window.idleWindowMeans();
+        }
+        if (timer.interval() != intervalMs)
+        {
+            timer.setInterval(intervalMs);
         }
         if (changed)
         {

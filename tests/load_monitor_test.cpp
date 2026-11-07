@@ -38,7 +38,7 @@ class LoadMonitorTest : public QObject
     Q_OBJECT
 
 private slots:
-    void startsBusyUntilIdleWindowIsCovered();
+    void startsIdleUntilLoadShowsUp();
     void becomesBusyFromEitherCpuOrGpu();
     void shortSpikesDoNotFlipState();
     void hysteresisHoldsBusyBetweenThresholds();
@@ -48,16 +48,18 @@ private slots:
     void liveProbe();
 };
 
-void LoadMonitorTest::startsBusyUntilIdleWindowIsCovered()
+void LoadMonitorTest::startsIdleUntilLoadShowsUp()
 {
-    LoadWindow window(testSettings());
-    QVERIFY(window.busy());
-    qint64 time = feed(window, 0, 59, 0.0, 0.0);
-    QVERIFY(window.busy());
-    QVERIFY(!window.idleWindowMeans().covered);
-    window.addSample({time + 1000, 0.0, 0.0});
-    QVERIFY(!window.busy());
-    QVERIFY(window.idleWindowMeans().covered);
+    LoadWindow quiet(testSettings());
+    QVERIFY(!quiet.busy());
+    feed(quiet, 0, 60, 0.0, 0.0);
+    QVERIFY(!quiet.busy());
+
+    // A machine already loaded at startup turns busy once the busy window fills.
+    LoadWindow loaded(testSettings());
+    QVERIFY(!loaded.busy());
+    feed(loaded, 0, 10, 80.0, 0.0);
+    QVERIFY(loaded.busy());
 }
 
 void LoadMonitorTest::becomesBusyFromEitherCpuOrGpu()
@@ -110,7 +112,10 @@ void LoadMonitorTest::hysteresisHoldsBusyBetweenThresholds()
 void LoadMonitorTest::longGapRestartsWindow()
 {
     LoadWindow window(testSettings());
-    qint64 time = feed(window, 0, 50, 0.0, 0.0);
+    qint64 time = feed(window, 0, 10, 80.0, 0.0);
+    QVERIFY(window.busy());
+    time = feed(window, time, 50, 0.0, 0.0);
+    QVERIFY(window.busy());
     // Sleep for an hour; the 50 quiet seconds before it must not count.
     time += 3600 * 1000;
     window.addSample({time, 0.0, 0.0});

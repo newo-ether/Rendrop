@@ -171,6 +171,16 @@ void DistributedTest::verifierRejectsReplayAndTampering()
     const QByteArray stale = "Rendrop-HMAC ts=" + QByteArray::number(old) + ",nonce=" + oldNonce + ",sig="
         + WorkerAuth::hmacHex(token, WorkerAuth::requestMessage("POST", "/workers/claim", old, oldNonce));
     QCOMPARE(verifier.verify(token, stale, "POST", "/workers/claim", nonce), WorkerAuth::Verifier::Result::Invalid);
+    // A signed content hash must arrive unchanged, and cannot be dropped.
+    const QByteArray hash(64, 'a');
+    const QByteArray swapped(64, 'b');
+    const QByteArray put = QByteArray::fromStdString(WorkerAuth::signRequest(token, "PUT", "/leases/x/frames/f.png", hash).header);
+    QCOMPARE(verifier.verify(token, put, "PUT", "/leases/x/frames/f.png", nonce, swapped), WorkerAuth::Verifier::Result::Invalid);
+    const QByteArray dropped = QByteArray::fromStdString(WorkerAuth::signRequest(token, "PUT", "/leases/x/frames/f.png", hash).header);
+    QCOMPARE(verifier.verify(token, dropped, "PUT", "/leases/x/frames/f.png", nonce), WorkerAuth::Verifier::Result::Invalid);
+    const QByteArray intact = QByteArray::fromStdString(WorkerAuth::signRequest(token, "PUT", "/leases/x/frames/f.png", hash).header);
+    QCOMPARE(verifier.verify(token, intact, "PUT", "/leases/x/frames/f.png", nonce, hash), WorkerAuth::Verifier::Result::Ok);
+    QCOMPARE(WorkerAuth::hashFile(QStringLiteral("does-not-exist.bin")), QByteArray());
 }
 
 void DistributedTest::beaconRoundTrip()

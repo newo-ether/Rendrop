@@ -38,12 +38,11 @@ QLabel {
 }
 
 QSpinBox {
-    background-color: rgb(43, 45, 48);
+    background: transparent;
     color: white;
     padding-left: 5px;
     padding-right: 20px;
-    border: 1px solid rgb(85, 90, 102);
-    border-radius: 6px;
+    border: 1px solid transparent;
     font-family: &quot;Pixel Mixed&quot;;
     font-size: 12px;
 }
@@ -90,23 +89,12 @@ QSpinBox::down-arrow {
 }
 
 QPushButton {
-    background-color: #333842;
-    border: 1px solid #555A66;
-    border-radius: 6px;
+    background: transparent;
+    border: 1px solid transparent;
     color: white;
     padding: 6px 6px;
     font-family: &quot;Pixel Mixed&quot;;
     font-size: 12px;
-}
-
-QPushButton:hover {
-    background-color: #4B5362;
-    color: white;
-}
-
-QPushButton:pressed {
-    background-color: #2B2F38;
-    color: white;
 }</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">

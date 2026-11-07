@@ -18,6 +18,9 @@ public:
 
     QString getName() const;
 
+protected:
+    bool eventFilter(QObject *object, QEvent *event) override;
+
 private:
     Ui::RenameDialog *ui;
 };

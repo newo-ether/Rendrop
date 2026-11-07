@@ -4,7 +4,7 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
 CONFIG += c++20
 
-VERSION = 1.0.35
+VERSION = 2.0.0
 
 QMAKE_CXXFLAGS_RELEASE += -O2
 
@@ -13,8 +13,18 @@ INCLUDEPATH += \
     $$PWD/thirdparty/cpp-httplib \
     $$PWD/thirdparty/json/include
 
+# QWindowKit (thirdparty/qwindowkit, Apache-2.0) is built with CMake as a
+# static library; see README for the command. Override with
+# qmake QWK_INSTALL=<prefix> to use another install tree.
+isEmpty(QWK_INSTALL): QWK_INSTALL = $$PWD/build-dist/qwindowkit/install
+!exists($$QWK_INSTALL/share/QWindowKit/qmake/QWKWidgets.pri) {
+    error("QWindowKit not found at $$QWK_INSTALL; build and install thirdparty/qwindowkit first")
+}
+include($$QWK_INSTALL/share/QWindowKit/qmake/QWKWidgets.pri)
+
 SOURCES += \
     src/add_file_button.cpp \
+    src/caption_button.cpp \
     src/blender_file_info.cpp \
     src/blender_file_reader.cpp \
     src/blender_renderer.cpp \
@@ -31,26 +41,29 @@ SOURCES += \
     src/main.cpp \
     src/node_agent.cpp \
     src/node_discovery.cpp \
-    src/node_panel.cpp \
+    src/nodes_page.cpp \
     src/progress_bar.cpp \
     src/project_info.cpp \
     src/render_job.cpp \
     src/remote_worker.cpp \
     src/rounded_surface.cpp \
     src/render_queue.cpp \
+    src/settings_page.cpp \
     src/simple_process.cpp \
+    src/look_widgets.cpp \
     src/widget.cpp \
     src/drop_file_tip.cpp \
-    src/ring_progress_bar.cpp \
     src/frame_range_dialog.cpp \
     src/rename_dialog.cpp
 
 HEADERS += \
     src/include/app_paths.h \
+    src/include/app_preferences.h \
     src/include/blender_renderer.h \
     src/include/blender_file_info.h \
     src/include/blender_file_reader.h \
     src/include/add_file_button.h \
+    src/include/caption_button.h \
     src/include/blender_version_manager.h \
     src/include/chunk_planner.h \
     src/include/color.h \
@@ -65,18 +78,19 @@ HEADERS += \
     src/include/load_settings.h \
     src/include/node_agent.h \
     src/include/node_discovery.h \
-    src/include/node_panel.h \
+    src/include/nodes_page.h \
     src/include/project_info.h \
     src/include/render_job.h \
     src/include/remote_worker.h \
     src/include/rounded_surface.h \
     src/include/render_queue.h \
+    src/include/settings_page.h \
     src/include/simple_process.h \
+    src/include/look_widgets.h \
     src/include/worker_auth.h \
     src/include/style.h \
     src/include/widget.h \
     src/include/drop_file_tip.h \
-    src/include/ring_progress_bar.h \
     src/include/progress_bar.h \
     src/include/loading_bar.h \
     src/include/frame_range_dialog.h \
@@ -98,6 +112,6 @@ RESOURCES += \
 
 TRANSLATIONS += resource/i18n/zh_CN.ts
 
-win32: LIBS += -luser32 -lws2_32 -lpdh
+win32: LIBS += -luser32 -lws2_32 -lpdh -luxtheme -ldwmapi -lgdi32
 
 RC_ICONS = resource/icon/icon.ico

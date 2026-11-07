@@ -59,6 +59,9 @@ struct WorkerInfo
     QString name;
     qint64 lastSeenMs = 0;
     QUuid leaseId;
+    // Frames of the current lease, valid while leaseId is set.
+    int leaseFrameStart = 0;
+    int leaseFrameEnd = 0;
     int completedLeases = 0;
     // Measured on the current job, negative when unknown.
     double msPerFrame = -1.0;

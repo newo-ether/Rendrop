@@ -256,13 +256,47 @@ QImage DropShadowRenderer::render(WidgetInfo info)
 
     QImage image(width, height, QImage::Format_ARGB32_Premultiplied);
 
+    // Inside this box every pixel lies at least halfBlur within the rounded
+    // rect, so the falloff never reaches it and its alpha is constant. Only
+    // the band along the edges and corners needs the distance field.
+    const float inset = std::max(radius, halfBlur);
+    const float solidHalfWidth = halfRectWidth - inset;
+    const float solidHalfHeight = halfRectHeight - inset;
+    const QRgb solid = qRgba(0, 0, 0, static_cast<int>(std::lround(alphaMax * 255.0f)));
+    // Pixel centres i + 0.5 - size / 2 - offset that fall in [-half, half].
+    const auto solidSpan = [](float half, int size, float offset, int &first, int &last) {
+        const float centre = static_cast<float>(size) * 0.5f + offset - 0.5f;
+        first = std::max(0, static_cast<int>(std::ceil(centre - half)));
+        last = std::min(size - 1, static_cast<int>(std::floor(centre + half)));
+    };
+    int solidX0 = 0;
+    int solidX1 = -1;
+    int solidY0 = 0;
+    int solidY1 = -1;
+    if (solidHalfWidth >= 0.0f && solidHalfHeight >= 0.0f)
+    {
+        solidSpan(solidHalfWidth, width, offsetX, solidX0, solidX1);
+        solidSpan(solidHalfHeight, height, offsetY, solidY0, solidY1);
+    }
+
     for (int y = 0; y < height; ++y)
     {
         QRgb *scanLine = reinterpret_cast<QRgb *>(image.scanLine(y));
         const float py = static_cast<float>(y) + 0.5f - static_cast<float>(height) * 0.5f - offsetY;
+        const bool solidRow = y >= solidY0 && y <= solidY1 && solidX0 <= solidX1;
+        if (solidRow)
+        {
+            std::fill(scanLine + solidX0, scanLine + solidX1 + 1, solid);
+        }
 
         for (int x = 0; x < width; ++x)
         {
+            if (solidRow && x == solidX0)
+            {
+                // Jump over the filled span; the loop increment lands after it.
+                x = solidX1;
+                continue;
+            }
             const float px = static_cast<float>(x) + 0.5f - static_cast<float>(width) * 0.5f - offsetX;
             const float dx = std::abs(px) - (halfRectWidth - radius);
             const float dy = std::abs(py) - (halfRectHeight - radius);

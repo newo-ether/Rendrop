@@ -70,7 +70,7 @@ int main(int argc, char *argv[])
 {
     QCoreApplication application(argc, argv);
     QCoreApplication::setApplicationName(QStringLiteral("rendropctl"));
-    QCoreApplication::setApplicationVersion(QStringLiteral("1.0.35"));
+    QCoreApplication::setApplicationVersion(QStringLiteral("2.0.0"));
 
     QCommandLineParser parser;
     parser.setApplicationDescription(

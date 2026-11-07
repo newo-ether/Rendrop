@@ -21,8 +21,8 @@ struct DistributedSettings
 {
     // When disabled, the local renderer takes the whole remaining range in one
     // Blender process, exactly like a single-machine queue, and this machine
-    // neither announces itself nor renders for others.
-    bool enabled = false;
+    // neither announces itself nor renders for others. On by default.
+    bool enabled = true;
     // Shared secret of the render group. Workers send it as
     // "Authorization: Bearer <token>"; beacons are signed with it.
     QString token;
@@ -117,7 +117,8 @@ inline bool save(const QString &filePath, const DistributedSettings &settings)
     return file.commit();
 }
 
-// Loads distributed.json, writing a disabled default when it does not exist.
+// Loads distributed.json, writing an enabled default with a fresh token when
+// it does not exist.
 // Enabling it without a usable token generates one and writes it back so the
 // user can copy it to the other machines. Keys missing from older files are
 // written back with their defaults so every option is discoverable.
@@ -127,7 +128,11 @@ inline DistributedSettings load(const QString &filePath)
     QFile file(filePath);
     if (!file.exists())
     {
-        save(filePath, settings);
+        settings.token = generateToken();
+        if (!save(filePath, settings))
+        {
+            settings.enabled = false;
+        }
         return settings;
     }
     if (!file.open(QIODevice::ReadOnly))
@@ -142,7 +147,7 @@ inline DistributedSettings load(const QString &filePath)
     }
     const QJsonObject object = document.object();
     const DistributedSettings defaults;
-    settings.enabled = object.value(QStringLiteral("enabled")).toBool(false);
+    settings.enabled = object.value(QStringLiteral("enabled")).toBool(defaults.enabled);
     settings.token = object.value(QStringLiteral("token")).toString().trimmed();
     settings.chunkSize = std::clamp(object.value(QStringLiteral("chunkSize")).toInt(defaults.chunkSize), 1, 100000);
     settings.adaptiveChunks = object.value(QStringLiteral("adaptiveChunks")).toBool(defaults.adaptiveChunks);

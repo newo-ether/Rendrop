@@ -4,8 +4,23 @@
 #include <QPixmap>
 #include <QPainter>
 
+#include <algorithm>
+#include <vector>
+
 #include "drop_shadow_widget.h"
 #include "drop_shadow_renderer.h"
+
+namespace {
+
+bool globalShadowsEnabled = true;
+
+std::vector<DropShadowWidget *> &instances()
+{
+    static std::vector<DropShadowWidget *> list;
+    return list;
+}
+
+}
 
 DropShadowWidget::DropShadowWidget(
     QWidget *parent,
@@ -26,11 +41,36 @@ DropShadowWidget::DropShadowWidget(
     
     stackUnder(targetWidget);
     targetWidget->installEventFilter(this);
+    instances().push_back(this);
+    refreshVisibility();
 }
 
 DropShadowWidget::~DropShadowWidget()
 {
+    auto &list = instances();
+    list.erase(std::remove(list.begin(), list.end(), this), list.end());
     dropShadowRenderer->deleteWidgetBuffer(handle);
+}
+
+void DropShadowWidget::setShadowsEnabled(bool enabled)
+{
+    globalShadowsEnabled = enabled;
+    for (DropShadowWidget *shadow : instances())
+    {
+        shadow->refreshVisibility();
+    }
+}
+
+bool DropShadowWidget::shadowsEnabled()
+{
+    return globalShadowsEnabled;
+}
+
+void DropShadowWidget::refreshVisibility()
+{
+    // isVisibleTo: the target is a sibling, so only its own hidden state
+    // matters, not whether the window is shown yet.
+    setVisible(globalShadowsEnabled && targetWidget && targetWidget->isVisibleTo(parentWidget()));
 }
 
 void DropShadowWidget::paintEvent(QPaintEvent *)
@@ -88,6 +128,10 @@ bool DropShadowWidget::eventFilter(QObject *watched, QEvent *event)
         rect.setRect(rect.x() - marginX, rect.y() - marginY, rect.width() + marginX * 2, rect.height() + marginY * 2);
         setGeometry(rect);
         stackUnder(targetWidget);
+    }
+    else if (watched == targetWidget && (event->type() == QEvent::Show || event->type() == QEvent::Hide))
+    {
+        refreshVisibility();
     }
     return QWidget::eventFilter(watched, event);
 }

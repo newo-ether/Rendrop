@@ -43,8 +43,8 @@ public:
     bool addSample(const LoadSample &sample);
     void clear();
 
-    // Starts busy: a machine is not offered for remote work until a full
-    // idle window has shown it is quiet.
+    // Starts idle: a loaded machine turns busy once the short busy window is
+    // covered, and any lease taken before that is released at that point.
     bool busy() const;
     Means busyWindowMeans() const;
     Means idleWindowMeans() const;
@@ -55,12 +55,12 @@ private:
     LoadSettings config;
     std::deque<LoadSample> samples;
     qint64 firstSampleMs = -1;
-    bool isBusy = true;
+    bool isBusy = false;
 };
 
 struct LoadStatus
 {
-    bool busy = true;
+    bool busy = false;
     // False on platforms or machines without the GPU Engine counters.
     bool gpuAvailable = false;
     LoadSample latest;
@@ -84,6 +84,8 @@ public:
 
     // Thread-safe.
     LoadStatus status() const;
+    // Thread-safe. Applies new thresholds without dropping collected samples.
+    void setSettings(const LoadSettings &settings);
     void stop();
 
 signals:

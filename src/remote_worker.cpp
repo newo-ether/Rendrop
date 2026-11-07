@@ -8,6 +8,7 @@
 #include "nlohmann/json.hpp"
 
 #include <QCoreApplication>
+#include <QCryptographicHash>
 #include <QDateTime>
 #include <QDeadlineTimer>
 #include <QDir>
@@ -323,12 +324,18 @@ void RemoteWorker::setPhase(const QString &phase, int finished)
     }
 }
 
-std::string RemoteWorker::authorization(const char *method, const std::string &path, QByteArray *nonce) const
+std::string RemoteWorker::authorization(
+    const char *method,
+    const std::string &path,
+    QByteArray *nonce,
+    const QByteArray &contentHash
+) const
 {
     const WorkerAuth::SignedRequest request = WorkerAuth::signRequest(
         settings.token,
         QByteArray(method),
-        QByteArray::fromStdString(path)
+        QByteArray::fromStdString(path),
+        contentHash
     );
     if (nonce)
     {
@@ -555,9 +562,34 @@ void RemoteWorker::heartbeatIfDue(const Assignment &assignment, qint64 &lastBeat
     }
 }
 
-// Streams path into target via a .part file. 200 on success.
+// Streams path into target via a .part file. 200 on success. A file whose
+// content hash does not match is fetched once more before giving up; the
+// coordinator's copy may have changed between hashing and sending.
 RemoteWorker::HttpStatus RemoteWorker::download(const std::string &path, const QString &target, const Assignment &assignment, QString *servedKey)
 {
+    HttpStatus status = 0;
+    for (int attempt = 0; attempt < 2; ++attempt)
+    {
+        bool mismatch = false;
+        status = downloadOnce(path, target, assignment, servedKey, mismatch);
+        if (!mismatch || yielding)
+        {
+            break;
+        }
+        log(true, QStringLiteral("Content hash mismatch on %1, downloading again").arg(QFileInfo(target).fileName()));
+    }
+    return status;
+}
+
+RemoteWorker::HttpStatus RemoteWorker::downloadOnce(
+    const std::string &path,
+    const QString &target,
+    const Assignment &assignment,
+    QString *servedKey,
+    bool &mismatch
+)
+{
+    mismatch = false;
     const QString partPath = target + QStringLiteral(".part");
     QDir().mkpath(QFileInfo(target).absolutePath());
     QFile part(partPath);
@@ -568,9 +600,13 @@ RemoteWorker::HttpStatus RemoteWorker::download(const std::string &path, const Q
     HttpStatus status = -1;
     qint64 expected = -1;
     bool writeFailed = false;
+    bool forged = false;
+    QByteArray expectedHash;
+    QCryptographicHash hash(WorkerAuth::contentHashAlgorithm);
     qint64 lastBeat = nowMs();
     const std::string decoded = QUrl::fromPercentEncoding(QByteArray::fromStdString(path)).toUtf8().toStdString();
-    const httplib::Headers headers = {{"Authorization", authorization("GET", decoded)}};
+    QByteArray nonce;
+    const httplib::Headers headers = {{"Authorization", authorization("GET", decoded, &nonce)}};
     const auto result = client->Get(
         path,
         headers,
@@ -590,6 +626,19 @@ RemoteWorker::HttpStatus RemoteWorker::download(const std::string &path, const Q
                 {
                     expected = static_cast<qint64>(response.get_header_value_u64("Content-Length"));
                 }
+                // Older coordinators send no hash; then only the length is checked.
+                const QByteArray served = QByteArray::fromStdString(response.get_header_value(WorkerAuth::contentHashHeader));
+                if (!served.isEmpty())
+                {
+                    const QByteArray signature = QByteArray::fromStdString(response.get_header_value("X-Rendrop-Response"));
+                    if (!WorkerAuth::isContentHash(served) || !WorkerAuth::constantTimeEquals(
+                            WorkerAuth::fileSignature(settings.token, nonce, served), signature))
+                    {
+                        forged = true;
+                        return false;
+                    }
+                    expectedHash = served;
+                }
             }
             return status == 200;
         },
@@ -603,6 +652,7 @@ RemoteWorker::HttpStatus RemoteWorker::download(const std::string &path, const Q
                 writeFailed = true;
                 return false;
             }
+            hash.addData(QByteArrayView(data, static_cast<qsizetype>(length)));
             heartbeatIfDue(assignment, lastBeat);
             return true;
         }
@@ -613,8 +663,18 @@ RemoteWorker::HttpStatus RemoteWorker::download(const std::string &path, const Q
     {
         status = -1;
     }
+    if (forged)
+    {
+        log(true, QStringLiteral("File hash is not signed with the group token, ignoring the download"));
+        status = 0;
+    }
     if (status == 200 && (writeFailed || expected < 0 || received != expected))
     {
+        status = 0;
+    }
+    if (status == 200 && !expectedHash.isEmpty() && hash.result().toHex() != expectedHash)
+    {
+        mismatch = true;
         status = 0;
     }
     if (status != 200)
@@ -745,16 +805,23 @@ RemoteWorker::HttpStatus RemoteWorker::uploadFile(const Assignment &assignment, 
     const std::string signedPath = assignment.path("/frames/") + utf8(name);
     const std::string path = assignment.path("/frames/") + encodePath(name);
     HttpStatus status = -1;
-    // Transient failures (network, busy queue) get a few retries.
+    // Transient failures (network, busy queue, a corrupted transfer) get a
+    // few retries.
     for (int attempt = 0; attempt < 3; ++attempt)
     {
+        // Hashed per attempt: the coordinator compares against the bytes
+        // read below, and the file is settled, so both see the same content.
+        const QByteArray contentHash = WorkerAuth::hashFile(filePath);
         auto file = std::make_shared<QFile>(filePath);
-        if (!file->open(QIODevice::ReadOnly))
+        if (contentHash.isEmpty() || !file->open(QIODevice::ReadOnly))
         {
             return 0;
         }
         const qint64 size = file->size();
-        const httplib::Headers headers = {{"Authorization", authorization("PUT", signedPath)}};
+        const httplib::Headers headers = {
+            {"Authorization", authorization("PUT", signedPath, nullptr, contentHash)},
+            {WorkerAuth::contentHashHeader, contentHash.toStdString()}
+        };
         const auto result = client->Put(
             path,
             headers,
@@ -771,7 +838,11 @@ RemoteWorker::HttpStatus RemoteWorker::uploadFile(const Assignment &assignment, 
             "application/octet-stream"
         );
         status = result ? result->status : -1;
-        if (status == 200 || (status >= 400 && status < 500))
+        if (status == 422)
+        {
+            log(true, QStringLiteral("Content hash mismatch on %1, uploading again").arg(name));
+        }
+        else if (status == 200 || (status >= 400 && status < 500))
         {
             break;
         }

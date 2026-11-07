@@ -18,7 +18,12 @@ public:
     BlenderVersionManager(QString versionConfigPath);
     ~BlenderVersionManager();
 
-    int addBlenderVersion(QString path);
+    // First line of "blender --version"; empty when nothing usable came out.
+    static QString parseVersionOutput(const QString &output);
+    // Registers a version the caller has already probed. Returns 0, -2 for
+    // an empty version, -3 for a duplicate or -4 when the file cannot be
+    // written.
+    int addBlenderVersion(const QString &path, const QString &version);
     int deleteBlenderVersion(QString version);
     const std::vector<BlenderVersion>& getBlenderVersions() const;
     QString getBlenderPath(QString version) const;

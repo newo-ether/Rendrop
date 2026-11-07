@@ -8,9 +8,13 @@ INCLUDEPATH += \
     $$PWD/../thirdparty/cpp-httplib \
     $$PWD/../thirdparty/json/include
 
+isEmpty(QWK_INSTALL): QWK_INSTALL = $$PWD/../build-dist/qwindowkit/install
+include($$QWK_INSTALL/share/QWindowKit/qmake/QWKWidgets.pri)
+
 SOURCES += \
     ui_snapshot.cpp \
     ../src/add_file_button.cpp \
+    ../src/caption_button.cpp \
     ../src/blender_file_info.cpp \
     ../src/blender_file_reader.cpp \
     ../src/blender_renderer.cpp \
@@ -28,16 +32,17 @@ SOURCES += \
     ../src/loading_bar.cpp \
     ../src/node_agent.cpp \
     ../src/node_discovery.cpp \
-    ../src/node_panel.cpp \
+    ../src/nodes_page.cpp \
     ../src/progress_bar.cpp \
     ../src/project_info.cpp \
     ../src/remote_worker.cpp \
     ../src/rename_dialog.cpp \
     ../src/render_job.cpp \
     ../src/render_queue.cpp \
-    ../src/ring_progress_bar.cpp \
     ../src/rounded_surface.cpp \
+    ../src/settings_page.cpp \
     ../src/simple_process.cpp \
+    ../src/look_widgets.cpp \
     ../src/widget.cpp
 
 HEADERS += $$files($$PWD/../src/include/*.h)
@@ -51,4 +56,4 @@ FORMS += \
 
 RESOURCES += ../resource/resource.qrc
 
-win32: LIBS += -luser32 -lws2_32 -lpdh
+win32: LIBS += -luser32 -lws2_32 -lpdh -luxtheme -ldwmapi -lgdi32

@@ -619,6 +619,8 @@ std::optional<WorkAssignment> RenderQueue::claimWork(
     assignment.frameStep = project.frameStep;
     assignment.heartbeatSeconds = std::max(1, distributed.leaseTimeoutSeconds / 4);
     worker.leaseId = lease->id;
+    worker.leaseFrameStart = assignment.frameStart;
+    worker.leaseFrameEnd = assignment.frameEnd;
     emit outputTextUpdated(
         tr("Worker %1 took frames %2-%3")
             .arg(worker.name)

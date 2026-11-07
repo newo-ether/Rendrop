@@ -44,39 +44,14 @@ BlenderVersionManager::BlenderVersionManager(QString versionConfigPath):
 
 BlenderVersionManager::~BlenderVersionManager() {}
 
-int BlenderVersionManager::addBlenderVersion(QString path)
+QString BlenderVersionManager::parseVersionOutput(const QString &output)
 {
-    if (!QFile::exists(path))
-    {
-        return -1;
-    }
+    // "blender --version" prints "Blender 4.5.2 LTS" on its first line.
+    return output.split(QLatin1Char('\n')).first().trimmed();
+}
 
-    SimpleProcess process;
-    QString program = path;
-    QStringList arguments = {"--version"};
-
-    if (process.start(program, arguments) != 0)
-    {
-        return -2;
-    }
-
-    int result = process.waitForFinished(3000);
-
-    QString output = process.readStandardOutput();
-
-    if (output.isEmpty())
-    {
-        return -2;
-    }
-
-    if (!result)
-    {
-        process.kill();
-    }
-
-    QString versionString = output.split("\n").first().trimmed();
-    QString version = versionString;
-
+int BlenderVersionManager::addBlenderVersion(const QString &path, const QString &version)
+{
     if (version.isEmpty())
     {
         return -2;

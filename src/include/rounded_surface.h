@@ -13,7 +13,8 @@ class QWidget;
 // stepped corners at large radii; widgets using this keep their style sheet
 // for text color, font and padding but set "background: transparent".
 //
-// For buttons the hover, pressed and disabled colors follow the button state.
+// For buttons the hover, pressed, checked and disabled colors follow the
+// button state; focusBorder replaces the outline while the widget has focus.
 class RoundedSurface : public QObject
 {
     Q_OBJECT
@@ -26,6 +27,12 @@ public:
         QColor hover;
         QColor pressed;
         QColor disabled;
+        // Optional antialiased 1px outline; invalid means none.
+        QColor border = QColor();
+        // Invalid means the outline does not change on focus.
+        QColor focusBorder = QColor();
+        // Checkable buttons; wins over hover. Invalid means no checked look.
+        QColor checked = QColor();
     };
 
     // The surface is owned by the widget.
@@ -40,6 +47,7 @@ protected:
 private:
     RoundedSurface(QWidget *widget, qreal radius, const Colors &colors);
     QColor currentColor() const;
+    QColor currentBorder() const;
 
     QWidget *target;
     qreal radius;
