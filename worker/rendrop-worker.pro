@@ -5,7 +5,7 @@ CONFIG -= windows app_bundle
 TEMPLATE = app
 TARGET = rendrop-worker
 
-VERSION = 2.0.0
+VERSION = 2.0.1
 
 INCLUDEPATH += \
     $$PWD/../src/include \

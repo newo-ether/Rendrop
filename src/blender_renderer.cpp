@@ -165,14 +165,22 @@ int BlenderRenderer::getTotalFrame() const
 
 void BlenderRenderer::parseOutput(QString output)
 {
+    // Cycles and EEVEE print "Fra:N ..." status lines. Blender 5 logs a
+    // "Rendering frame N" line per frame instead, and Workbench prints only
+    // that one, so either starts a frame.
     static const QRegularExpression framePattern("^.*(Fra:\\s*(\\d+).+)$");
+    static const QRegularExpression frameStartPattern("^.*\\b(Rendering frame\\s+(\\d+))\\s*$");
     static const QRegularExpression savePattern("^.*(Saved:.+)$");
     const QStringList lines = output.split('\n');
     QString outputText;
     bool matched = false;
     for (const QString &line : lines)
     {
-        const QRegularExpressionMatch frameMatch = framePattern.match(line);
+        QRegularExpressionMatch frameMatch = framePattern.match(line);
+        if (!frameMatch.hasMatch())
+        {
+            frameMatch = frameStartPattern.match(line);
+        }
         if (frameMatch.hasMatch())
         {
             matched = true;

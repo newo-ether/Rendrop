@@ -86,6 +86,7 @@ private slots:
     void loadErrorReloadAndEdit();
     void reorderAndRemove();
     void renderFailureAdvancesSerialQueue();
+    void blender5FrameLogFinishes();
     void stopThenRestartIgnoresStoppedRunCompletion();
     void removingCurrentJobAdvancesQueue();
     void persistedProgressRestoresAndResumes();
@@ -300,6 +301,30 @@ void RenderQueueTest::renderFailureAdvancesSerialQueue()
     QVERIFY(renderingSpy.count() >= 2);
     QCOMPARE(renderingSpy.first().at(0).toBool(), true);
     QCOMPARE(renderingSpy.last().at(0).toBool(), false);
+}
+
+void RenderQueueTest::blender5FrameLogFinishes()
+{
+    // Workbench in Blender 5 prints "Rendering frame N" and no "Fra:" lines;
+    // every frame must still count.
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    RenderQueue queue(persistenceDirectory(directory));
+    const QUuid id = queue.addJob(
+        QStringLiteral("log5"),
+        createBlendFile(directory, QStringLiteral("log5_workbench")),
+        fakeBlenderPath
+    );
+    QVERIFY(waitUntil([&]() { return queue.snapshotById(id).state == ProjectState::Queued; }));
+    QVERIFY(queue.start());
+    QVERIFY(waitUntil([&]() {
+        return queue.snapshotById(id).state != ProjectState::Rendering
+            && queue.snapshotById(id).state != ProjectState::Queued
+            && !queue.isRendering();
+    }));
+    const ProjectInfo snapshot = queue.snapshotById(id);
+    QCOMPARE(snapshot.state, ProjectState::Finished);
+    QCOMPARE(snapshot.finishedFrame, snapshot.totalFrame);
 }
 
 void RenderQueueTest::stopThenRestartIgnoresStoppedRunCompletion()

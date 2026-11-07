@@ -79,7 +79,15 @@ int renderFrames(const QStringList &arguments)
     for (int frame = frameStart; frame <= frameEnd; frame += frameStep)
     {
         QThread::msleep(slow ? 1000 : 80);
-        output << "Fra: " << frame << " Mem: 1.00M\n";
+        if (blendPath.contains(QStringLiteral("log5"), Qt::CaseInsensitive))
+        {
+            // Blender 5 Workbench: no "Fra:" lines, only the frame start.
+            output << "00:01.765  render           | Rendering frame " << frame << "\r\n";
+        }
+        else
+        {
+            output << "Fra: " << frame << " Mem: 1.00M\n";
+        }
         if (outputPattern.isEmpty())
         {
             output << "Saved: 'frame_" << frame << ".png'\n";
