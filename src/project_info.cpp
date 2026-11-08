@@ -10,7 +10,7 @@
 #include "project_info.h"
 
 namespace {
-constexpr int schemaVersion = 3;
+constexpr int schemaVersion = 4;
 
 bool readInt(const QJsonObject &object, const char *key, int &value)
 {
@@ -90,6 +90,31 @@ bool readRanges(const QJsonValue &jsonValue, int totalFrame, std::vector<std::pa
     return true;
 }
 
+// Owners are advisory: any malformed entry drops all of them, which only
+// moves frames back under this machine.
+bool readOwners(const QJsonValue &jsonValue, int totalFrame, std::vector<FrameOwnerRanges> &owners)
+{
+    if (!jsonValue.isArray())
+    {
+        return false;
+    }
+    for (const QJsonValue &item : jsonValue.toArray())
+    {
+        const QJsonObject object = item.toObject();
+        FrameOwnerRanges entry;
+        if (!item.isObject()
+            || !readString(object, "node", entry.owner)
+            || entry.owner.isEmpty()
+            || !readRanges(object.value(QStringLiteral("ranges")), totalFrame, entry.ranges))
+        {
+            owners.clear();
+            return false;
+        }
+        owners.push_back(std::move(entry));
+    }
+    return true;
+}
+
 int rangeCount(const std::vector<std::pair<int, int>> &ranges)
 {
     int count = 0;
@@ -138,6 +163,19 @@ QJsonObject ProjectInfo::toJson() const
     {
         ranges.append(QJsonArray{range.first, range.second});
     }
+    QJsonArray owners;
+    for (const FrameOwnerRanges &entry : frameOwners)
+    {
+        QJsonArray ownerRanges;
+        for (const auto &range : entry.ranges)
+        {
+            ownerRanges.append(QJsonArray{range.first, range.second});
+        }
+        owners.append(QJsonObject{
+            {QStringLiteral("node"), entry.owner},
+            {QStringLiteral("ranges"), ownerRanges}
+        });
+    }
     return {
         {QStringLiteral("schemaVersion"), schemaVersion},
         {QStringLiteral("id"), id.toString(QUuid::WithoutBraces)},
@@ -154,7 +192,8 @@ QJsonObject ProjectInfo::toJson() const
         {QStringLiteral("renderEngine"), renderEngine},
         {QStringLiteral("finishedFrame"), finishedFrame},
         {QStringLiteral("totalFrame"), totalFrame},
-        {QStringLiteral("completedRanges"), ranges}
+        {QStringLiteral("completedRanges"), ranges},
+        {QStringLiteral("frameOwners"), owners}
     };
 }
 
@@ -254,6 +293,10 @@ std::optional<ProjectInfo> ProjectInfo::fromJson(const QJsonObject &object)
         // Schema 1 and 2 only rendered sequentially, so progress is a prefix.
         // The same applies to a schema 3 object written without ranges.
         project.completedRanges = prefixRanges(std::min(project.finishedFrame, project.totalFrame));
+    }
+    if (version >= 4 && object.contains(QStringLiteral("frameOwners")))
+    {
+        readOwners(object.value(QStringLiteral("frameOwners")), project.totalFrame, project.frameOwners);
     }
     project.finishedFrame = rangeCount(project.completedRanges);
     project.updateCompletionState();

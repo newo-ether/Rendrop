@@ -4,7 +4,7 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
 CONFIG += c++20
 
-VERSION = 2.0.1
+VERSION = 2.0.2
 
 QMAKE_CXXFLAGS_RELEASE += -O2
 

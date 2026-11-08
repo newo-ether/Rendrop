@@ -149,6 +149,23 @@ void RenderQueueTest::projectInfoSerializationNormalizesState()
     QJsonObject invalid = loading.toJson();
     invalid.insert(QStringLiteral("schemaVersion"), 99);
     QVERIFY(!ProjectInfo::fromJson(invalid).has_value());
+
+    // Frame owners round-trip; a malformed entry drops all of them.
+    loading.finishedFrame = 2;
+    loading.completedRanges = {{0, 0}, {2, 2}};
+    loading.frameOwners = {{QStringLiteral("Quantum"), {{2, 2}}}};
+    restored = ProjectInfo::fromJson(loading.toJson());
+    QVERIFY(restored.has_value());
+    QCOMPARE(restored->frameOwners, loading.frameOwners);
+    QJsonObject badOwners = loading.toJson();
+    badOwners.insert(
+        QStringLiteral("frameOwners"),
+        QJsonArray{QJsonObject{{QStringLiteral("node"), QStringLiteral("Quantum")}, {QStringLiteral("ranges"), QJsonArray{QJsonArray{5, 9}}}}}
+    );
+    restored = ProjectInfo::fromJson(badOwners);
+    QVERIFY(restored.has_value());
+    QVERIFY(restored->frameOwners.empty());
+    QCOMPARE(restored->finishedFrame, 2);
 }
 
 void RenderQueueTest::loadErrorReloadAndEdit()
@@ -482,7 +499,7 @@ void RenderQueueTest::legacyIntegerIdsMigrateToUuidSchema()
     const QJsonArray migratedProjects = migratedRoot.value(QStringLiteral("projects")).toArray();
     QCOMPARE(migratedProjects.size(), 1);
     const QJsonObject migratedProject = migratedProjects[0].toObject();
-    QCOMPARE(migratedProject.value(QStringLiteral("schemaVersion")).toInt(), 3);
+    QCOMPARE(migratedProject.value(QStringLiteral("schemaVersion")).toInt(), 4);
     QVERIFY(migratedProject.value(QStringLiteral("id")).isString());
     QCOMPARE(migratedProject.value(QStringLiteral("id")).toString(), uuidString(snapshots[0].id));
     // Legacy sequential progress becomes a prefix range.

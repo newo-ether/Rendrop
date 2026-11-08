@@ -429,11 +429,36 @@ void HttpServerTest::workerProcessRendersLeases()
     QVERIFY(workers[0].completedLeases >= 1);
     QCOMPARE(queue.snapshotById(id).finishedFrame, 3);
 
+    // Every frame the worker uploaded is credited to it by name, and the
+    // project listing carries the ownership to clients.
+    httplib::Result listing;
+    QThread *lister = QThread::create([&]() {
+        httplib::Client listClient("127.0.0.1", port);
+        listing = listClient.Get("/projects");
+    });
+    lister->start();
+    QVERIFY(waitUntil([&]() { return lister->isFinished(); }, 5000));
+    delete lister;
+    QVERIFY(listing);
+    QCOMPARE(listing->status, 200);
+    const json listed = json::parse(listing->body).at(0);
+    QCOMPARE(listed.at("completedRanges"), json::parse("[[0, 2]]"));
+    int credited = 0;
+    for (const json &owner : listed.at("frameOwners"))
+    {
+        QCOMPARE(owner.at("node").get<std::string>(), std::string("test-worker"));
+        for (const json &range : owner.at("ranges"))
+        {
+            credited += range.at(1).get<int>() - range.at(0).get<int>() + 1;
+        }
+    }
+
     // The local fake Blender writes no files, so every frame on disk came
     // through the upload endpoint, named the way the project asks for.
     const QStringList frames = QDir(directory.path()).entryList({QStringLiteral("render_*.png")}, QDir::Files, QDir::Name);
     QVERIFY2(!frames.isEmpty(), output.constData());
     QCOMPARE(output.count("Uploaded render_"), qsizetype(frames.size()));
+    QCOMPARE(credited, int(frames.size()));
     for (const QString &frameName : frames)
     {
         QFile frame(QDir(directory.path()).filePath(frameName));

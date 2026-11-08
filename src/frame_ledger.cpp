@@ -10,7 +10,8 @@ void FrameLedger::reset(
     int frameStart,
     int frameEnd,
     int frameStep,
-    const std::vector<IndexRange> &completed
+    const std::vector<IndexRange> &completed,
+    const std::vector<FrameOwnerRanges> &owners
 )
 {
     clear();
@@ -22,13 +23,34 @@ void FrameLedger::reset(
     step = frameStep;
     const int total = (frameEnd - frameStart) / frameStep + 1;
     frameSlots.assign(static_cast<size_t>(total), Slot::Pending);
+    frameOwners.assign(static_cast<size_t>(total), -1);
     for (const IndexRange &range : completed)
     {
         const int first = std::max(range.first, 0);
         const int last = std::min(range.second, total - 1);
         if (first <= last)
         {
-            markDone(first, last - first + 1);
+            markDone(first, last - first + 1, -1);
+        }
+    }
+    for (const FrameOwnerRanges &entry : owners)
+    {
+        if (entry.owner.isEmpty())
+        {
+            continue;
+        }
+        const int ownerIndex = ownerIndexFor(entry.owner);
+        for (const IndexRange &range : entry.ranges)
+        {
+            const int first = std::max(range.first, 0);
+            const int last = std::min(range.second, total - 1);
+            for (int index = first; index <= last; ++index)
+            {
+                if (frameSlots[static_cast<size_t>(index)] == Slot::Done)
+                {
+                    frameOwners[static_cast<size_t>(index)] = ownerIndex;
+                }
+            }
         }
     }
 }
@@ -38,6 +60,8 @@ void FrameLedger::clear()
     start = 0;
     step = 0;
     frameSlots.clear();
+    frameOwners.clear();
+    ownerNames.clear();
     done = 0;
     leases.clear();
 }
@@ -45,7 +69,8 @@ void FrameLedger::clear()
 std::optional<FrameLedger::Lease> FrameLedger::claim(
     const QString &workerId,
     int maxFrames,
-    qint64 nowMs
+    qint64 nowMs,
+    const QString &owner
 )
 {
     if (maxFrames <= 0)
@@ -69,6 +94,7 @@ std::optional<FrameLedger::Lease> FrameLedger::claim(
     Lease lease;
     lease.id = QUuid::createUuid();
     lease.workerId = workerId;
+    lease.owner = owner;
     lease.firstIndex = firstIndex;
     lease.count = count;
     lease.claimedMs = nowMs;
@@ -89,7 +115,7 @@ bool FrameLedger::report(const QUuid &leaseId, int finishedCount, qint64 nowMs)
     // Progress is monotonic; a renderer never un-finishes a frame.
     if (clamped > lease.finished)
     {
-        markDone(lease.firstIndex + lease.finished, clamped - lease.finished);
+        markDone(lease.firstIndex + lease.finished, clamped - lease.finished, ownerIndexFor(lease.owner));
         lease.finished = clamped;
     }
     lease.lastSeenMs = nowMs;
@@ -104,7 +130,7 @@ bool FrameLedger::complete(const QUuid &leaseId)
         return false;
     }
     const Lease &lease = iterator.value();
-    markDone(lease.firstIndex + lease.finished, lease.count - lease.finished);
+    markDone(lease.firstIndex + lease.finished, lease.count - lease.finished, ownerIndexFor(lease.owner));
     leases.erase(iterator);
     return true;
 }
@@ -230,7 +256,38 @@ std::vector<FrameLedger::IndexRange> FrameLedger::completedRanges() const
     return ranges;
 }
 
-void FrameLedger::markDone(int firstIndex, int count)
+std::vector<FrameOwnerRanges> FrameLedger::ownerRanges() const
+{
+    std::vector<FrameOwnerRanges> result;
+    // Position of each owner in result, in order of first credited frame.
+    std::vector<int> position(static_cast<size_t>(ownerNames.size()), -1);
+    for (int index = 0; index < static_cast<int>(frameSlots.size()); ++index)
+    {
+        const int ownerIndex = frameOwners[static_cast<size_t>(index)];
+        if (ownerIndex < 0 || frameSlots[static_cast<size_t>(index)] != Slot::Done)
+        {
+            continue;
+        }
+        int &slot = position[static_cast<size_t>(ownerIndex)];
+        if (slot < 0)
+        {
+            slot = static_cast<int>(result.size());
+            result.push_back({ownerNames[ownerIndex], {}});
+        }
+        std::vector<IndexRange> &ranges = result[static_cast<size_t>(slot)].ranges;
+        if (!ranges.empty() && ranges.back().second == index - 1)
+        {
+            ranges.back().second = index;
+        }
+        else
+        {
+            ranges.emplace_back(index, index);
+        }
+    }
+    return result;
+}
+
+void FrameLedger::markDone(int firstIndex, int count, int ownerIndex)
 {
     for (int index = firstIndex; index < firstIndex + count; ++index)
     {
@@ -238,9 +295,25 @@ void FrameLedger::markDone(int firstIndex, int count)
         if (slot != Slot::Done)
         {
             slot = Slot::Done;
+            frameOwners[static_cast<size_t>(index)] = ownerIndex;
             ++done;
         }
     }
+}
+
+int FrameLedger::ownerIndexFor(const QString &owner)
+{
+    if (owner.isEmpty())
+    {
+        return -1;
+    }
+    const qsizetype existing = ownerNames.indexOf(owner);
+    if (existing >= 0)
+    {
+        return static_cast<int>(existing);
+    }
+    ownerNames.append(owner);
+    return static_cast<int>(ownerNames.size() - 1);
 }
 
 void FrameLedger::releaseUnfinished(const Lease &lease)

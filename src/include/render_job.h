@@ -53,7 +53,8 @@ public:
 
     // Remote lease operations. They only succeed while the job is rendering
     // and the lease belongs to a remote worker.
-    std::optional<FrameLedger::Lease> claimRemote(const QString &workerId, int maxFrames);
+    // owner is the name credited with the frames; empty falls back to workerId.
+    std::optional<FrameLedger::Lease> claimRemote(const QString &workerId, int maxFrames, const QString &owner = QString());
     bool reportRemote(const QUuid &leaseId, int finishedCount);
     bool completeRemote(const QUuid &leaseId);
     bool failRemote(const QUuid &leaseId);

@@ -594,7 +594,7 @@ std::optional<WorkAssignment> RenderQueue::claimWork(
             return std::nullopt;
         }
     }
-    const std::optional<FrameLedger::Lease> lease = job->claimRemote(workerId, maxFrames);
+    const std::optional<FrameLedger::Lease> lease = job->claimRemote(workerId, maxFrames, worker.name);
     if (!lease.has_value())
     {
         return std::nullopt;

@@ -13,6 +13,8 @@ private slots:
     void expireReleasesSilentLeases();
     void resetRestoresCompletedRangesWithGaps();
     void completeAndUnknownLeases();
+    void creditsFramesToLeaseOwners();
+    void resetRestoresOwnersOnlyOnCompletedFrames();
 };
 
 void FrameLedgerTest::claimsContiguousPendingFrames()
@@ -104,6 +106,48 @@ void FrameLedgerTest::completeAndUnknownLeases()
     ledger.reset(1, 0, 1, {});
     QCOMPARE(ledger.totalCount(), 0);
     QVERIFY(!ledger.isComplete());
+}
+
+void FrameLedgerTest::creditsFramesToLeaseOwners()
+{
+    FrameLedger ledger;
+    ledger.reset(1, 10, 1, {});
+    const auto local = ledger.claim(QStringLiteral("local"), 3, 0);
+    const auto quantum = ledger.claim(QStringLiteral("q-id"), 4, 0, QStringLiteral("Quantum"));
+    const auto rest = ledger.claim(QStringLiteral("local"), 3, 0);
+    QVERIFY(ledger.complete(local->id));
+    // Partial progress is credited as it is reported, then the rest on complete.
+    QVERIFY(ledger.report(quantum->id, 2, 0));
+    std::vector<FrameOwnerRanges> expected = {{QStringLiteral("Quantum"), {{3, 4}}}};
+    QCOMPARE(ledger.ownerRanges(), expected);
+    QVERIFY(ledger.complete(quantum->id));
+    QVERIFY(ledger.complete(rest->id));
+    expected = {{QStringLiteral("Quantum"), {{3, 6}}}};
+    QCOMPARE(ledger.ownerRanges(), expected);
+    QCOMPARE(ledger.doneCount(), 10);
+}
+
+void FrameLedgerTest::resetRestoresOwnersOnlyOnCompletedFrames()
+{
+    FrameLedger ledger;
+    const std::vector<FrameOwnerRanges> owners = {
+        {QStringLiteral("QW"), {{0, 1}, {5, 7}}},
+        {QStringLiteral(""), {{2, 2}}},
+        {QStringLiteral("Quantum"), {{8, 9}}}
+    };
+    ledger.reset(1, 10, 1, {{0, 2}, {5, 6}}, owners);
+    // Frame 7 is not done, so its stale owner entry is dropped, and the
+    // anonymous entry never creates an owner.
+    const std::vector<FrameOwnerRanges> expected = {{QStringLiteral("QW"), {{0, 1}, {5, 6}}}};
+    QCOMPARE(ledger.ownerRanges(), expected);
+    const auto lease = ledger.claim(QStringLiteral("b"), 1, 0, QStringLiteral("Quantum"));
+    QCOMPARE(lease->firstIndex, 3);
+    QVERIFY(ledger.complete(lease->id));
+    const std::vector<FrameOwnerRanges> after = {
+        {QStringLiteral("QW"), {{0, 1}, {5, 6}}},
+        {QStringLiteral("Quantum"), {{3, 3}}}
+    };
+    QCOMPARE(ledger.ownerRanges(), after);
 }
 
 QTEST_GUILESS_MAIN(FrameLedgerTest)

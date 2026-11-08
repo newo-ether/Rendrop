@@ -43,7 +43,7 @@ int main(int argc, char *argv[])
     QCoreApplication::setAttribute(Qt::AA_DontCreateNativeWidgetSiblings);
     QApplication app(argc, argv);
     QCoreApplication::setApplicationName(QStringLiteral("Rendrop"));
-    QCoreApplication::setApplicationVersion(QStringLiteral("2.0.1"));
+    QCoreApplication::setApplicationVersion(QStringLiteral("2.0.2"));
     // The window hides to the tray; message boxes closing while it is hidden
     // must not end the process. Quitting goes through the tray menu.
     app.setQuitOnLastWindowClosed(false);

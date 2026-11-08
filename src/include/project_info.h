@@ -12,6 +12,8 @@
 #include <QString>
 #include <QUuid>
 
+#include "frame_owner.h"
+
 enum ProjectState
 {
     Loading,
@@ -54,6 +56,9 @@ struct ProjectInfo
     // Completed frame indices as sorted, non-overlapping inclusive ranges.
     // finishedFrame is the number of indices covered by these ranges.
     std::vector<std::pair<int, int>> completedRanges;
+    // Completed frames credited to remote nodes. Unlisted completed frames
+    // belong to this machine.
+    std::vector<FrameOwnerRanges> frameOwners;
 
     inline ProjectInfo():
         isNull(true),

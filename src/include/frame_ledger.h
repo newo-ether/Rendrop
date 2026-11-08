@@ -9,7 +9,10 @@
 
 #include <QHash>
 #include <QString>
+#include <QStringList>
 #include <QUuid>
+
+#include "frame_owner.h"
 
 // Tracks per-frame completion for one render run and hands out contiguous
 // leases of pending frames to renderers. Frames are addressed by index:
@@ -24,6 +27,8 @@ public:
     {
         QUuid id;
         QString workerId;
+        // Display name credited with the frames; empty for the coordinator.
+        QString owner;
         int firstIndex = 0;
         int count = 0;
         // Frames finished counted from the start of the lease.
@@ -32,10 +37,17 @@ public:
         qint64 lastSeenMs = 0;
     };
 
-    void reset(int frameStart, int frameEnd, int frameStep, const std::vector<IndexRange> &completed);
+    // owners credits already completed frames; entries outside completed are ignored.
+    void reset(
+        int frameStart,
+        int frameEnd,
+        int frameStep,
+        const std::vector<IndexRange> &completed,
+        const std::vector<FrameOwnerRanges> &owners = {}
+    );
     void clear();
 
-    std::optional<Lease> claim(const QString &workerId, int maxFrames, qint64 nowMs);
+    std::optional<Lease> claim(const QString &workerId, int maxFrames, qint64 nowMs, const QString &owner = QString());
     bool report(const QUuid &leaseId, int finishedCount, qint64 nowMs);
     bool complete(const QUuid &leaseId);
     bool release(const QUuid &leaseId);
@@ -53,6 +65,8 @@ public:
     int leaseHolderCount() const;
     bool holdsLease(const QString &workerId) const;
     std::vector<IndexRange> completedRanges() const;
+    // Completed frames per non-empty owner, in order of first appearance.
+    std::vector<FrameOwnerRanges> ownerRanges() const;
 
 private:
     enum class Slot : unsigned char
@@ -62,13 +76,17 @@ private:
         Done
     };
 
-    void markDone(int firstIndex, int count);
+    void markDone(int firstIndex, int count, int ownerIndex);
+    int ownerIndexFor(const QString &owner);
     void releaseUnfinished(const Lease &lease);
 
     int start = 0;
     int step = 0;
     // Not named "slots": that is a Qt keyword macro.
     std::vector<Slot> frameSlots;
+    // Per slot index into ownerNames; -1 means the coordinator.
+    std::vector<int> frameOwners;
+    QStringList ownerNames;
     int done = 0;
     QHash<QUuid, Lease> leases;
 };

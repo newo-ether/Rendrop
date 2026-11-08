@@ -164,6 +164,7 @@ bool RenderJob::setFrameRange(int frameStart, int frameEnd, int frameStep)
     project.frameStep = frameStep;
     project.finishedFrame = 0;
     project.completedRanges.clear();
+    project.frameOwners.clear();
     project.totalFrame = (frameEnd - frameStart) / frameStep + 1;
     project.state = ProjectState::Queued;
     publishSnapshot();
@@ -197,7 +198,7 @@ bool RenderJob::startRender()
     {
         return false;
     }
-    ledger.reset(project.frameStart, project.frameEnd, project.frameStep, project.completedRanges);
+    ledger.reset(project.frameStart, project.frameEnd, project.frameStep, project.completedRanges, project.frameOwners);
     planner.reset();
     remoteFailures = 0;
     if (ledger.pendingCount() == 0)
@@ -258,7 +259,7 @@ void RenderJob::shutdown()
     }
 }
 
-std::optional<FrameLedger::Lease> RenderJob::claimRemote(const QString &workerId, int maxFrames)
+std::optional<FrameLedger::Lease> RenderJob::claimRemote(const QString &workerId, int maxFrames, const QString &owner)
 {
     if (shuttingDown || project.state != ProjectState::Rendering || !distributed)
     {
@@ -266,7 +267,7 @@ std::optional<FrameLedger::Lease> RenderJob::claimRemote(const QString &workerId
     }
     const int chunk = nextChunk(workerId);
     const int limit = maxFrames > 0 ? std::min(maxFrames, chunk) : chunk;
-    return ledger.claim(workerId, limit, nowMs());
+    return ledger.claim(workerId, limit, nowMs(), owner.isEmpty() ? workerId : owner);
 }
 
 bool RenderJob::reportRemote(const QUuid &leaseId, int finishedCount)
@@ -391,6 +392,7 @@ void RenderJob::onFinishedReading(int status, BlenderFileInfo info)
         project.outputPath = info.outputPath;
         project.finishedFrame = 0;
         project.completedRanges.clear();
+        project.frameOwners.clear();
         project.totalFrame = info.frameStep <= 0
             ? 0
             : (info.frameEnd - info.frameBegin) / info.frameStep + 1;
@@ -483,6 +485,7 @@ void RenderJob::resetProjectData()
     project.renderEngine.clear();
     project.finishedFrame = 0;
     project.completedRanges.clear();
+    project.frameOwners.clear();
     project.totalFrame = 0;
 }
 
@@ -490,6 +493,7 @@ void RenderJob::syncProgressFromLedger()
 {
     project.finishedFrame = ledger.doneCount();
     project.completedRanges = ledger.completedRanges();
+    project.frameOwners = ledger.ownerRanges();
 }
 
 bool RenderJob::isRemoteLease(const QUuid &leaseId) const

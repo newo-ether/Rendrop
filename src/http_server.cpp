@@ -48,9 +48,28 @@ std::string uuidText(const QUuid &id)
     return toUtf8(id.toString(QUuid::WithoutBraces));
 }
 
+json rangesToJson(const std::vector<std::pair<int, int>> &ranges)
+{
+    json array = json::array();
+    for (const auto &range : ranges)
+    {
+        array.push_back(json::array({range.first, range.second}));
+    }
+    return array;
+}
+
 json projectToJson(const ProjectInfo &project)
 {
+    // Ranges are frame indices: frame = frameStart + index * frameStep.
+    // Completed frames missing from frameOwners were rendered here.
+    json owners = json::array();
+    for (const FrameOwnerRanges &entry : project.frameOwners)
+    {
+        owners.push_back({{"node", toUtf8(entry.owner)}, {"ranges", rangesToJson(entry.ranges)}});
+    }
     return {
+        {"completedRanges", rangesToJson(project.completedRanges)},
+        {"frameOwners", owners},
         {"id", uuidText(project.id)},
         {"state", toUtf8(ProjectStateToString(project.state))},
         {"name", toUtf8(project.name)},

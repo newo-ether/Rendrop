@@ -5,7 +5,7 @@ CONFIG -= windows app_bundle
 TEMPLATE = app
 TARGET = rendropctl
 
-VERSION = 2.0.1
+VERSION = 2.0.2
 
 INCLUDEPATH += \
     $$PWD/../thirdparty/cpp-httplib \
