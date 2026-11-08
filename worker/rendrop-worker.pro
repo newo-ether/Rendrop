@@ -8,20 +8,20 @@ TARGET = rendrop-worker
 VERSION = 2.0.3
 
 INCLUDEPATH += \
-    $$PWD/../src/include \
+    $$PWD/../src \
     $$PWD/../thirdparty/cpp-httplib \
     $$PWD/../thirdparty/json/include
 
 SOURCES += \
     main.cpp \
-    ../src/blender_renderer.cpp \
-    ../src/remote_worker.cpp \
-    ../src/simple_process.cpp
+    ../src/core/blender_renderer.cpp \
+    ../src/core/simple_process.cpp \
+    ../src/farm/remote_worker.cpp
 
 HEADERS += \
-    ../src/include/blender_renderer.h \
-    ../src/include/remote_worker.h \
-    ../src/include/simple_process.h \
-    ../src/include/worker_auth.h
+    ../src/core/blender_renderer.h \
+    ../src/core/simple_process.h \
+    ../src/farm/remote_worker.h \
+    ../src/farm/worker_auth.h
 
 win32: LIBS += -luser32 -lws2_32

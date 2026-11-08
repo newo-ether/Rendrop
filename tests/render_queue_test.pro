@@ -8,32 +8,12 @@ TEMPLATE = app
 TARGET = render_queue_test
 
 INCLUDEPATH += \
-    $$PWD/../src/include
+    $$PWD/../src
+
+include(../src/config/config.pri)
+include(../src/core/core.pri)
 
 SOURCES += \
-    render_queue_test.cpp \
-    ../src/blender_file_info.cpp \
-    ../src/blender_file_reader.cpp \
-    ../src/blender_renderer.cpp \
-    ../src/chunk_planner.cpp \
-    ../src/dependency_packer.cpp \
-    ../src/frame_ledger.cpp \
-    ../src/project_info.cpp \
-    ../src/render_job.cpp \
-    ../src/render_queue.cpp \
-    ../src/simple_process.cpp
-
-HEADERS += \
-    ../src/include/blender_file_info.h \
-    ../src/include/blender_file_reader.h \
-    ../src/include/blender_renderer.h \
-    ../src/include/chunk_planner.h \
-    ../src/include/dependency_packer.h \
-    ../src/include/distributed_settings.h \
-    ../src/include/frame_ledger.h \
-    ../src/include/project_info.h \
-    ../src/include/render_job.h \
-    ../src/include/render_queue.h \
-    ../src/include/simple_process.h
+    render_queue_test.cpp
 
 win32: LIBS += -luser32 -lws2_32

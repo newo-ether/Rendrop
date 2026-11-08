@@ -8,16 +8,16 @@ TEMPLATE = app
 TARGET = distributed_test
 
 INCLUDEPATH += \
-    $$PWD/../src/include
+    $$PWD/../src
+
+include(../src/config/config.pri)
 
 SOURCES += \
     distributed_test.cpp \
-    ../src/chunk_planner.cpp \
-    ../src/node_discovery.cpp
+    ../src/core/chunk_planner.cpp \
+    ../src/farm/node_discovery.cpp
 
 HEADERS += \
-    ../src/include/chunk_planner.h \
-    ../src/include/distributed_settings.h \
-    ../src/include/load_settings.h \
-    ../src/include/node_discovery.h \
-    ../src/include/worker_auth.h
+    ../src/core/chunk_planner.h \
+    ../src/farm/node_discovery.h \
+    ../src/farm/worker_auth.h

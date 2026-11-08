@@ -16,7 +16,7 @@
 #include <QThread>
 #include <QUuid>
 
-#include "remote_worker.h"
+#include "farm/remote_worker.h"
 
 namespace {
 

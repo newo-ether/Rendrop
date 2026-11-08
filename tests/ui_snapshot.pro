@@ -4,62 +4,20 @@ TEMPLATE = app
 TARGET = ui_snapshot
 
 INCLUDEPATH += \
-    $$PWD/../src/include \
+    $$PWD/../src \
     $$PWD/../thirdparty/cpp-httplib \
     $$PWD/../thirdparty/json/include
 
 isEmpty(QWK_INSTALL): QWK_INSTALL = $$PWD/../build-dist/qwindowkit/install
 include($$QWK_INSTALL/share/QWindowKit/qmake/QWKWidgets.pri)
 
+include(../src/config/config.pri)
+include(../src/core/core.pri)
+include(../src/farm/farm.pri)
+include(../src/ui/ui.pri)
+
 SOURCES += \
-    ui_snapshot.cpp \
-    ../src/add_file_button.cpp \
-    ../src/caption_button.cpp \
-    ../src/blender_file_info.cpp \
-    ../src/blender_file_reader.cpp \
-    ../src/blender_renderer.cpp \
-    ../src/blender_version_manager.cpp \
-    ../src/chunk_planner.cpp \
-    ../src/dependency_packer.cpp \
-    ../src/drop_file_tip.cpp \
-    ../src/drop_shadow_widget.cpp \
-    ../src/file_bar.cpp \
-    ../src/frame_driver.cpp \
-    ../src/frame_ledger.cpp \
-    ../src/frame_range_dialog.cpp \
-    ../src/http_server.cpp \
-    ../src/list_motion.cpp \
-    ../src/load_monitor.cpp \
-    ../src/loading_bar.cpp \
-    ../src/node_agent.cpp \
-    ../src/node_discovery.cpp \
-    ../src/nodes_page.cpp \
-    ../src/project_page.cpp \
-    ../src/progress_bar.cpp \
-    ../src/project_info.cpp \
-    ../src/remote_worker.cpp \
-    ../src/rename_dialog.cpp \
-    ../src/render_job.cpp \
-    ../src/render_queue.cpp \
-    ../src/rounded_surface.cpp \
-    ../src/transition.cpp \
-    ../src/rendrop_style.cpp \
-    ../src/popup_motion.cpp \
-    ../src/page_fade.cpp \
-    ../src/settings_page.cpp \
-    ../src/simple_process.cpp \
-    ../src/smooth_scroll.cpp \
-    ../src/look_widgets.cpp \
-    ../src/widget.cpp
-
-HEADERS += $$files($$PWD/../src/include/*.h)
-
-FORMS += \
-    ../ui/drop_file_tip.ui \
-    ../ui/file_bar.ui \
-    ../ui/widget.ui \
-    ../ui/frame_range_dialog.ui \
-    ../ui/rename_dialog.ui
+    ui_snapshot.cpp
 
 RESOURCES += ../resource/resource.qrc
 

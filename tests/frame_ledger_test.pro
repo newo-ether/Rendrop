@@ -8,11 +8,12 @@ TEMPLATE = app
 TARGET = frame_ledger_test
 
 INCLUDEPATH += \
-    $$PWD/../src/include
+    $$PWD/../src
 
 SOURCES += \
     frame_ledger_test.cpp \
-    ../src/frame_ledger.cpp
+    ../src/core/frame_ledger.cpp
 
 HEADERS += \
-    ../src/include/frame_ledger.h
+    ../src/core/frame_ledger.h \
+    ../src/core/frame_owner.h

@@ -3,7 +3,7 @@
 #include <QElapsedTimer>
 #include <QtTest>
 
-#include "load_monitor.h"
+#include "farm/load_monitor.h"
 
 namespace {
 

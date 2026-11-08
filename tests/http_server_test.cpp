@@ -15,13 +15,13 @@
 #include <QTemporaryDir>
 #include <QtTest>
 
-#include "dependency_packer.h"
+#include "core/dependency_packer.h"
 #include "httplib.h"
-#include "http_server.h"
-#include "load_monitor.h"
+#include "farm/http_server.h"
+#include "farm/load_monitor.h"
 #include "nlohmann/json.hpp"
-#include "render_queue.h"
-#include "worker_auth.h"
+#include "core/render_queue.h"
+#include "farm/worker_auth.h"
 
 using nlohmann::json;
 

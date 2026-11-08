@@ -12,7 +12,7 @@
 #include <QTemporaryDir>
 #include <QtTest>
 
-#include "render_queue.h"
+#include "core/render_queue.h"
 
 namespace {
 QString createBlendFile(const QTemporaryDir &directory, const QString &name)

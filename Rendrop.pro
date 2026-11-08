@@ -8,8 +8,9 @@ VERSION = 2.0.3
 
 QMAKE_CXXFLAGS_RELEASE += -O2
 
+# Sources include project headers by module path, e.g. "core/render_queue.h".
 INCLUDEPATH += \
-    $$PWD/src/include \
+    $$PWD/src \
     $$PWD/thirdparty/cpp-httplib \
     $$PWD/thirdparty/json/include
 
@@ -22,100 +23,13 @@ isEmpty(QWK_INSTALL): QWK_INSTALL = $$PWD/build-dist/qwindowkit/install
 }
 include($$QWK_INSTALL/share/QWindowKit/qmake/QWKWidgets.pri)
 
+include(src/config/config.pri)
+include(src/core/core.pri)
+include(src/farm/farm.pri)
+include(src/ui/ui.pri)
+
 SOURCES += \
-    src/add_file_button.cpp \
-    src/caption_button.cpp \
-    src/blender_file_info.cpp \
-    src/blender_file_reader.cpp \
-    src/blender_renderer.cpp \
-    src/chunk_planner.cpp \
-    src/dependency_packer.cpp \
-    src/drop_shadow_widget.cpp \
-    src/file_bar.cpp \
-    src/frame_driver.cpp \
-    src/frame_ledger.cpp \
-    src/blender_version_manager.cpp \
-    src/http_server.cpp \
-    src/list_motion.cpp \
-    src/load_monitor.cpp \
-    src/loading_bar.cpp \
-    src/main.cpp \
-    src/node_agent.cpp \
-    src/node_discovery.cpp \
-    src/nodes_page.cpp \
-    src/project_page.cpp \
-    src/progress_bar.cpp \
-    src/project_info.cpp \
-    src/render_job.cpp \
-    src/remote_worker.cpp \
-    src/rounded_surface.cpp \
-    src/transition.cpp \
-    src/rendrop_style.cpp \
-    src/popup_motion.cpp \
-    src/page_fade.cpp \
-    src/render_queue.cpp \
-    src/settings_page.cpp \
-    src/simple_process.cpp \
-    src/smooth_scroll.cpp \
-    src/look_widgets.cpp \
-    src/widget.cpp \
-    src/drop_file_tip.cpp \
-    src/frame_range_dialog.cpp \
-    src/rename_dialog.cpp
-
-HEADERS += \
-    src/include/app_paths.h \
-    src/include/app_preferences.h \
-    src/include/blender_renderer.h \
-    src/include/blender_file_info.h \
-    src/include/blender_file_reader.h \
-    src/include/add_file_button.h \
-    src/include/caption_button.h \
-    src/include/blender_version_manager.h \
-    src/include/chunk_planner.h \
-    src/include/color.h \
-    src/include/dependency_packer.h \
-    src/include/distributed_settings.h \
-    src/include/frame_driver.h \
-    src/include/frame_ledger.h \
-    src/include/drop_shadow_widget.h \
-    src/include/file_bar.h \
-    src/include/http_server.h \
-    src/include/list_motion.h \
-    src/include/load_monitor.h \
-    src/include/load_settings.h \
-    src/include/node_agent.h \
-    src/include/node_discovery.h \
-    src/include/nodes_page.h \
-    src/include/project_page.h \
-    src/include/project_info.h \
-    src/include/render_job.h \
-    src/include/remote_worker.h \
-    src/include/rounded_surface.h \
-    src/include/transition.h \
-    src/include/rendrop_style.h \
-    src/include/popup_motion.h \
-    src/include/page_fade.h \
-    src/include/render_queue.h \
-    src/include/settings_page.h \
-    src/include/simple_process.h \
-    src/include/smooth_scroll.h \
-    src/include/look_widgets.h \
-    src/include/worker_auth.h \
-    src/include/style.h \
-    src/include/widget.h \
-    src/include/drop_file_tip.h \
-    src/include/progress_bar.h \
-    src/include/loading_bar.h \
-    src/include/frame_range_dialog.h \
-    src/include/rename_dialog.h
-
-FORMS += \
-    ui/drop_file_tip.ui \
-    ui/file_bar.ui \
-    ui/widget.ui \
-    ui/frame_range_dialog.ui \
-    ui/rename_dialog.ui
+    src/app/main.cpp
 
 qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin

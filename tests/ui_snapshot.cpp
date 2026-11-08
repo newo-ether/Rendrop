@@ -59,19 +59,19 @@
 
 #include <windows.h>
 
-#include "app_paths.h"
-#include "file_bar.h"
-#include "frame_driver.h"
-#include "smooth_scroll.h"
-#include "frame_range_dialog.h"
-#include "list_motion.h"
-#include "rename_dialog.h"
-#include "distributed_settings.h"
-#include "node_discovery.h"
-#include "project_page.h"
-#include "look_widgets.h"
-#include "rendrop_style.h"
-#include "widget.h"
+#include "config/app_paths.h"
+#include "ui/widgets/file_bar.h"
+#include "ui/motion/frame_driver.h"
+#include "ui/motion/smooth_scroll.h"
+#include "ui/widgets/frame_range_dialog.h"
+#include "ui/motion/list_motion.h"
+#include "ui/widgets/rename_dialog.h"
+#include "config/distributed_settings.h"
+#include "farm/node_discovery.h"
+#include "ui/pages/project_page.h"
+#include "ui/style/look_widgets.h"
+#include "ui/style/rendrop_style.h"
+#include "ui/window/widget.h"
 
 // Rewrites one family to another on every widget as it is polished, which
 // covers fonts set in .ui files and in code before show().

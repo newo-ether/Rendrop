@@ -9,10 +9,10 @@
 #include <QTemporaryDir>
 #include <QTest>
 
-#include "chunk_planner.h"
-#include "distributed_settings.h"
-#include "node_discovery.h"
-#include "worker_auth.h"
+#include "core/chunk_planner.h"
+#include "config/distributed_settings.h"
+#include "farm/node_discovery.h"
+#include "farm/worker_auth.h"
 
 class DistributedTest : public QObject
 {
