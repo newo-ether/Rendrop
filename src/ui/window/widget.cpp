@@ -8,7 +8,6 @@
 #include <QCoreApplication>
 #include <QDateTime>
 #include <QDir>
-#include <QFile>
 #include <QFileDialog>
 #include <QFileInfo>
 #include <QFont>
@@ -29,9 +28,10 @@
 
 #include <QWKWidgets/widgetwindowagent.h>
 
+#include "app/app_controller.h"
 #include "config/app_paths.h"
 #include "config/app_preferences.h"
-#include "config/distributed_settings.h"
+#include "config/language_setting.h"
 #include "ui/motion/list_motion.h"
 #include "ui/style/look_widgets.h"
 #include "ui/motion/page_fade.h"
@@ -41,14 +41,14 @@
 #include "core/blender_file_info.h"
 #include "ui_widget.h"
 
-Widget::Widget(int languageIndex, QWidget *parent):
+Widget::Widget(AppController *controller, int languageIndex, QWidget *parent):
     QWidget(parent),
     ui(new Ui::widget),
+    controller(controller),
     addFileButton(nullptr),
     dropFileTip(nullptr),
-    blenderVersionManager(nullptr),
-    renderQueue(nullptr),
-    httpServer(nullptr),
+    blenderVersionManager(controller->blenderVersions()),
+    renderQueue(controller->queue()),
     languageIndex(languageIndex)
 {
     // QWindowKit must take over the native frame before the window gets its
@@ -67,7 +67,6 @@ Widget::Widget(int languageIndex, QWidget *parent):
     qRegisterMetaType<BlenderFileInfo>("BlenderFileInfo");
     qRegisterMetaType<ProjectInfo>("ProjectInfo");
 
-    renderQueue = new RenderQueue();
     QObject::connect(renderQueue, &RenderQueue::jobAdded, this, &Widget::onJobAdded);
     QObject::connect(renderQueue, &RenderQueue::jobUpdated, this, &Widget::onJobUpdated);
     QObject::connect(renderQueue, &RenderQueue::jobRemoved, this, &Widget::onJobRemoved);
@@ -76,46 +75,15 @@ Widget::Widget(int languageIndex, QWidget *parent):
     QObject::connect(renderQueue, &RenderQueue::renderingChanged, this, &Widget::onRenderingChanged);
     QObject::connect(renderQueue, &RenderQueue::outputTextUpdated, this, &Widget::onOutputTextUpdated);
 
-    blenderVersionManager = new BlenderVersionManager(
-        AppPaths::configFile(QStringLiteral("blender_versions.cfg"))
-    );
     updateBlenderVersions();
-    QFile selectionFile(AppPaths::configFile(QStringLiteral("blender_selection.cfg")));
-    if (selectionFile.open(QIODevice::ReadOnly | QIODevice::Text))
+    const int selectedIndex = ui->selectorComboBox->findText(controller->selectedBlender());
+    if (selectedIndex != -1)
     {
-        const QString savedVersion = selectionFile.readLine().trimmed();
-        const int index = ui->selectorComboBox->findText(savedVersion);
-        if (index != -1)
-        {
-            ui->selectorComboBox->setCurrentIndex(index);
-        }
+        ui->selectorComboBox->setCurrentIndex(selectedIndex);
     }
     QObject::connect(ui->selectorComboBox, &QComboBox::currentTextChanged, this, [this](const QString &text) {
-        if (text.isEmpty() || text == tr("Add Blender..."))
-        {
-            renderQueue->setBlenderPathForAll(QString());
-            if (nodeAgent)
-            {
-                nodeAgent->setBlenderPath(QString());
-            }
-            return;
-        }
-        renderQueue->setBlenderPathForAll(blenderVersionManager->getBlenderPath(text));
-        if (nodeAgent)
-        {
-            nodeAgent->setBlenderPath(blenderVersionManager->getBlenderPath(text));
-        }
-        const bool configDirectoryReady = AppPaths::ensureConfigDirectory();
-        if (!configDirectoryReady)
-        {
-            return;
-        }
-        QFile file(AppPaths::configFile(QStringLiteral("blender_selection.cfg")));
-        if (file.open(QIODevice::WriteOnly | QIODevice::Text))
-        {
-            file.write(text.toUtf8());
-            file.write("\n");
-        }
+        const bool placeholder = text.isEmpty() || text == tr("Add Blender...");
+        this->controller->selectBlender(placeholder ? QString() : text);
     });
 
     ui->scrollAreaContent->installEventFilter(this);
@@ -146,25 +114,14 @@ Widget::Widget(int languageIndex, QWidget *parent):
         setLogVisible(!logShown);
     });
 
-    const QString blenderPath = selectedBlenderPath();
-    renderQueue->setBlenderPathForAll(blenderPath);
-    renderQueue->setMaxConcurrentLoads(AppPreferencesFile::load().maxConcurrentLoads);
-    renderQueue->restorePersistedJobs(blenderPath);
-    const DistributedSettings distributed = DistributedConfig::load(
-        AppPaths::configFile(QStringLiteral("distributed.json"))
-    );
-    renderQueue->setDistributedSettings(distributed);
-    loadMonitor = new LoadMonitor(distributed.load);
-    // Normal priority: a starved sampler under full render load would leave
-    // gaps that reset the window.
-    loadMonitor->start();
-    // The server outlives settings changes; only the token it checks moves.
-    httpServer = new HttpServer(renderQueue);
-    httpServer->setLoadMonitor(loadMonitor);
-    httpServer->setWorkerToken(distributed.enabled ? distributed.token : QString());
-    farmSettings = distributed;
-    startNodeAgent(distributed);
-    httpServer->start(QThread::LowestPriority);
+    QObject::connect(controller, &AppController::outputText, this, &Widget::onOutputTextUpdated);
+    QObject::connect(controller, &AppController::nodeStateChanged, this, &Widget::updateStatusChip);
+    QObject::connect(controller, &AppController::nodeAgentReplaced, this, [this](NodeAgent *agent) {
+        if (nodesPage)
+        {
+            nodesPage->setAgent(agent);
+        }
+    });
     createPages();
     installRoundedSurfaces();
     setupTray();
@@ -195,27 +152,8 @@ Widget::~Widget()
     {
         QObject::disconnect(settingsPage, nullptr, this, nullptr);
     }
-    // Hands a lease rendered for another node back before anything stops.
-    if (nodeAgent)
-    {
-        nodeAgent->shutdown();
-    }
-    if (httpServer)
-    {
-        httpServer->stop();
-        httpServer->wait();
-        delete httpServer;
-    }
-    // After the server: its beacon handler reads the agent's discovery.
-    delete nodeAgent;
-    nodeAgent = nullptr;
-    // After the server and the agent: both read the monitor.
-    delete loadMonitor;
-    if (renderQueue)
-    {
-        renderQueue->shutdown();
-        delete renderQueue;
-    }
+    // The back end belongs to the controller and outlives the window.
+    QObject::disconnect(controller, nullptr, this, nullptr);
     for (FileBar *fileBar : fileBars)
     {
         delete fileBar;
@@ -227,7 +165,6 @@ Widget::~Widget()
     {
         delete dropShadowWidget;
     }
-    delete blenderVersionManager;
     delete ui;
 }
 
@@ -579,12 +516,9 @@ void Widget::createPages()
             }
         }
     };
-    nodesPage = new NodesPage(nodeAgent, renderQueue, loadMonitor);
+    nodesPage = new NodesPage(controller->nodeAgent(), renderQueue, controller->loadMonitor());
     wrap(nodesPage);
-    settingsPage = new SettingsPage(
-        AppPaths::configFile(QStringLiteral("distributed.json")),
-        languageIndex
-    );
+    settingsPage = new SettingsPage(AppPaths::distributedFile(), languageIndex);
     wrap(settingsPage);
     // The NodeAgent's name for this machine, so local frames match the legend
     // the phone shows.
@@ -598,9 +532,7 @@ void Widget::createPages()
     QObject::connect(settingsPage, &SettingsPage::addBlenderRequested, this, &Widget::onAddBlenderVersionButtonClicked);
     QObject::connect(settingsPage, &SettingsPage::removeBlenderRequested, this, &Widget::onDeleteBlenderVersion);
     QObject::connect(settingsPage, &SettingsPage::farmSettingsSaved, this, &Widget::applyFarmSettings);
-    QObject::connect(settingsPage, &SettingsPage::maxConcurrentLoadsChanged, this, [this](int limit) {
-        renderQueue->setMaxConcurrentLoads(limit);
-    });
+    QObject::connect(settingsPage, &SettingsPage::maxConcurrentLoadsChanged, controller, &AppController::setMaxConcurrentLoads);
     QObject::connect(nodesPage, &NodesPage::manageNodesRequested, this, [this]() {
         showPage(2);
         settingsPage->showSection(SettingsPage::Section::Farm);
@@ -655,11 +587,12 @@ void Widget::showPage(int index)
 
 void Widget::updateStatusChip()
 {
-    if (!nodeAgent)
+    const NodeAgent *agent = controller->nodeAgent();
+    if (!agent)
     {
         return;
     }
-    const NodeAgent::Snapshot snapshot = nodeAgent->snapshot();
+    const NodeAgent::Snapshot snapshot = agent->snapshot();
     if (renderQueue->isRendering())
     {
         int nodes = 1;
@@ -860,22 +793,11 @@ void Widget::installRoundedSurfaces()
     Look::setPadding(ui->renderButton, QMargins(6, 6, 6, 6));
 }
 
-QString Widget::selectedBlenderPath() const
-{
-    return blenderVersionManager->getBlenderPath(ui->selectorComboBox->currentText());
-}
-
 void Widget::onLanguageChanged(int index)
 {
-    const bool configDirectoryReady = AppPaths::ensureConfigDirectory();
-    if (!configDirectoryReady)
+    if (!LanguageSetting::save(LanguageSetting::localeForIndex(index)))
     {
         return;
-    }
-    QFile configFile(AppPaths::configFile(QStringLiteral("language.cfg")));
-    if (configFile.open(QIODevice::WriteOnly | QIODevice::Text))
-    {
-        configFile.write(index == 0 ? "en_US\n" : "zh_CN\n");
     }
     const auto result = warningMessageBox(
         tr("Warning"),
@@ -1407,57 +1329,9 @@ void Widget::onDeleteBlenderVersion(QString version)
     updateStatusChip();
 }
 
-void Widget::startNodeAgent(const DistributedSettings &settings)
-{
-    nodeAgent = new NodeAgent(
-        renderQueue,
-        loadMonitor,
-        settings,
-        AppPaths::configFile(QStringLiteral("distributed.json")),
-        this
-    );
-    nodeAgent->setBlenderPath(selectedBlenderPath());
-    nodeAgent->attachServer(httpServer);
-    QObject::connect(nodeAgent, &NodeAgent::outputText, this, &Widget::onOutputTextUpdated);
-    QObject::connect(nodeAgent, &NodeAgent::changed, this, &Widget::updateStatusChip);
-    nodeAgent->start();
-    if (nodesPage)
-    {
-        nodesPage->setAgent(nodeAgent);
-    }
-}
-
 void Widget::applyFarmSettings(DistributedSettings settings)
 {
-    // Thresholds, chunking and the key apply in place; nothing restarts.
-    loadMonitor->setSettings(settings.load);
-    renderQueue->setDistributedSettings(settings);
-    httpServer->setWorkerToken(settings.enabled ? settings.token : QString());
-
-    // Discovery binds its port and reads the peers once, so a change there
-    // swaps the agent. acceptRemoteWork is the Nodes page's switch, which the
-    // agent already follows; the load thresholds were applied above.
-    const auto agentPart = [](DistributedSettings value) {
-        value.acceptRemoteWork = true;
-        value.load = LoadSettings();
-        return DistributedConfig::toJson(value);
-    };
-    const bool rebuild = agentPart(settings) != agentPart(farmSettings);
-    farmSettings = settings;
-    if (!rebuild)
-    {
-        return;
-    }
-    if (nodesPage)
-    {
-        nodesPage->setAgent(nullptr);
-    }
-    // Hands a lease taken for another node back before the agent goes.
-    nodeAgent->shutdown();
-    httpServer->setBeaconProvider({});
-    delete nodeAgent;
-    nodeAgent = nullptr;
-    startNodeAgent(settings);
+    controller->applyFarmSettings(settings);
     updateStatusChip();
 }
 

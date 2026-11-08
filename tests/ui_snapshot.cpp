@@ -59,6 +59,7 @@
 
 #include <windows.h>
 
+#include "app/app_controller.h"
 #include "config/app_paths.h"
 #include "ui/widgets/file_bar.h"
 #include "ui/motion/frame_driver.h"
@@ -215,7 +216,9 @@ int main(int argc, char *argv[])
         QFile::remove(AppPaths::configFile(QStringLiteral("blender_versions.cfg")));
     }
 
-    Widget widget(0);
+    AppController controller;
+    Widget widget(&controller, 0);
+    controller.start();
     widget.resize(width, height);
     widget.show();
     const int page = qEnvironmentVariableIntValue("RENDROP_SNAPSHOT_PAGE");
@@ -554,7 +557,7 @@ int main(int argc, char *argv[])
         // first bar's grip down past two others: <out>.drag.png mid-way,
         // .dragend.png after the drop settled.
         const QString dragBlender = qEnvironmentVariable("RENDROP_SNAPSHOT_DRAG");
-        RenderQueue *queue = widget.queue();
+        RenderQueue *queue = controller.queue();
         QTemporaryDir dragDirectory;
         if (!dragBlender.isEmpty() && queue && dragDirectory.isValid())
         {

@@ -23,6 +23,7 @@ isEmpty(QWK_INSTALL): QWK_INSTALL = $$PWD/build-dist/qwindowkit/install
 }
 include($$QWK_INSTALL/share/QWindowKit/qmake/QWKWidgets.pri)
 
+include(src/app/app.pri)
 include(src/config/config.pri)
 include(src/core/core.pri)
 include(src/farm/farm.pri)

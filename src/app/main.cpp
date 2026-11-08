@@ -6,12 +6,13 @@
 #include <QLocalSocket>
 #include <QPointer>
 #include <QTranslator>
-#include <QFile>
 #include <QString>
 #include <QSystemTrayIcon>
 
+#include "app/app_controller.h"
 #include "config/app_paths.h"
 #include "config/app_preferences.h"
+#include "config/language_setting.h"
 #include "ui/motion/frame_driver.h"
 #include "ui/style/rendrop_style.h"
 #include "ui/window/widget.h"
@@ -84,40 +85,25 @@ int main(int argc, char *argv[])
         QTranslator translator;
         // Qt's own strings: message box buttons, text edit context menus.
         QTranslator qtTranslator;
-        int languageIndex = 0;
-
-        QFile configFile(AppPaths::configFile(QStringLiteral("language.cfg")));
-        if (!configFile.exists())
+        int languageIndex = LanguageSetting::English;
+        if (LanguageSetting::load() == LanguageSetting::localeForIndex(LanguageSetting::Chinese))
         {
-            if (configFile.open(QIODevice::WriteOnly | QIODevice::Text))
+            if (translator.load(QStringLiteral(":/i18n/zh_CN.qm")))
             {
-                configFile.write("en_US\n");
-                configFile.close();
+                app.installTranslator(&translator);
+                languageIndex = LanguageSetting::Chinese;
             }
-        }
-        else
-        {
-            if (configFile.open(QIODevice::ReadOnly | QIODevice::Text))
+            if (qtTranslator.load(QStringLiteral(":/i18n/qtbase_zh_CN.qm")))
             {
-                QString language = configFile.readLine().trimmed();
-                if (language == "zh_CN")
-                {
-                    if (translator.load(":/i18n/zh_CN.qm"))
-                    {
-                        app.installTranslator(&translator);
-                        languageIndex = 1;
-                    }
-                    if (qtTranslator.load(":/i18n/qtbase_zh_CN.qm"))
-                    {
-                        app.installTranslator(&qtTranslator);
-                    }
-                }
-                configFile.close();
+                app.installTranslator(&qtTranslator);
             }
         }
 
         {
-            Widget widget(languageIndex);
+            // Declared first so it goes last: the window drives it.
+            AppController controller;
+            Widget widget(&controller, languageIndex);
+            controller.start();
             QPointer<Widget> target(&widget);
             const QMetaObject::Connection handover = QObject::connect(
                 &instanceServer, &QLocalServer::newConnection, &widget, [&instanceServer, target]() {

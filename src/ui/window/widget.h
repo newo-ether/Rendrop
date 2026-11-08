@@ -22,8 +22,6 @@
 #include "ui/widgets/caption_button.h"
 #include "ui/widgets/drop_file_tip.h"
 #include "ui/widgets/file_bar.h"
-#include "farm/http_server.h"
-#include "farm/load_monitor.h"
 #include "farm/node_agent.h"
 #include "ui/pages/nodes_page.h"
 #include "core/project_info.h"
@@ -32,6 +30,7 @@
 #include "ui/pages/settings_page.h"
 #include "ui/style/look_widgets.h"
 
+class AppController;
 class QSystemTrayIcon;
 
 namespace QWK {
@@ -49,11 +48,9 @@ class Widget : public QWidget
     Q_OBJECT
 
 public:
-    Widget(int languageIndex, QWidget *parent = nullptr);
+    // Drives the controller's back end, which must outlive the window.
+    Widget(AppController *controller, int languageIndex, QWidget *parent = nullptr);
     ~Widget() override;
-
-    // The queue this window drives; owned by the widget.
-    RenderQueue *queue() const { return renderQueue; }
 
     // Brings the window back from the tray, or to the front when another
     // launch of Rendrop asks for it.
@@ -106,7 +103,6 @@ private:
         float blurRadius,
         bool hoverLift
     );
-    QString selectedBlenderPath() const;
     // Refills the selector and keeps the current version selected; the first
     // version only gets picked when nothing was selected before.
     void updateBlenderVersions();
@@ -134,7 +130,6 @@ private:
     void autoScrollDrag();
     void endDrag();
     void setupTray();
-    void startNodeAgent(const DistributedSettings &settings);
     // Asks before quitting while files are rendering or loading.
     bool confirmQuit();
     void requestQuit();
@@ -164,8 +159,10 @@ private slots:
 
 private:
     Ui::widget *ui;
+    AppController *controller;
     AddFileButton *addFileButton;
     DropFileTip *dropFileTip;
+    // Owned by the controller.
     BlenderVersionManager *blenderVersionManager;
     RenderQueue *renderQueue;
     std::vector<FileBar *> fileBars;
@@ -188,11 +185,6 @@ private:
     bool logShown = false;
     // The log keeps its newest line in view until the user scrolls up.
     bool logFollow = true;
-    HttpServer *httpServer;
-    LoadMonitor *loadMonitor = nullptr;
-    NodeAgent *nodeAgent = nullptr;
-    // What the running farm components were last configured with.
-    DistributedSettings farmSettings;
     QWK::WidgetWindowAgent *windowAgent = nullptr;
     CaptionButton *maximizeButton = nullptr;
     std::vector<NavButton *> navButtons;
