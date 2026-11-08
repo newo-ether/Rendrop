@@ -61,6 +61,7 @@
 
 #include "app/app_controller.h"
 #include "config/app_paths.h"
+#include "core/render_queue.h"
 #include "ui/widgets/file_bar.h"
 #include "ui/motion/frame_driver.h"
 #include "ui/motion/smooth_scroll.h"

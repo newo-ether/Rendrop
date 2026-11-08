@@ -1,4 +1,4 @@
-# Qt Widgets front end. Depends on farm, core and config.
+# Qt Widgets front end. Depends on app (AppController), farm, core and config.
 
 SOURCES += \
     $$PWD/motion/frame_driver.cpp \
@@ -9,6 +9,7 @@ SOURCES += \
     $$PWD/motion/transition.cpp \
     $$PWD/pages/nodes_page.cpp \
     $$PWD/pages/project_page.cpp \
+    $$PWD/pages/queue_page.cpp \
     $$PWD/pages/settings_page.cpp \
     $$PWD/style/drop_shadow_widget.cpp \
     $$PWD/style/look_widgets.cpp \
@@ -20,6 +21,8 @@ SOURCES += \
     $$PWD/widgets/file_bar.cpp \
     $$PWD/widgets/frame_range_dialog.cpp \
     $$PWD/widgets/loading_bar.cpp \
+    $$PWD/widgets/log_panel.cpp \
+    $$PWD/widgets/message_dialog.cpp \
     $$PWD/widgets/progress_bar.cpp \
     $$PWD/widgets/rename_dialog.cpp \
     $$PWD/window/widget.cpp
@@ -33,6 +36,7 @@ HEADERS += \
     $$PWD/motion/transition.h \
     $$PWD/pages/nodes_page.h \
     $$PWD/pages/project_page.h \
+    $$PWD/pages/queue_page.h \
     $$PWD/pages/settings_page.h \
     $$PWD/style/color.h \
     $$PWD/style/drop_shadow_widget.h \
@@ -46,6 +50,8 @@ HEADERS += \
     $$PWD/widgets/file_bar.h \
     $$PWD/widgets/frame_range_dialog.h \
     $$PWD/widgets/loading_bar.h \
+    $$PWD/widgets/log_panel.h \
+    $$PWD/widgets/message_dialog.h \
     $$PWD/widgets/progress_bar.h \
     $$PWD/widgets/rename_dialog.h \
     $$PWD/window/widget.h
@@ -54,5 +60,6 @@ FORMS += \
     $$PWD/forms/drop_file_tip.ui \
     $$PWD/forms/file_bar.ui \
     $$PWD/forms/frame_range_dialog.ui \
+    $$PWD/forms/queue_page.ui \
     $$PWD/forms/rename_dialog.ui \
     $$PWD/forms/widget.ui

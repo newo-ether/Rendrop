@@ -35,6 +35,9 @@ public:
 
     DropShadowWidget(QWidget *parent, QWidget *targetWidget);
     ~DropShadowWidget() override;
+    // A shadow in parent under target, at rest with params. The caller owns
+    // it, like any widget with a parent.
+    static DropShadowWidget *attach(QWidget *parent, QWidget *target, const Params &params, bool hoverLift);
 
     void setBorderRadius(float borderRadius);
     void setOffsetX(float offsetX);

@@ -394,3 +394,15 @@ void DropShadowWidget::setFade(qreal value)
     fade = value;
     update();
 }
+
+DropShadowWidget *DropShadowWidget::attach(QWidget *parent, QWidget *target, const Params &params, bool hoverLift)
+{
+    DropShadowWidget *shadow = new DropShadowWidget(parent, target);
+    shadow->setBorderRadius(params.borderRadius);
+    shadow->setOffsetX(params.offsetX);
+    shadow->setOffsetY(params.offsetY);
+    shadow->setAlphaMax(params.alphaMax);
+    shadow->setBlurRadius(params.blurRadius);
+    shadow->setHoverLift(hoverLift);
+    return shadow;
+}

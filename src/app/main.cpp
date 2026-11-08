@@ -14,6 +14,7 @@
 #include "config/app_preferences.h"
 #include "config/language_setting.h"
 #include "ui/motion/frame_driver.h"
+#include "ui/style/look_widgets.h"
 #include "ui/style/rendrop_style.h"
 #include "ui/window/widget.h"
 

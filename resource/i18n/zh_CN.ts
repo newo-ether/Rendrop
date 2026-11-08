@@ -398,6 +398,147 @@
     </message>
 </context>
 <context>
+    <name>QueuePage</name>
+    <message>
+        <location filename="../../src/ui/pages/queue_page.cpp" line="63"/>
+        <location filename="../../src/ui/pages/queue_page.cpp" line="763"/>
+        <source>Add Blender...</source>
+        <translation>添加 Blender...</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/pages/queue_page.cpp" line="241"/>
+        <source>Hide log</source>
+        <translation>隐藏日志</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/pages/queue_page.cpp" line="241"/>
+        <source>Show log</source>
+        <translation>显示日志</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/pages/queue_page.cpp" line="488"/>
+        <location filename="../../src/ui/pages/queue_page.cpp" line="501"/>
+        <source>Warning</source>
+        <translation>警告</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/pages/queue_page.cpp" line="489"/>
+        <source> is still loading. Are you sure to delete?</source>
+        <translation> 正在加载中，确定要删除吗？</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/pages/queue_page.cpp" line="502"/>
+        <source> is still rendering. Are you sure to delete?</source>
+        <translation> 正在渲染中，确定要删除吗？</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/pages/queue_page.cpp" line="544"/>
+        <source>Render failed</source>
+        <translation>渲染失败</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/pages/queue_page.cpp" line="545"/>
+        <source>%1 stopped at frame %2 / %3. See the log for details.</source>
+        <translation>%1 在第 %2 / %3 帧中止，详情见日志。</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/pages/queue_page.cpp" line="657"/>
+        <source>Stop Render</source>
+        <translation>停止渲染</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/pages/queue_page.cpp" line="657"/>
+        <source>Start Render</source>
+        <translation>开始渲染</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/pages/queue_page.cpp" line="677"/>
+        <source>Render complete: %1 finished.</source>
+        <translation>渲染完成：%1 个项目已完成。</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/pages/queue_page.cpp" line="678"/>
+        <source>Render ended: %1 finished, %2 failed.</source>
+        <translation>渲染结束：%1 个完成，%2 个失败。</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/pages/queue_page.cpp" line="684"/>
+        <source>Render complete</source>
+        <translation>渲染完成</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/pages/queue_page.cpp" line="684"/>
+        <source>Render ended with errors</source>
+        <translation>渲染结束，有项目出错</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/pages/queue_page.cpp" line="705"/>
+        <source>Open File</source>
+        <translation>打开文件</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/pages/queue_page.cpp" line="707"/>
+        <source>Blender Projects (*.blend)</source>
+        <translation>Blender 工程文件 (*.blend)</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/pages/queue_page.cpp" line="720"/>
+        <source> (%1 at frame %2 / %3)</source>
+        <translation>（%1，第 %2 / %3 帧）</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/pages/queue_page.cpp" line="726"/>
+        <source>Render stopped manually</source>
+        <translation>已手动停止渲染</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/pages/queue_page.cpp" line="805"/>
+        <source>Projects %1 / %2</source>
+        <translation>工程 %1 / %2</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/pages/queue_page.cpp" line="814"/>
+        <source>%1 h %2 min</source>
+        <translation>%1 小时 %2 分</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/pages/queue_page.cpp" line="815"/>
+        <source>%1 min</source>
+        <translation>%1 分钟</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/pages/queue_page.cpp" line="816"/>
+        <source>ETA %1</source>
+        <translation>预计剩余 %1</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/pages/queue_page.cpp" line="820"/>
+        <source>Frames %1 / %2</source>
+        <translation>帧 %1 / %2</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/pages/queue_page.cpp" line="833"/>
+        <location filename="../../src/ui/pages/queue_page.cpp" line="834"/>
+        <source>Add a Blender version in Settings first.</source>
+        <translation>请先在设置中添加 Blender 版本。</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/pages/queue_page.cpp" line="838"/>
+        <source>Add a Blender project to get started.</source>
+        <translation>添加一个 Blender 项目以开始.</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/pages/queue_page.cpp" line="839"/>
+        <source>Drop your Blender Projects here.</source>
+        <translation>将你的 Blender 工程文件拖拽至此处.</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/pages/queue_page.cpp" line="843"/>
+        <source>Ready to render.</source>
+        <translation>准备渲染.</translation>
+    </message>
+</context>
+<context>
     <name>RenameDialog</name>
     <message>
         <location filename="../../src/ui/forms/rename_dialog.ui" line="20"/>
@@ -845,289 +986,155 @@
 <context>
     <name>Widget</name>
     <message>
-        <location filename="../../src/ui/window/widget.cpp" line="274"/>
+        <location filename="../../src/ui/window/widget.cpp" line="133"/>
         <source>Minimize</source>
         <translation>最小化</translation>
     </message>
     <message>
-        <location filename="../../src/ui/window/widget.cpp" line="260"/>
-        <location filename="../../src/ui/window/widget.cpp" line="275"/>
+        <location filename="../../src/ui/window/widget.cpp" line="119"/>
+        <location filename="../../src/ui/window/widget.cpp" line="134"/>
         <source>Maximize</source>
         <translation>最大化</translation>
     </message>
     <message>
-        <location filename="../../src/ui/window/widget.cpp" line="94"/>
-        <location filename="../../src/ui/window/widget.cpp" line="1546"/>
-        <source>Add Blender...</source>
-        <translation>添加 Blender...</translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/window/widget.cpp" line="260"/>
+        <location filename="../../src/ui/window/widget.cpp" line="119"/>
         <source>Restore</source>
         <translation>还原</translation>
     </message>
     <message>
-        <location filename="../../src/ui/window/widget.cpp" line="276"/>
+        <location filename="../../src/ui/window/widget.cpp" line="135"/>
         <source>Close</source>
         <translation>关闭</translation>
     </message>
     <message>
-        <location filename="../../src/ui/window/widget.cpp" line="401"/>
-        <location filename="../../src/ui/window/widget.cpp" line="881"/>
-        <location filename="../../src/ui/window/widget.cpp" line="1068"/>
-        <location filename="../../src/ui/window/widget.cpp" line="1080"/>
-        <location filename="../../src/ui/window/widget.cpp" line="1392"/>
+        <location filename="../../src/ui/window/widget.cpp" line="260"/>
+        <location filename="../../src/ui/window/widget.cpp" line="468"/>
+        <location filename="../../src/ui/window/widget.cpp" line="558"/>
         <source>Warning</source>
         <translation>警告</translation>
     </message>
     <message>
-        <location filename="../../src/ui/window/widget.cpp" line="399"/>
+        <location filename="../../src/ui/window/widget.cpp" line="258"/>
         <source>Some files are still rendering. Are you sure to exit?</source>
         <translation>一些文件仍在渲染中，确定要退出吗？</translation>
     </message>
     <message>
-        <location filename="../../src/ui/window/widget.cpp" line="315"/>
+        <location filename="../../src/ui/window/widget.cpp" line="174"/>
         <source>Rendrop keeps running in the tray. Right-click the icon to quit.</source>
         <translation>Rendrop 仍在托盘中运行。右键单击图标可退出。</translation>
     </message>
     <message>
-        <location filename="../../src/ui/window/widget.cpp" line="350"/>
+        <location filename="../../src/ui/window/widget.cpp" line="209"/>
         <source>Show Rendrop</source>
         <translation>显示 Rendrop</translation>
     </message>
     <message>
-        <location filename="../../src/ui/window/widget.cpp" line="352"/>
+        <location filename="../../src/ui/window/widget.cpp" line="211"/>
         <source>Quit</source>
         <translation>退出</translation>
     </message>
     <message>
-        <location filename="../../src/ui/window/widget.cpp" line="400"/>
+        <location filename="../../src/ui/window/widget.cpp" line="259"/>
         <source>Some files are still loading. Are you sure to exit?</source>
         <translation>一些文件仍在加载中，确定要退出吗？</translation>
     </message>
     <message>
-        <location filename="../../src/ui/window/widget.cpp" line="623"/>
+        <location filename="../../src/ui/window/widget.cpp" line="383"/>
         <source>Queue</source>
         <translation>队列</translation>
     </message>
     <message>
-        <location filename="../../src/ui/window/widget.cpp" line="624"/>
+        <location filename="../../src/ui/window/widget.cpp" line="384"/>
         <source>Nodes</source>
         <translation>节点</translation>
     </message>
     <message>
-        <location filename="../../src/ui/window/widget.cpp" line="625"/>
+        <location filename="../../src/ui/window/widget.cpp" line="385"/>
         <source>Settings</source>
         <translation>设置</translation>
     </message>
     <message numerus="yes">
-        <location filename="../../src/ui/window/widget.cpp" line="672"/>
+        <location filename="../../src/ui/window/widget.cpp" line="433"/>
         <source>Rendering · %n node(s)</source>
         <translation>
             <numerusform>渲染中 · %n 个节点</numerusform>
         </translation>
     </message>
     <message>
-        <location filename="../../src/ui/window/widget.cpp" line="672"/>
+        <location filename="../../src/ui/window/widget.cpp" line="433"/>
         <source>Rendering</source>
         <translation>渲染中</translation>
     </message>
     <message>
-        <location filename="../../src/ui/window/widget.cpp" line="678"/>
+        <location filename="../../src/ui/window/widget.cpp" line="439"/>
         <source>No Blender</source>
         <translation>无 Blender</translation>
     </message>
     <message>
-        <location filename="../../src/ui/window/widget.cpp" line="685"/>
+        <location filename="../../src/ui/window/widget.cpp" line="446"/>
         <source>Ready</source>
         <translation>就绪</translation>
     </message>
     <message numerus="yes">
-        <location filename="../../src/ui/window/widget.cpp" line="689"/>
+        <location filename="../../src/ui/window/widget.cpp" line="450"/>
         <source>%1 · %n peer(s)</source>
         <translation>
             <numerusform>%1 · %n 个节点</numerusform>
         </translation>
     </message>
     <message>
-        <location filename="../../src/ui/window/widget.cpp" line="795"/>
-        <source>Hide log</source>
-        <translation>隐藏日志</translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/window/widget.cpp" line="795"/>
-        <source>Show log</source>
-        <translation>显示日志</translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/window/widget.cpp" line="1069"/>
-        <source> is still loading. Are you sure to delete?</source>
-        <translation> 正在加载中，确定要删除吗？</translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/window/widget.cpp" line="1081"/>
-        <source> is still rendering. Are you sure to delete?</source>
-        <translation> 正在渲染中，确定要删除吗？</translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/window/widget.cpp" line="1300"/>
-        <source>Open File</source>
-        <translation>打开文件</translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/window/widget.cpp" line="1302"/>
-        <source>Blender Projects (*.blend)</source>
-        <translation>Blender 工程文件 (*.blend)</translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/window/widget.cpp" line="1318"/>
+        <location filename="../../src/ui/window/widget.cpp" line="489"/>
         <source>Select Blender Version</source>
         <translation>选择 Blender 版本</translation>
     </message>
     <message>
-        <location filename="../../src/ui/window/widget.cpp" line="1320"/>
+        <location filename="../../src/ui/window/widget.cpp" line="491"/>
         <source>Blender Executable (blender.exe)</source>
         <translation>Blender 主程序 (blender.exe)</translation>
     </message>
     <message>
-        <location filename="../../src/ui/window/widget.cpp" line="1328"/>
-        <location filename="../../src/ui/window/widget.cpp" line="1353"/>
-        <location filename="../../src/ui/window/widget.cpp" line="1361"/>
-        <location filename="../../src/ui/window/widget.cpp" line="1402"/>
+        <location filename="../../src/ui/window/widget.cpp" line="499"/>
+        <location filename="../../src/ui/window/widget.cpp" line="524"/>
+        <location filename="../../src/ui/window/widget.cpp" line="532"/>
+        <location filename="../../src/ui/window/widget.cpp" line="568"/>
         <source>Error</source>
         <translation>错误</translation>
     </message>
     <message>
-        <location filename="../../src/ui/window/widget.cpp" line="1328"/>
+        <location filename="../../src/ui/window/widget.cpp" line="499"/>
         <source>Cannot open specified path.</source>
         <translation>打开指定的路径时出现错误.</translation>
     </message>
     <message>
-        <location filename="../../src/ui/window/widget.cpp" line="1353"/>
+        <location filename="../../src/ui/window/widget.cpp" line="524"/>
         <source>Failed to start Blender.</source>
         <translation>Blender 启动失败.</translation>
     </message>
     <message>
-        <location filename="../../src/ui/window/widget.cpp" line="1357"/>
+        <location filename="../../src/ui/window/widget.cpp" line="528"/>
         <source>Note</source>
         <translation>提示</translation>
     </message>
     <message>
-        <location filename="../../src/ui/window/widget.cpp" line="1357"/>
+        <location filename="../../src/ui/window/widget.cpp" line="528"/>
         <source>Selected Blender version already exists.</source>
         <translation>选择的 Blender 版本已存在.</translation>
     </message>
     <message>
-        <location filename="../../src/ui/window/widget.cpp" line="1361"/>
-        <location filename="../../src/ui/window/widget.cpp" line="1402"/>
+        <location filename="../../src/ui/window/widget.cpp" line="532"/>
+        <location filename="../../src/ui/window/widget.cpp" line="568"/>
         <source>Failed to save version configuration file.</source>
         <translation>保存配置文件时出现错误.</translation>
     </message>
     <message>
-        <location filename="../../src/ui/window/widget.cpp" line="1393"/>
+        <location filename="../../src/ui/window/widget.cpp" line="559"/>
         <source>Remove Blender %1 from Rendrop? The program itself is not deleted.</source>
         <translation>从 Rendrop 中移除 Blender %1？程序本身不会被删除。</translation>
     </message>
     <message>
-        <location filename="../../src/ui/window/widget.cpp" line="1597"/>
-        <source>Projects %1 / %2</source>
-        <translation>工程 %1 / %2</translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/window/widget.cpp" line="1606"/>
-        <source>%1 h %2 min</source>
-        <translation>%1 小时 %2 分</translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/window/widget.cpp" line="1607"/>
-        <source>%1 min</source>
-        <translation>%1 分钟</translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/window/widget.cpp" line="1608"/>
-        <source>ETA %1</source>
-        <translation>预计剩余 %1</translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/window/widget.cpp" line="1612"/>
-        <source>Frames %1 / %2</source>
-        <translation>帧 %1 / %2</translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/window/widget.cpp" line="1625"/>
-        <location filename="../../src/ui/window/widget.cpp" line="1626"/>
-        <source>Add a Blender version in Settings first.</source>
-        <translation>请先在设置中添加 Blender 版本。</translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/window/widget.cpp" line="1254"/>
-        <source>Stop Render</source>
-        <translation>停止渲染</translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/window/widget.cpp" line="1254"/>
-        <source>Start Render</source>
-        <translation>开始渲染</translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/window/widget.cpp" line="1635"/>
-        <source>Ready to render.</source>
-        <translation>准备渲染.</translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/window/widget.cpp" line="882"/>
+        <location filename="../../src/ui/window/widget.cpp" line="469"/>
         <source>Language settings will take effect after restarting the program. Restart now?</source>
         <translation>语言设置将在重启程序后生效，是否重启程序？</translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/window/widget.cpp" line="1630"/>
-        <source>Add a Blender project to get started.</source>
-        <translation>添加一个 Blender 项目以开始.</translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/window/widget.cpp" line="1631"/>
-        <source>Drop your Blender Projects here.</source>
-        <translation>将你的 Blender 工程文件拖拽至此处.</translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/window/widget.cpp" line="1138"/>
-        <source>Render failed</source>
-        <translation>渲染失败</translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/window/widget.cpp" line="1139"/>
-        <source>%1 stopped at frame %2 / %3. See the log for details.</source>
-        <translation>%1 在第 %2 / %3 帧中止，详情见日志。</translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/window/widget.cpp" line="1274"/>
-        <source>Render complete: %1 finished.</source>
-        <translation>渲染完成：%1 个项目已完成。</translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/window/widget.cpp" line="1275"/>
-        <source>Render ended: %1 finished, %2 failed.</source>
-        <translation>渲染结束：%1 个完成，%2 个失败。</translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/window/widget.cpp" line="1280"/>
-        <source>Render complete</source>
-        <translation>渲染完成</translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/window/widget.cpp" line="1280"/>
-        <source>Render ended with errors</source>
-        <translation>渲染结束，有项目出错</translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/window/widget.cpp" line="1473"/>
-        <source> (%1 at frame %2 / %3)</source>
-        <translation>（%1，第 %2 / %3 帧）</translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/window/widget.cpp" line="1479"/>
-        <source>Render stopped manually</source>
-        <translation>已手动停止渲染</translation>
     </message>
 </context>
 <context>
@@ -1156,32 +1163,35 @@
     </message>
 </context>
 <context>
+    <name>queuePage</name>
+    <message>
+        <location filename="../../src/ui/forms/queue_page.ui" line="87"/>
+        <source>Blender version used for rendering</source>
+        <translation>用于渲染的 Blender 版本</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/forms/queue_page.ui" line="164"/>
+        <source>Start Render</source>
+        <translation>开始渲染</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/forms/queue_page.ui" line="306"/>
+        <source>Output</source>
+        <translation>输出</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/forms/queue_page.ui" line="362"/>
+        <source>Show log</source>
+        <translation>显示日志</translation>
+    </message>
+</context>
+<context>
     <name>widget</name>
     <message>
         <location filename="../../src/ui/forms/widget.ui" line="26"/>
         <location filename="../../src/ui/forms/widget.ui" line="111"/>
         <source>Rendrop</source>
         <translation>Rendrop</translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/forms/widget.ui" line="257"/>
-        <source>Blender version used for rendering</source>
-        <translation>用于渲染的 Blender 版本</translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/forms/widget.ui" line="581"/>
-        <source>Show log</source>
-        <translation>显示日志</translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/forms/widget.ui" line="525"/>
-        <source>Output</source>
-        <translation>输出</translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/forms/widget.ui" line="334"/>
-        <source>Start Render</source>
-        <translation>开始渲染</translation>
     </message>
 </context>
 </TS>
