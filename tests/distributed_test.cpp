@@ -65,9 +65,11 @@ void DistributedTest::plannerCapsAtFairShare()
     planner.setSettings({true, 10, 1000, 300});
     planner.recordComplete(QStringLiteral("a"), 1000, 10);
     // 100 ms per frame would allow 1000 frames; 50 pending over 3 renderers
-    // gives at most 17.
-    QCOMPARE(planner.chunkFor(QStringLiteral("a"), 50, 3), 17);
+    // gives half an even share, at most 9.
+    QCOMPARE(planner.chunkFor(QStringLiteral("a"), 50, 3), 9);
     QCOMPARE(planner.chunkFor(QStringLiteral("a"), 1, 3), 1);
+    // Alone, a renderer may take everything that is left.
+    QCOMPARE(planner.chunkFor(QStringLiteral("a"), 50, 1), 50);
 }
 
 void DistributedTest::plannerFollowsSlowerRunningLease()

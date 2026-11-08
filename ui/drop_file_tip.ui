@@ -13,11 +13,6 @@
   <property name="windowTitle">
    <string>Form</string>
   </property>
-  <property name="styleSheet">
-   <string notr="true">background: transparent;
-background-color: black;
-border: none;</string>
-  </property>
   <layout class="QHBoxLayout" name="horizontalLayout">
    <property name="spacing">
     <number>0</number>
@@ -36,11 +31,6 @@ border: none;</string>
    </property>
    <item>
     <widget class="QWidget" name="ContentWidget" native="true">
-     <property name="styleSheet">
-      <string notr="true">border-radius: 10px;
-background: transparent;
-border: none;</string>
-     </property>
      <layout class="QHBoxLayout" name="horizontalLayout_2">
       <property name="spacing">
        <number>22</number>
@@ -72,9 +62,6 @@ border: none;</string>
           <height>100</height>
          </size>
         </property>
-        <property name="styleSheet">
-         <string notr="true">background: transparent;</string>
-        </property>
         <property name="text">
          <string/>
         </property>
@@ -90,13 +77,9 @@ border: none;</string>
        <widget class="QLabel" name="label">
         <property name="font">
          <font>
-          <family>Pixel Mixed</family>
+          <family>Mi Outfit</family>
           <pointsize>12</pointsize>
          </font>
-        </property>
-        <property name="styleSheet">
-         <string notr="true">background: transparent;
-color: white;</string>
         </property>
         <property name="text">
          <string>Drop your Blender Projects here.</string>

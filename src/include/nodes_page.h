@@ -4,6 +4,7 @@
 #define NODES_PAGE_H
 
 #include <QColor>
+#include <QElapsedTimer>
 #include <QString>
 #include <QVector>
 #include <QWidget>
@@ -89,6 +90,10 @@ private:
     NodeTable *table;
     QPushButton *manageButton;
     QTimer *timer;
+    // Runs while the table is empty; past searchTimeoutMs the spinner gives
+    // way to "No other nodes found".
+    QElapsedTimer searchClock;
+    static constexpr qint64 searchTimeoutMs = 10000;
 };
 
 #endif // NODES_PAGE_H

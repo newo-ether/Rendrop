@@ -61,8 +61,13 @@ signals:
     void languageChanged(int index);
     void addBlenderRequested();
     void removeBlenderRequested(QString version);
+    // Saved to preferences.json already; the queue should use it now.
+    void maxConcurrentLoadsChanged(int limit);
     // Written to distributed.json; the farm should switch to these now.
     void farmSettingsSaved(DistributedSettings settings);
+
+protected:
+    bool eventFilter(QObject *watched, QEvent *event) override;
 
 private:
     QWidget *addSection(Section section, const QString &title);
@@ -91,6 +96,7 @@ private:
     ToggleSwitch *shadowsSwitch;
     QVBoxLayout *blenderList;
     QPushButton *addBlenderButton;
+    QSpinBox *maxLoadsBox;
     std::vector<QPushButton *> removeBlenderButtons;
     bool blenderEditingEnabled = true;
     bool addBlenderBusy = false;

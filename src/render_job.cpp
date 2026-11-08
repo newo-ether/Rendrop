@@ -173,23 +173,65 @@ bool RenderJob::setFrameRange(int frameStart, int frameEnd, int frameStep)
 
 bool RenderJob::reload()
 {
+    return requestLoad() && startLoad();
+}
+
+bool RenderJob::requestLoad()
+{
     if (shuttingDown || renderer->isRunning())
     {
         return false;
     }
+    const bool hadSlot = cancelLoad();
+    ledger.clear();
+    resetProjectData();
+    project.state = ProjectState::Loading;
+    loadWaiting = true;
+    publishSnapshot();
+    if (hadSlot)
+    {
+        emit loadFinished(project.id);
+    }
+    return true;
+}
+
+bool RenderJob::startLoad()
+{
+    if (shuttingDown || !loadWaiting || fileReader->isRunning())
+    {
+        return false;
+    }
+    loadWaiting = false;
+    loadActive = true;
+    fileReader->setParameter(project.path, blenderPath);
+    fileReader->prepareStart();
+    fileReader->start(QThread::LowestPriority);
+    return true;
+}
+
+bool RenderJob::isLoadWaiting() const
+{
+    return loadWaiting;
+}
+
+bool RenderJob::isLoadActive() const
+{
+    return loadActive;
+}
+
+bool RenderJob::cancelLoad()
+{
     if (fileReader->isRunning())
     {
         fileReader->stop();
         fileReader->wait();
     }
-    ledger.clear();
-    resetProjectData();
-    project.state = ProjectState::Loading;
-    publishSnapshot();
-    fileReader->setParameter(project.path, blenderPath);
-    fileReader->prepareStart();
-    fileReader->start(QThread::LowestPriority);
-    return true;
+    // A result the reader posted just before it stopped arrives later and
+    // is dropped in onFinishedReading because loadActive is already false.
+    const bool hadSlot = loadActive;
+    loadActive = false;
+    loadWaiting = false;
+    return hadSlot;
 }
 
 bool RenderJob::startRender()
@@ -247,11 +289,7 @@ void RenderJob::shutdown()
         return;
     }
     shuttingDown = true;
-    if (fileReader->isRunning())
-    {
-        fileReader->stop();
-        fileReader->wait();
-    }
+    cancelLoad();
     if (renderer->isRunning())
     {
         renderer->stop();
@@ -267,7 +305,13 @@ std::optional<FrameLedger::Lease> RenderJob::claimRemote(const QString &workerId
     }
     const int chunk = nextChunk(workerId);
     const int limit = maxFrames > 0 ? std::min(maxFrames, chunk) : chunk;
-    return ledger.claim(workerId, limit, nowMs(), owner.isEmpty() ? workerId : owner);
+    std::optional<FrameLedger::Lease> lease = ledger.claim(workerId, limit, nowMs(), owner.isEmpty() ? workerId : owner);
+    if (lease.has_value())
+    {
+        syncProgressFromLedger();
+        publishSnapshot();
+    }
+    return lease;
 }
 
 bool RenderJob::reportRemote(const QUuid &leaseId, int finishedCount)
@@ -376,10 +420,11 @@ int RenderJob::frameAt(int index) const
 
 void RenderJob::onFinishedReading(int status, BlenderFileInfo info)
 {
-    if (shuttingDown)
+    if (shuttingDown || !loadActive)
     {
         return;
     }
+    loadActive = false;
     if (status == 0)
     {
         project.frameStart = info.frameBegin;
@@ -406,6 +451,7 @@ void RenderJob::onFinishedReading(int status, BlenderFileInfo info)
         project.state = ProjectState::Error;
     }
     publishSnapshot();
+    emit loadFinished(project.id);
 }
 
 void RenderJob::onProgressChanged()
@@ -486,6 +532,7 @@ void RenderJob::resetProjectData()
     project.finishedFrame = 0;
     project.completedRanges.clear();
     project.frameOwners.clear();
+    project.frameLeases.clear();
     project.totalFrame = 0;
 }
 
@@ -494,6 +541,7 @@ void RenderJob::syncProgressFromLedger()
     project.finishedFrame = ledger.doneCount();
     project.completedRanges = ledger.completedRanges();
     project.frameOwners = ledger.ownerRanges();
+    project.frameLeases = ledger.leasedRanges();
 }
 
 bool RenderJob::isRemoteLease(const QUuid &leaseId) const
@@ -523,6 +571,8 @@ bool RenderJob::startLocalLease()
     renderer->prepareStart();
     ++pendingFinishSignals;
     renderer->start(QThread::LowestPriority);
+    syncProgressFromLedger();
+    publishSnapshot();
     return true;
 }
 
@@ -550,6 +600,7 @@ void RenderJob::finishIfComplete()
     }
     project.finishedFrame = project.totalFrame;
     project.completedRanges = ProjectInfo::prefixRanges(project.totalFrame);
+    project.frameLeases.clear();
     project.state = ProjectState::Finished;
     ledger.clear();
     publishSnapshot();

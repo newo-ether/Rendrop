@@ -19,36 +19,6 @@
   <property name="windowTitle">
    <string>Rename Project</string>
   </property>
-  <property name="styleSheet">
-   <string notr="true">QDialog {
-    background-color: rgb(43, 45, 48);
-    color: white;
-}
-
-QLabel {
-    color: white;
-    font-family: &quot;Pixel Mixed&quot;;
-    font-size: 12px;
-}
-
-QLineEdit {
-    background: transparent;
-    color: white;
-    padding: 5px;
-    border: 1px solid transparent;
-    font-family: &quot;Pixel Mixed&quot;;
-    font-size: 12px;
-}
-
-QPushButton {
-    background: transparent;
-    border: 1px solid transparent;
-    color: white;
-    padding: 6px 6px;
-    font-family: &quot;Pixel Mixed&quot;;
-    font-size: 12px;
-}</string>
-  </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <property name="spacing">
     <number>15</number>

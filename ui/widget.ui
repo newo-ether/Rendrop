@@ -12,7 +12,7 @@
   </property>
   <property name="minimumSize">
    <size>
-    <width>900</width>
+    <width>1000</width>
     <height>600</height>
    </size>
   </property>
@@ -51,12 +51,6 @@
        <family>Segoe UI</family>
        <pointsize>8</pointsize>
       </font>
-     </property>
-     <property name="styleSheet">
-      <string notr="true">QWidget#ContentWidget {
-	background-color: #202124;
-	color: #E0E0E0;
-}</string>
      </property>
      <layout class="QVBoxLayout" name="verticalLayout">
       <property name="spacing">
@@ -111,11 +105,7 @@
              <family>Bitcount Single</family>
              <pointsize>15</pointsize>
              <bold>true</bold>
-             <stylestrategy>PreferAntialias</stylestrategy>
             </font>
-           </property>
-           <property name="styleSheet">
-            <string notr="true">color: white;</string>
            </property>
            <property name="text">
             <string>Rendrop</string>
@@ -181,9 +171,6 @@
         </item>
         <item>
          <widget class="QStackedWidget" name="pageStack">
-          <property name="styleSheet">
-           <string notr="true">QStackedWidget#pageStack { background: transparent; }</string>
-          </property>
           <widget class="QWidget" name="queuePage">
            <layout class="QVBoxLayout" name="queuePageLayout">
             <property name="spacing">
@@ -215,11 +202,6 @@
                 <height>68</height>
                </size>
               </property>
-              <property name="styleSheet">
-               <string notr="true">background: transparent;
-border: none;
-color: #E0E0E0;</string>
-              </property>
               <layout class="QVBoxLayout" name="selectorContainerLayout">
                <property name="leftMargin">
                 <number>5</number>
@@ -235,9 +217,6 @@ color: #E0E0E0;</string>
                </property>
                <item>
                 <widget class="QWidget" name="selectorWidgetContent" native="true">
-                 <property name="styleSheet">
-                  <string notr="true">background: transparent;</string>
-                 </property>
                  <layout class="QHBoxLayout" name="selectorHorizontalLayout">
                   <property name="spacing">
                    <number>18</number>
@@ -270,62 +249,12 @@ color: #E0E0E0;</string>
                     </property>
                     <property name="font">
                      <font>
-                      <family>Pixel Mixed</family>
+                      <family>Mi Outfit</family>
                       <pointsize>11</pointsize>
                      </font>
                     </property>
                     <property name="toolTip">
                      <string>Blender version used for rendering</string>
-                    </property>
-                    <property name="styleSheet">
-                     <string notr="true">QComboBox {
-    background: transparent;
-	border: 1px solid transparent;
-    padding: 6px 28px 6px 12px;
-    color: white;
-}
-
-QComboBox:disabled {
-    color: #AAAAAA;
-}
-
-QComboBox::drop-down {
-    subcontrol-origin: padding;
-    subcontrol-position: top right;
-    width: 24px;
-    border-left: none;
-}
-
-QComboBox::down-arrow {
-    image: url(:/icon/down_arrow.ico);
-    width: 10px;
-    height: 10px;
-}
-
-QComboBox QAbstractItemView {
-    background-color: #333842;
-    border: 1px solid #555A66;
-    border-radius: 6px;
-    padding: 4px;
-    color: white;
-    selection-background-color: #4B5362;
-    selection-color: white;
-	outline: none;
-}
-
-QComboBox QAbstractItemView::item:hover {
-    background-color: #4B5362;
-	border-left: 3px solid rgb(110, 110, 180);
-	border-radius: 6px;
-	padding: 2px;
-}
-
-QComboBox QAbstractItemView::item:selected {
-    background-color: #4B5362;
-	border-left: 3px solid rgb(110, 110, 180);
-	border-radius: 6px;
-	padding: 2px;
-}</string>
                     </property>
                    </widget>
                   </item>
@@ -351,12 +280,9 @@ QComboBox QAbstractItemView::item:selected {
                      <widget class="QLabel" name="summaryLabel">
                       <property name="font">
                        <font>
-                        <family>Pixel Mixed</family>
+                        <family>Mi Outfit</family>
                         <pointsize>10</pointsize>
                        </font>
-                      </property>
-                      <property name="styleSheet">
-                       <string notr="true">color: #E0E0E0;</string>
                       </property>
                       <property name="textFormat">
                        <enum>Qt::TextFormat::RichText</enum>
@@ -397,25 +323,12 @@ QComboBox QAbstractItemView::item:selected {
                     </property>
                     <property name="font">
                      <font>
-                      <family>Pixel Mixed</family>
+                      <family>Mi Outfit</family>
                       <pointsize>11</pointsize>
-                      <stylestrategy>PreferAntialias</stylestrategy>
                      </font>
                     </property>
                     <property name="cursor">
                      <cursorShape>PointingHandCursor</cursorShape>
-                    </property>
-                    <property name="styleSheet">
-                     <string notr="true">QPushButton {
-    background: transparent;
-    border: none;
-    color: white;
-    padding: 6px 6px;
-}
-
-QPushButton:disabled {
-    color: #AAAAAA;
-}</string>
                     </property>
                     <property name="text">
                      <string>Start Render</string>
@@ -430,9 +343,6 @@ QPushButton:disabled {
             </item>
             <item>
              <widget class="QWidget" name="scrollAreaContainer" native="true">
-              <property name="styleSheet">
-               <string notr="true">background: transparent;</string>
-              </property>
               <layout class="QVBoxLayout" name="verticalLayout_4">
                <property name="spacing">
                 <number>9</number>
@@ -451,48 +361,6 @@ QPushButton:disabled {
                </property>
                <item>
                 <widget class="QScrollArea" name="scrollArea">
-                 <property name="styleSheet">
-                  <string notr="true">QScrollArea#scrollArea {
-	background: transparent;
-	border: none;
-	color: #E0E0E0;
-}
-
-QScrollBar:vertical, QScrollBar:horizontal {
-    background: #2C2F36;
- 	border: 1px solid #555A66;
-    border-radius: 6px;
-    margin: 2px;
-}
-
-QScrollBar::handle:vertical, QScrollBar::handle:horizontal {
-    background: rgb(110, 110, 180);
-    min-height: 20px;
-    min-width: 20px;
-    border-radius: 6px;
-}
-
-QScrollBar::handle:hover {
-    background: rgb(125, 125, 195);
-}
-
-
-QScrollBar::handle:pressed {
-    background: rgb(90, 90, 160);
-}
-
-QScrollBar::sub-line,
-QScrollBar::add-line {
-    background: none;
-    width: 0px;
-    height: 0px;
-}
-
-QScrollBar::sub-page,
-QScrollBar::add-page {
-    background: none;
-}</string>
-                 </property>
                  <property name="frameShape">
                   <enum>QFrame::Shape::StyledPanel</enum>
                  </property>
@@ -510,14 +378,9 @@ QScrollBar::add-page {
                    <rect>
                     <x>0</x>
                     <y>0</y>
-                    <width>1100</width>
-                    <height>560</height>
+                    <width>1098</width>
+                    <height>426</height>
                    </rect>
-                  </property>
-                  <property name="styleSheet">
-                   <string notr="true">background: transparent;
-border: none;
-color: #E0E0E0;</string>
                   </property>
                   <layout class="QVBoxLayout" name="scrollAreaVerticalLayout">
                    <property name="spacing">
@@ -547,10 +410,6 @@ color: #E0E0E0;</string>
                        <height>0</height>
                       </size>
                      </property>
-                     <property name="styleSheet">
-                      <string notr="true">border: none;
-background: transparent;</string>
-                     </property>
                     </widget>
                    </item>
                   </layout>
@@ -574,9 +433,6 @@ background: transparent;</string>
                 <height>160</height>
                </size>
               </property>
-              <property name="styleSheet">
-               <string notr="true">background: transparent;</string>
-              </property>
               <layout class="QVBoxLayout" name="logContainerLayout">
                <property name="spacing">
                 <number>0</number>
@@ -597,17 +453,9 @@ background: transparent;</string>
                 <widget class="QPlainTextEdit" name="logView">
                  <property name="font">
                   <font>
-                   <family>Pixel Mixed</family>
+                   <family>Mi Outfit</family>
                    <pointsize>9</pointsize>
                   </font>
-                 </property>
-                 <property name="styleSheet">
-                  <string notr="true">QPlainTextEdit {
-	background: transparent;
-	border: none;
-	padding: 4px 6px;
-	color: rgb(180, 180, 200);
-}</string>
                  </property>
                  <property name="frameShape">
                   <enum>QFrame::Shape::NoFrame</enum>
@@ -636,9 +484,6 @@ background: transparent;</string>
                 <width>16777215</width>
                 <height>30</height>
                </size>
-              </property>
-              <property name="styleSheet">
-               <string notr="true">background: transparent;</string>
               </property>
               <layout class="QHBoxLayout" name="horizontalLayout_5" stretch="0,1,0">
                <property name="spacing">
@@ -672,13 +517,9 @@ background: transparent;</string>
                  </property>
                  <property name="font">
                   <font>
-                   <family>Pixel Mixed</family>
+                   <family>Mi Outfit</family>
                    <pointsize>11</pointsize>
                   </font>
-                 </property>
-                 <property name="styleSheet">
-                  <string notr="true">background: transparent;
-color: rgb(200, 200, 240);</string>
                  </property>
                  <property name="text">
                   <string>Output</string>
@@ -704,15 +545,9 @@ color: rgb(200, 200, 240);</string>
                  </property>
                  <property name="font">
                   <font>
-                   <family>Pixel Mixed</family>
+                   <family>Mi Outfit</family>
                    <pointsize>9</pointsize>
                   </font>
-                 </property>
-                 <property name="styleSheet">
-                  <string notr="true">padding-left: 10px;
-padding-right: 10px;
-background-color: transparent;
-color: rgb(180, 180, 200);</string>
                  </property>
                  <property name="text">
                   <string/>
@@ -735,24 +570,12 @@ color: rgb(180, 180, 200);</string>
                  </property>
                  <property name="font">
                   <font>
-                   <family>Pixel Mixed</family>
+                   <family>Mi Outfit</family>
                    <pointsize>9</pointsize>
                   </font>
                  </property>
                  <property name="cursor">
                   <cursorShape>PointingHandCursor</cursorShape>
-                 </property>
-                 <property name="styleSheet">
-                  <string notr="true">QPushButton {
-	background: transparent;
-	border: none;
-	color: rgb(150, 150, 190);
-	padding: 2px 8px;
-}
-
-QPushButton:hover {
-	color: white;
-}</string>
                  </property>
                  <property name="text">
                   <string>Show log</string>
@@ -785,8 +608,6 @@ QPushButton:hover {
    <header>look_widgets.h</header>
   </customwidget>
  </customwidgets>
- <resources>
-  <include location="../resource/resource.qrc"/>
- </resources>
+ <resources/>
  <connections/>
 </ui>

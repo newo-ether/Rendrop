@@ -18,6 +18,7 @@
 #include "render_queue.h"
 #include "rounded_surface.h"
 #include "look_widgets.h"
+#include "smooth_scroll.h"
 
 namespace {
 
@@ -39,14 +40,12 @@ QWidget *card(QWidget *parent, QLayout *content, int margin)
 {
     // Same build as the queue toolbar: a frame around a darker surface.
     auto *frame = new QWidget(parent);
-    frame->setStyleSheet(QStringLiteral("background: transparent;"));
     // Widget gives every frame marked as a card a drop shadow.
     frame->setProperty(Look::cardProperty, true);
     RoundedSurface::install(frame, 12, Look::frameColor);
     auto *frameLayout = new QVBoxLayout(frame);
     frameLayout->setContentsMargins(5, 5, 5, 5);
     auto *surface = new QWidget(frame);
-    surface->setStyleSheet(QStringLiteral("background: transparent; color: #E0E0E0;"));
     RoundedSurface::install(surface, 10, Look::surfaceColor);
     content->setContentsMargins(margin, margin, margin, margin);
     surface->setLayout(content);
@@ -117,11 +116,14 @@ void NodeTable::paintEvent(QPaintEvent *)
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing);
     painter.setRenderHint(QPainter::TextAntialiasing);
-    const QFont headerFont = Look::pixelFont(9);
-    const QFont nameFont = Look::pixelFont(10);
+    const QFont headerFont = Look::pixelFont(9, QFont::Medium);
+    const QFont nameFont = Look::pixelFont(10, QFont::Medium);
     const QFont cellFont = Look::pixelFont(9);
+    // Address, speed and lease counts line up in columns.
+    const QFont numberFont = Look::monoFont(8);
     const QFontMetrics nameMetrics(nameFont);
     const QFontMetrics cellMetrics(cellFont);
+    const QFontMetrics numberMetrics(numberFont);
 
     const int left = 8;
     const int usable = std::max(0, width() - left * 2);
@@ -175,15 +177,18 @@ void NodeTable::paintEvent(QPaintEvent *)
         painter.drawText(nameArea, Qt::AlignVCenter | Qt::AlignLeft,
             nameMetrics.elidedText(row.name, Qt::ElideRight, nameArea.width()));
 
-        painter.setFont(cellFont);
         const std::array<const QString *, 5> values {&row.address, &row.state, &row.speed, &row.lease, &row.done};
         for (int column = 1; column <= 5; ++column)
         {
             const QRect area = cell(column, y, rowHeight);
+            // State is a word; the other columns are numbers.
+            const bool number = column != 2;
+            painter.setFont(number ? numberFont : cellFont);
             painter.setPen(column == 1 ? Look::dimTextColor : cellColor);
             painter.drawText(area, Qt::AlignVCenter | Qt::AlignLeft,
-                cellMetrics.elidedText(*values[column - 1], Qt::ElideRight, area.width()));
+                (number ? numberMetrics : cellMetrics).elidedText(*values[column - 1], Qt::ElideRight, area.width()));
         }
+        painter.setFont(cellFont);
         y += rowHeight;
     }
     if (rows.isEmpty() && !emptyText.isEmpty())
@@ -222,7 +227,6 @@ NodesPage::NodesPage(NodeAgent *agent, RenderQueue *queue, const LoadMonitor *mo
     queue(queue),
     monitor(monitor)
 {
-    setStyleSheet(QStringLiteral("color: #E0E0E0;"));
     auto *layout = new QVBoxLayout(this);
     layout->setContentsMargins(0, 0, 0, 0);
     layout->setSpacing(14);
@@ -232,22 +236,23 @@ NodesPage::NodesPage(NodeAgent *agent, RenderQueue *queue, const LoadMonitor *mo
     auto *selfText = new QVBoxLayout();
     selfText->setSpacing(4);
     selfName = new QLabel(this);
-    selfName->setFont(Look::pixelFont(13));
-    selfName->setStyleSheet(QStringLiteral("color: white;"));
+    selfName->setFont(Look::pixelFont(13, QFont::DemiBold));
+    Look::setTextColor(selfName, Qt::white);
     selfState = new QLabel(this);
     selfState->setFont(Look::pixelFont(10));
-    selfState->setStyleSheet(QStringLiteral("color: rgb(170, 174, 186);"));
+    Look::setTextColor(selfState, cellColor);
     selfText->addWidget(selfName);
     selfText->addWidget(selfState);
     selfLayout->addLayout(selfText, 1);
     selfLoad = new QLabel(this);
-    selfLoad->setFont(Look::pixelFont(10));
-    selfLoad->setStyleSheet(QStringLiteral("color: rgb(150, 155, 170);"));
+    selfLoad->setFont(Look::monoFont(9));
+    Look::setTextColor(selfLoad, QColor(150, 155, 170));
     selfLoad->setToolTip(tr("Load from programs other than Rendrop, averaged over the busy window"));
     selfLayout->addWidget(selfLoad);
     selfLayout->addSpacing(18);
     acceptLabel = new QLabel(tr("Accept work"), this);
-    acceptLabel->setFont(Look::pixelFont(10));
+    acceptLabel->setFont(Look::pixelFont(10, QFont::Medium));
+    Look::setTextColor(acceptLabel, cellColor, QColor(100, 104, 115));
     acceptLabel->setToolTip(tr("Let other Rendrop nodes render on this machine while it is idle"));
     selfLayout->addWidget(acceptLabel);
     acceptSwitch = new ToggleSwitch(this);
@@ -259,12 +264,12 @@ NodesPage::NodesPage(NodeAgent *agent, RenderQueue *queue, const LoadMonitor *mo
     tableLayout->setSpacing(8);
     auto *tableHeader = new QHBoxLayout();
     auto *tableTitle = new QLabel(tr("Render group"), this);
-    tableTitle->setFont(Look::pixelFont(12));
-    tableTitle->setStyleSheet(QStringLiteral("color: rgb(150, 155, 170);"));
+    tableTitle->setFont(Look::pixelFont(12, QFont::DemiBold));
+    Look::setTextColor(tableTitle, QColor(150, 155, 170));
     tableHeader->addWidget(tableTitle);
     tableHeader->addStretch(1);
     manageButton = new QPushButton(tr("Manage nodes..."), this);
-    manageButton->setFont(Look::pixelFont(9));
+    manageButton->setFont(Look::pixelFont(9, QFont::Medium));
     Look::stylePlainButton(manageButton);
     manageButton->setCursor(Qt::PointingHandCursor);
     manageButton->setToolTip(tr("Add nodes that broadcast cannot reach, such as Tailscale peers"));
@@ -275,16 +280,15 @@ NodesPage::NodesPage(NodeAgent *agent, RenderQueue *queue, const LoadMonitor *mo
     scroll->setWidgetResizable(true);
     scroll->setFrameShape(QFrame::NoFrame);
     scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    scroll->setStyleSheet(QStringLiteral("QScrollArea { background: transparent; border: none; }") + Look::scrollBarStyleSheet());
-    scroll->viewport()->setAutoFillBackground(false);
     auto *scrollContent = new QWidget(scroll);
-    scrollContent->setStyleSheet(QStringLiteral("background: transparent;"));
     auto *scrollLayout = new QVBoxLayout(scrollContent);
     scrollLayout->setContentsMargins(0, 0, 0, 0);
     table = new NodeTable(scrollContent);
     scrollLayout->addWidget(table);
     scrollLayout->addStretch(1);
     scroll->setWidget(scrollContent);
+    Look::clearScrollArea(scroll);
+    SmoothScroll::install(scroll);
     tableLayout->addWidget(scroll, 1);
     layout->addWidget(card(this, tableLayout, 12), 1);
 
@@ -310,6 +314,8 @@ void NodesPage::setAgent(NodeAgent *newAgent)
         QObject::disconnect(agent, nullptr, this, nullptr);
     }
     agent = newAgent;
+    // A rebuilt agent starts a fresh search.
+    searchClock.invalidate();
     if (agent)
     {
         QObject::connect(agent, &NodeAgent::changed, this, &NodesPage::refresh);
@@ -376,7 +382,7 @@ void NodesPage::refresh()
     selfName->setText(snapshot.name);
     QColor dot;
     selfState->setText(describeSelf(snapshot, &dot));
-    selfState->setStyleSheet(QStringLiteral("color: %1;").arg(dot.lighter(130).name()));
+    Look::setTextColor(selfState, dot.lighter(130));
 
     const LoadStatus load = monitor->status();
     const QString gpu = load.gpuAvailable
@@ -392,9 +398,6 @@ void NodesPage::refresh()
     }
     acceptSwitch->setEnabled(snapshot.enabled);
     acceptLabel->setEnabled(snapshot.enabled);
-    acceptLabel->setStyleSheet(snapshot.enabled
-        ? QStringLiteral("color: rgb(170, 174, 186);")
-        : QStringLiteral("color: rgb(100, 104, 115);"));
 
     if (!snapshot.enabled)
     {
@@ -475,11 +478,26 @@ void NodesPage::refresh()
         rows.append(row);
     }
     QString empty;
-    if (rows.isEmpty())
+    bool searching = false;
+    if (!rows.isEmpty())
     {
-        empty = snapshot.discoveryListening
-            ? tr("Looking for other nodes on the LAN...")
-            : tr("Discovery port unavailable. Add nodes manually with \"Manage nodes...\".");
+        searchClock.invalidate();
     }
-    table->setRows(rows, empty, snapshot.discoveryListening);
+    else if (!snapshot.discoveryListening)
+    {
+        empty = tr("Discovery port unavailable. Add nodes manually with \"Manage nodes...\".");
+    }
+    else
+    {
+        if (!searchClock.isValid())
+        {
+            searchClock.start();
+        }
+        // A few announce and poll rounds without an answer means nobody is there.
+        searching = searchClock.elapsed() < searchTimeoutMs;
+        empty = searching
+            ? tr("Looking for other nodes on the LAN...")
+            : tr("No other nodes found.");
+    }
+    table->setRows(rows, empty, searching);
 }

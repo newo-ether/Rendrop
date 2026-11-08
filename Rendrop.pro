@@ -4,7 +4,7 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
 CONFIG += c++20
 
-VERSION = 2.0.2
+VERSION = 2.0.3
 
 QMAKE_CXXFLAGS_RELEASE += -O2
 
@@ -30,26 +30,33 @@ SOURCES += \
     src/blender_renderer.cpp \
     src/chunk_planner.cpp \
     src/dependency_packer.cpp \
-    src/drop_shadow_renderer.cpp \
     src/drop_shadow_widget.cpp \
     src/file_bar.cpp \
+    src/frame_driver.cpp \
     src/frame_ledger.cpp \
     src/blender_version_manager.cpp \
     src/http_server.cpp \
+    src/list_motion.cpp \
     src/load_monitor.cpp \
     src/loading_bar.cpp \
     src/main.cpp \
     src/node_agent.cpp \
     src/node_discovery.cpp \
     src/nodes_page.cpp \
+    src/project_page.cpp \
     src/progress_bar.cpp \
     src/project_info.cpp \
     src/render_job.cpp \
     src/remote_worker.cpp \
     src/rounded_surface.cpp \
+    src/transition.cpp \
+    src/rendrop_style.cpp \
+    src/popup_motion.cpp \
+    src/page_fade.cpp \
     src/render_queue.cpp \
     src/settings_page.cpp \
     src/simple_process.cpp \
+    src/smooth_scroll.cpp \
     src/look_widgets.cpp \
     src/widget.cpp \
     src/drop_file_tip.cpp \
@@ -69,23 +76,30 @@ HEADERS += \
     src/include/color.h \
     src/include/dependency_packer.h \
     src/include/distributed_settings.h \
+    src/include/frame_driver.h \
     src/include/frame_ledger.h \
-    src/include/drop_shadow_renderer.h \
     src/include/drop_shadow_widget.h \
     src/include/file_bar.h \
     src/include/http_server.h \
+    src/include/list_motion.h \
     src/include/load_monitor.h \
     src/include/load_settings.h \
     src/include/node_agent.h \
     src/include/node_discovery.h \
     src/include/nodes_page.h \
+    src/include/project_page.h \
     src/include/project_info.h \
     src/include/render_job.h \
     src/include/remote_worker.h \
     src/include/rounded_surface.h \
+    src/include/transition.h \
+    src/include/rendrop_style.h \
+    src/include/popup_motion.h \
+    src/include/page_fade.h \
     src/include/render_queue.h \
     src/include/settings_page.h \
     src/include/simple_process.h \
+    src/include/smooth_scroll.h \
     src/include/look_widgets.h \
     src/include/worker_auth.h \
     src/include/style.h \

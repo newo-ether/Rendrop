@@ -3,6 +3,8 @@
 #ifndef APP_PREFERENCES_H
 #define APP_PREFERENCES_H
 
+#include <algorithm>
+
 #include <QCoreApplication>
 #include <QDir>
 #include <QFile>
@@ -25,7 +27,15 @@ struct AppPreferences
     bool shadows = true;
     // The "keeps running in the tray" balloon has been shown once already.
     bool trayHintShown = false;
+    // Blender processes that may read .blend files at the same time when
+    // files are added or reloaded. The rest wait in the Loading state.
+    int maxConcurrentLoads = 2;
 };
+
+namespace AppPreferencesLimits {
+inline constexpr int minConcurrentLoads = 1;
+inline constexpr int maxConcurrentLoads = 16;
+}
 
 namespace AppPreferencesFile {
 
@@ -46,6 +56,10 @@ inline AppPreferences load()
     preferences.launchAtLogin = object.value(QStringLiteral("launchAtLogin")).toBool(preferences.launchAtLogin);
     preferences.shadows = object.value(QStringLiteral("shadows")).toBool(preferences.shadows);
     preferences.trayHintShown = object.value(QStringLiteral("trayHintShown")).toBool(preferences.trayHintShown);
+    preferences.maxConcurrentLoads = std::clamp(
+        object.value(QStringLiteral("maxConcurrentLoads")).toInt(preferences.maxConcurrentLoads),
+        AppPreferencesLimits::minConcurrentLoads,
+        AppPreferencesLimits::maxConcurrentLoads);
     return preferences;
 }
 
@@ -59,7 +73,8 @@ inline bool save(const AppPreferences &preferences)
     const QJsonObject object {
         {QStringLiteral("launchAtLogin"), preferences.launchAtLogin},
         {QStringLiteral("shadows"), preferences.shadows},
-        {QStringLiteral("trayHintShown"), preferences.trayHintShown}
+        {QStringLiteral("trayHintShown"), preferences.trayHintShown},
+        {QStringLiteral("maxConcurrentLoads"), preferences.maxConcurrentLoads}
     };
     file.write(QJsonDocument(object).toJson(QJsonDocument::Indented));
     return file.commit();

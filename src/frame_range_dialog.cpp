@@ -1,5 +1,6 @@
 #include "frame_range_dialog.h"
 #include "ui_frame_range_dialog.h"
+#include "look_widgets.h"
 #include "rounded_surface.h"
 
 FrameRangeDialog::FrameRangeDialog(int start, int end, int step, QWidget *parent) :
@@ -8,13 +9,13 @@ FrameRangeDialog::FrameRangeDialog(int start, int end, int step, QWidget *parent
 {
     ui->setupUi(this);
     setWindowFlags(windowFlags() & ~Qt::WindowContextHelpButtonHint);
+    Look::styleDialog(this);
 
-    // With the style sheet padding a spin box asks for ~210px minimum, which
-    // fills the fixed-width dialog and squeezes the form labels to zero.
+    // Keeps the fixed-width dialog from squeezing the form labels.
     for (QSpinBox *spin : {ui->startSpin, ui->endSpin, ui->stepSpin})
     {
         spin->setMinimumWidth(96);
-        // The sheet keeps text and the step buttons; the box is painted antialiased.
+        // RendropStyle draws the step buttons; the box is painted antialiased.
         RoundedSurface::install(spin, 6, RoundedSurface::Colors {
             QColor(43, 45, 48), QColor(), QColor(), QColor(), QColor(85, 90, 102), QColor(110, 110, 180)});
     }
@@ -23,6 +24,7 @@ FrameRangeDialog::FrameRangeDialog(int start, int end, int step, QWidget *parent
         RoundedSurface::install(button, 6, RoundedSurface::Colors {
             QColor(0x33, 0x38, 0x42), QColor(0x4B, 0x53, 0x62), QColor(0x2B, 0x2F, 0x38), QColor(),
             QColor(0x55, 0x5A, 0x66)});
+        Look::setPadding(button, QMargins(6, 6, 6, 6));
     }
 
     ui->startSpin->setValue(start);

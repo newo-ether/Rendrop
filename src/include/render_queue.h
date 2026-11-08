@@ -92,6 +92,10 @@ public:
     void setBlenderPathForAll(const QString &blenderPath);
     void setDistributedSettings(const DistributedSettings &settings);
     DistributedSettings distributedSettings() const;
+    // Upper bound on Blender readers running at once for added or reloaded
+    // files. Jobs beyond it stay Loading and start in queue order.
+    void setMaxConcurrentLoads(int limit);
+    int maxConcurrentLoads() const;
     bool start();
     void stop();
     void shutdown();
@@ -144,6 +148,10 @@ private:
     void applyDistributedSettings(RenderJob *job) const;
     RenderJob *currentJob() const;
     WorkerInfo *workerForLease(const QUuid &leaseId);
+    // Starts waiting readers on the next event loop pass, after any result a
+    // stopped reader posted has been dropped.
+    void scheduleLoadPump();
+    void pumpLoads();
 
     std::vector<RenderJob *> jobs;
     mutable QReadWriteLock snapshotLock;
@@ -158,6 +166,8 @@ private:
     QHash<QString, WorkerInfo> workerRegistry;
     QTimer *leaseTimer = nullptr;
     DependencyPacker *packer = nullptr;
+    int loadLimit = 2;
+    bool loadPumpQueued = false;
 };
 
 #endif // RENDER_QUEUE_H

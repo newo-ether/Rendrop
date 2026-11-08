@@ -287,6 +287,56 @@ std::vector<FrameOwnerRanges> FrameLedger::ownerRanges() const
     return result;
 }
 
+std::vector<FrameOwnerRanges> FrameLedger::leasedRanges() const
+{
+    std::vector<std::pair<int, const Lease *>> ordered;
+    for (const Lease &lease : leases)
+    {
+        ordered.emplace_back(lease.firstIndex, &lease);
+    }
+    std::sort(ordered.begin(), ordered.end(), [](const auto &left, const auto &right) {
+        return left.first < right.first;
+    });
+    std::vector<FrameOwnerRanges> result;
+    for (const auto &entry : ordered)
+    {
+        const Lease *lease = entry.second;
+        // Frames of the lease still waiting; reported ones are already done.
+        int rangeStart = -1;
+        std::vector<IndexRange> ranges;
+        const int end = lease->firstIndex + lease->count;
+        for (int index = lease->firstIndex + lease->finished; index <= end; ++index)
+        {
+            const bool leased = index < end && frameSlots[static_cast<size_t>(index)] == Slot::Leased;
+            if (leased && rangeStart < 0)
+            {
+                rangeStart = index;
+            }
+            else if (!leased && rangeStart >= 0)
+            {
+                ranges.emplace_back(rangeStart, index - 1);
+                rangeStart = -1;
+            }
+        }
+        if (ranges.empty())
+        {
+            continue;
+        }
+        const auto existing = std::find_if(result.begin(), result.end(), [lease](const FrameOwnerRanges &entry) {
+            return entry.owner == lease->owner;
+        });
+        if (existing == result.end())
+        {
+            result.push_back({lease->owner, std::move(ranges)});
+        }
+        else
+        {
+            existing->ranges.insert(existing->ranges.end(), ranges.begin(), ranges.end());
+        }
+    }
+    return result;
+}
+
 void FrameLedger::markDone(int firstIndex, int count, int ownerIndex)
 {
     for (int index = firstIndex; index < firstIndex + count; ++index)

@@ -8,8 +8,9 @@
 
 // Decides how many frames the next lease of a renderer gets. Workers pull
 // work; each claim is sized from that renderer's measured time per frame so a
-// lease lasts about targetLeaseSeconds, and capped near the end of the job so
-// the last frames are spread over everyone instead of landing on one machine.
+// lease lasts about targetLeaseSeconds, and capped at half an even share of
+// the pending frames so leases shrink towards the end of the job and the last
+// frames are spread over everyone instead of landing on one machine.
 // Pure logic, no clock of its own.
 class ChunkPlanner
 {

@@ -67,6 +67,9 @@ public:
     std::vector<IndexRange> completedRanges() const;
     // Completed frames per non-empty owner, in order of first appearance.
     std::vector<FrameOwnerRanges> ownerRanges() const;
+    // Frames handed out but not finished yet, per lease owner (empty owner:
+    // the coordinator), sorted by first frame.
+    std::vector<FrameOwnerRanges> leasedRanges() const;
 
 private:
     enum class Slot : unsigned char

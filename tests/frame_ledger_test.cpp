@@ -15,6 +15,7 @@ private slots:
     void completeAndUnknownLeases();
     void creditsFramesToLeaseOwners();
     void resetRestoresOwnersOnlyOnCompletedFrames();
+    void listsUnfinishedLeasedFrames();
 };
 
 void FrameLedgerTest::claimsContiguousPendingFrames()
@@ -148,6 +149,27 @@ void FrameLedgerTest::resetRestoresOwnersOnlyOnCompletedFrames()
         {QStringLiteral("Quantum"), {{3, 3}}}
     };
     QCOMPARE(ledger.ownerRanges(), after);
+}
+
+void FrameLedgerTest::listsUnfinishedLeasedFrames()
+{
+    FrameLedger ledger;
+    ledger.reset(1, 12, 1, {});
+    const auto local = ledger.claim(QStringLiteral("local"), 3, 0);
+    const auto qw = ledger.claim(QStringLiteral("qw-id"), 4, 0, QStringLiteral("QW"));
+    const auto later = ledger.claim(QStringLiteral("qw-id"), 2, 0, QStringLiteral("QW"));
+    QVERIFY(ledger.report(qw->id, 1, 0));
+    std::vector<FrameOwnerRanges> expected = {
+        {QString(), {{0, 2}}},
+        {QStringLiteral("QW"), {{4, 6}, {7, 8}}}
+    };
+    QCOMPARE(ledger.leasedRanges(), expected);
+    QVERIFY(ledger.complete(local->id));
+    QVERIFY(ledger.release(later->id));
+    expected = {{QStringLiteral("QW"), {{4, 6}}}};
+    QCOMPARE(ledger.leasedRanges(), expected);
+    QVERIFY(ledger.complete(qw->id));
+    QVERIFY(ledger.leasedRanges().empty());
 }
 
 QTEST_GUILESS_MAIN(FrameLedgerTest)

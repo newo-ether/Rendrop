@@ -12,6 +12,8 @@
 
 #include "app_paths.h"
 #include "app_preferences.h"
+#include "frame_driver.h"
+#include "rendrop_style.h"
 #include "widget.h"
 
 namespace {
@@ -41,9 +43,14 @@ int main(int argc, char *argv[])
     // Required by QWindowKit: native child widgets must not turn their
     // siblings native, or the custom frame loses its hit testing.
     QCoreApplication::setAttribute(Qt::AA_DontCreateNativeWidgetSiblings);
+    Look::selectFontEngine();
     QApplication app(argc, argv);
+    // Before any widget exists, so every widget is polished by it.
+    RendropStyle::install();
+    Look::installTextRendering();
+    FrameDriver::installForScreen();
     QCoreApplication::setApplicationName(QStringLiteral("Rendrop"));
-    QCoreApplication::setApplicationVersion(QStringLiteral("2.0.2"));
+    QCoreApplication::setApplicationVersion(QStringLiteral("2.0.3"));
     // The window hides to the tray; message boxes closing while it is hidden
     // must not end the process. Quitting goes through the tray menu.
     app.setQuitOnLastWindowClosed(false);
@@ -61,7 +68,9 @@ int main(int argc, char *argv[])
     // Started by the Run entry at login: stay in the tray.
     bool startInTray = app.arguments().contains(QLatin1String(Autostart::trayArgument));
 
-    QFontDatabase::addApplicationFont(":/font/PixelMixed.ttf");
+    QFontDatabase::addApplicationFont(":/font/MiOutfit.ttf");
+    QFontDatabase::addApplicationFont(":/font/JetBrainsMono-Regular.ttf");
+    QFontDatabase::addApplicationFont(":/font/JetBrainsMono-Bold.ttf");
     QFontDatabase::addApplicationFont(":/font/BitcountSingle-Bold.ttf");
 
     if (!AppPaths::ensureConfigDirectory())
@@ -73,6 +82,8 @@ int main(int argc, char *argv[])
     int exitCode = 0;
     do {
         QTranslator translator;
+        // Qt's own strings: message box buttons, text edit context menus.
+        QTranslator qtTranslator;
         int languageIndex = 0;
 
         QFile configFile(AppPaths::configFile(QStringLiteral("language.cfg")));
@@ -96,6 +107,10 @@ int main(int argc, char *argv[])
                         app.installTranslator(&translator);
                         languageIndex = 1;
                     }
+                    if (qtTranslator.load(":/i18n/qtbase_zh_CN.qm"))
+                    {
+                        app.installTranslator(&qtTranslator);
+                    }
                 }
                 configFile.close();
             }
@@ -115,8 +130,13 @@ int main(int argc, char *argv[])
                         }
                     }
                 });
-            // Without a tray there would be no way back to a hidden window.
-            if (!startInTray || !QSystemTrayIcon::isSystemTrayAvailable())
+            // Login launch stays hidden; the widget waits for the taskbar to
+            // put its tray icon up. A normal launch shows the window.
+            if (startInTray)
+            {
+                widget.startInBackground();
+            }
+            else
             {
                 widget.show();
             }
@@ -127,6 +147,7 @@ int main(int argc, char *argv[])
         }
 
         app.removeTranslator(&translator);
+        app.removeTranslator(&qtTranslator);
 
     } while (exitCode == 773);
 

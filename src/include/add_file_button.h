@@ -7,19 +7,17 @@
 #include <QPointer>
 
 #include "drop_shadow_widget.h"
-#include "drop_shadow_renderer.h"
 
 class AddFileButton : public QPushButton
 {
     Q_OBJECT
 
 public:
-    AddFileButton(QWidget *parent, DropShadowRenderer *dropShadowRenderer);
+    explicit AddFileButton(QWidget *parent);
     ~AddFileButton();
 
 private:
     QPointer<DropShadowWidget> dropShadowWidget;
-    DropShadowRenderer *dropShadowRenderer;
 
 };
 

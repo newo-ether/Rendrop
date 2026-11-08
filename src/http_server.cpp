@@ -67,9 +67,16 @@ json projectToJson(const ProjectInfo &project)
     {
         owners.push_back({{"node", toUtf8(entry.owner)}, {"ranges", rangesToJson(entry.ranges)}});
     }
+    // Frames being rendered now; an empty node is this machine.
+    json leases = json::array();
+    for (const FrameOwnerRanges &entry : project.frameLeases)
+    {
+        leases.push_back({{"node", toUtf8(entry.owner)}, {"ranges", rangesToJson(entry.ranges)}});
+    }
     return {
         {"completedRanges", rangesToJson(project.completedRanges)},
         {"frameOwners", owners},
+        {"frameLeases", leases},
         {"id", uuidText(project.id)},
         {"state", toUtf8(ProjectStateToString(project.state))},
         {"name", toUtf8(project.name)},

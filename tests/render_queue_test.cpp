@@ -84,6 +84,7 @@ private slots:
     void initTestCase();
     void projectInfoSerializationNormalizesState();
     void loadErrorReloadAndEdit();
+    void concurrentLoadsAreCapped();
     void reorderAndRemove();
     void renderFailureAdvancesSerialQueue();
     void blender5FrameLogFinishes();
@@ -166,6 +167,44 @@ void RenderQueueTest::projectInfoSerializationNormalizesState()
     QVERIFY(restored.has_value());
     QVERIFY(restored->frameOwners.empty());
     QCOMPARE(restored->finishedFrame, 2);
+}
+
+void RenderQueueTest::concurrentLoadsAreCapped()
+{
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    RenderQueue queue(persistenceDirectory(directory));
+    queue.setMaxConcurrentLoads(2);
+    std::vector<QUuid> ids;
+    for (int index = 0; index < 5; ++index)
+    {
+        const QString blendPath = createBlendFile(directory, QStringLiteral("load_slow_%1").arg(index));
+        QVERIFY(!blendPath.isEmpty());
+        ids.push_back(queue.addJob(QStringLiteral("load_slow_%1").arg(index), blendPath, fakeBlenderPath));
+        QVERIFY(!ids.back().isNull());
+    }
+    const auto countIn = [&](ProjectState state) {
+        int count = 0;
+        for (const QUuid &id : ids)
+        {
+            count += queue.snapshotById(id).state == state ? 1 : 0;
+        }
+        return count;
+    };
+    // Every file shows Loading at once, waiting or not.
+    QCOMPARE(countIn(ProjectState::Loading), 5);
+
+    // The first batch finishes alone; with no cap all five would.
+    QVERIFY(waitUntil([&]() { return countIn(ProjectState::Queued) > 0; }));
+    QVERIFY(countIn(ProjectState::Queued) <= 2);
+    QVERIFY(countIn(ProjectState::Loading) >= 3);
+    // Slots go to the waiting files in queue order.
+    for (int index = 2; index < 5; ++index)
+    {
+        QCOMPARE(queue.snapshotById(ids[static_cast<size_t>(index)]).state, ProjectState::Loading);
+    }
+
+    QVERIFY(waitUntil([&]() { return countIn(ProjectState::Queued) == 5; }));
 }
 
 void RenderQueueTest::loadErrorReloadAndEdit()

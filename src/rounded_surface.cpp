@@ -6,6 +6,7 @@
 #include <QEvent>
 #include <QPainter>
 #include <QPainterPath>
+#include <QPalette>
 #include <QWidget>
 
 #include "rounded_surface.h"
@@ -14,20 +15,40 @@ RoundedSurface::RoundedSurface(QWidget *widget, qreal radius, const Colors &colo
     QObject(widget),
     target(widget),
     radius(radius),
-    colors(colors)
+    colors(colors),
+    fill(widget),
+    outline(widget),
+    label(widget)
 {
-    if (colors.hover.isValid())
-    {
-        // Enter and leave must repaint even without :hover style rules.
-        target->setAttribute(Qt::WA_Hover);
-    }
+    // Enter and leave must reach the filter even without :hover rules.
+    target->setAttribute(Qt::WA_Hover);
     target->installEventFilter(this);
-    target->update();
+    if (auto *button = qobject_cast<QAbstractButton *>(target))
+    {
+        // isDown() and isChecked() change after the events the filter sees.
+        QObject::connect(button, &QAbstractButton::pressed, this, [this]() { refresh(); });
+        QObject::connect(button, &QAbstractButton::released, this, [this]() { refresh(); });
+        QObject::connect(button, &QAbstractButton::toggled, this, [this]() { refresh(); });
+    }
+    fill.jumpTo(currentColor());
+    outline.jumpTo(currentBorder());
+    label.jumpTo(currentText());
 }
 
 RoundedSurface *RoundedSurface::install(QWidget *widget, qreal radius, const Colors &colors)
 {
-    return widget ? new RoundedSurface(widget, radius, colors) : nullptr;
+    if (!widget)
+    {
+        return nullptr;
+    }
+    // Installing again restyles the existing surface instead of stacking one.
+    if (RoundedSurface *existing = find(widget))
+    {
+        existing->radius = radius;
+        existing->setColors(colors);
+        return existing;
+    }
+    return new RoundedSurface(widget, radius, colors);
 }
 
 RoundedSurface *RoundedSurface::install(QWidget *widget, qreal radius, const QColor &color)
@@ -35,10 +56,29 @@ RoundedSurface *RoundedSurface::install(QWidget *widget, qreal radius, const QCo
     return install(widget, radius, Colors {color, QColor(), QColor(), QColor()});
 }
 
+RoundedSurface *RoundedSurface::find(const QWidget *widget)
+{
+    return widget ? widget->findChild<RoundedSurface *>(QString(), Qt::FindDirectChildrenOnly) : nullptr;
+}
+
 void RoundedSurface::setColors(const Colors &newColors)
 {
     colors = newColors;
-    target->update();
+    fill.jumpTo(currentColor());
+    outline.jumpTo(currentBorder());
+    label.jumpTo(currentText());
+}
+
+void RoundedSurface::refresh()
+{
+    fill.setTarget(currentColor());
+    outline.setTarget(currentBorder());
+    label.setTarget(currentText());
+}
+
+QColor RoundedSurface::textColor() const
+{
+    return label.value();
 }
 
 QColor RoundedSurface::currentColor() const
@@ -72,23 +112,58 @@ QColor RoundedSurface::currentBorder() const
     return colors.border;
 }
 
+QColor RoundedSurface::currentText() const
+{
+    const QPalette &palette = target->palette();
+    if (!target->isEnabled())
+    {
+        return palette.color(QPalette::Disabled, QPalette::ButtonText);
+    }
+    const QColor text = colors.text.isValid() ? colors.text : palette.color(QPalette::Active, QPalette::ButtonText);
+    const auto *button = qobject_cast<const QAbstractButton *>(target);
+    if (button && button->isChecked() && colors.checkedText.isValid())
+    {
+        return colors.checkedText;
+    }
+    if (target->underMouse() && colors.hoverText.isValid())
+    {
+        return colors.hoverText;
+    }
+    return text;
+}
+
 bool RoundedSurface::eventFilter(QObject *watched, QEvent *event)
 {
-    if (watched == target && colors.focusBorder.isValid()
-        && (event->type() == QEvent::FocusIn || event->type() == QEvent::FocusOut))
+    if (watched != target)
     {
-        target->update();
+        return QObject::eventFilter(watched, event);
     }
-    if (watched == target && event->type() == QEvent::Paint)
+    switch (event->type())
     {
+    case QEvent::Enter:
+    case QEvent::Leave:
+    case QEvent::HoverEnter:
+    case QEvent::HoverLeave:
+    case QEvent::EnabledChange:
+    case QEvent::FocusIn:
+    case QEvent::FocusOut:
+        refresh();
+        break;
+    case QEvent::PaletteChange:
+        // A new palette is a restyle, not a state change.
+        label.jumpTo(currentText());
+        break;
+    case QEvent::Paint:
+    {
+        const QColor color = fill.value();
+        const QColor border = outline.value();
         const QRectF bounds = QRectF(target->rect());
         const qreal clamped = std::min(radius, std::min(bounds.width(), bounds.height()) / 2.0);
         QPainter painter(target);
         painter.setRenderHint(QPainter::Antialiasing);
         painter.setPen(Qt::NoPen);
-        painter.setBrush(currentColor());
-        const QColor border = currentBorder();
-        if (border.isValid())
+        painter.setBrush(color.isValid() ? QBrush(color) : QBrush(Qt::NoBrush));
+        if (border.isValid() && border.alpha() > 0)
         {
             // A 1px stroke on the half-pixel inset lands on whole device
             // pixels instead of smearing over two.
@@ -96,11 +171,15 @@ bool RoundedSurface::eventFilter(QObject *watched, QEvent *event)
             const QRectF inset = bounds.adjusted(0.5, 0.5, -0.5, -0.5);
             painter.drawRoundedRect(inset, std::max(0.0, clamped - 0.5), std::max(0.0, clamped - 0.5));
         }
-        else
+        else if (color.isValid() && color.alpha() > 0)
         {
             painter.drawRoundedRect(bounds, clamped, clamped);
         }
         // Fall through: the widget paints its own content on top.
+        break;
+    }
+    default:
+        break;
     }
     return QObject::eventFilter(watched, event);
 }

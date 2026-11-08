@@ -19,40 +19,36 @@
 #include <QScrollArea>
 #include <QScrollBar>
 #include <QSpinBox>
+#include <QTextDocument>
 #include <QTimer>
 #include <QVBoxLayout>
+#include <QWheelEvent>
 
 #include "app_preferences.h"
 #include "drop_shadow_widget.h"
 #include "rounded_surface.h"
 #include "settings_page.h"
 #include "look_widgets.h"
+#include "smooth_scroll.h"
 
 namespace {
 
 constexpr int fieldWidth = 280;
 
-QString sectionButtonStyleSheet()
-{
-    return QStringLiteral(
-        // RoundedSurface paints the hover and checked backgrounds.
-        "QPushButton { background: transparent; border: none; color: rgb(150, 155, 170);"
-        "  text-align: left; padding: 7px 12px; }"
-        "QPushButton:checked { color: white; }"
-    );
-}
+const QColor helpColor(110, 115, 130);
+const QColor quietColor(150, 155, 170);
+const QColor warningColor(215, 165, 70);
+const QColor errorColor(225, 110, 110);
 
 QWidget *framedSurface(QWidget *parent, QWidget **surfaceOut)
 {
     auto *frame = new QWidget(parent);
-    frame->setStyleSheet(QStringLiteral("background: transparent;"));
     // Widget gives every frame marked as a card a drop shadow.
     frame->setProperty(Look::cardProperty, true);
     RoundedSurface::install(frame, 12, Look::frameColor);
     auto *frameLayout = new QVBoxLayout(frame);
     frameLayout->setContentsMargins(5, 5, 5, 5);
     auto *surface = new QWidget(frame);
-    surface->setStyleSheet(QStringLiteral("background: transparent; color: #E0E0E0;"));
     RoundedSurface::install(surface, 10, Look::surfaceColor);
     frameLayout->addWidget(surface);
     *surfaceOut = surface;
@@ -66,6 +62,7 @@ QSpinBox *spinBox(QWidget *parent, int minimum, int maximum, const QString &suff
     box->setSuffix(suffix);
     box->setButtonSymbols(QAbstractSpinBox::NoButtons);
     box->setFixedSize(fieldWidth, 30);
+    box->setFont(Look::monoFont(9));
     return box;
 }
 
@@ -77,13 +74,14 @@ QDoubleSpinBox *percentBox(QWidget *parent)
     box->setSuffix(QStringLiteral(" %"));
     box->setButtonSymbols(QAbstractSpinBox::NoButtons);
     box->setFixedSize(fieldWidth, 30);
+    box->setFont(Look::monoFont(9));
     return box;
 }
 
 QPushButton *button(QWidget *parent, const QString &text, bool accent)
 {
     auto *result = new QPushButton(text, parent);
-    result->setFont(Look::pixelFont(9));
+    result->setFont(Look::pixelFont(9, QFont::Medium));
     accent ? Look::styleAccentButton(result) : Look::stylePlainButton(result);
     result->setCursor(Qt::PointingHandCursor);
     result->setFixedHeight(28);
@@ -124,7 +122,6 @@ SettingsPage::SettingsPage(const QString &distributedPath, int languageIndex, QW
     QWidget(parent),
     distributedPath(distributedPath)
 {
-    setStyleSheet(Look::inputStyleSheet() + QStringLiteral("QLabel { color: #E0E0E0; }"));
     setFont(Look::pixelFont(10));
     auto *layout = new QHBoxLayout(this);
     layout->setContentsMargins(0, 0, 0, 0);
@@ -146,10 +143,13 @@ SettingsPage::SettingsPage(const QString &distributedPath, int languageIndex, QW
     {
         auto *entry = new QPushButton(titles[index], tocSurface);
         entry->setCheckable(true);
-        entry->setFont(Look::pixelFont(10));
-        entry->setStyleSheet(sectionButtonStyleSheet());
+        entry->setFont(Look::pixelFont(10, QFont::Medium));
+        Look::setPadding(entry, QMargins(12, 7, 12, 7), Qt::AlignLeft | Qt::AlignVCenter);
         RoundedSurface::Colors entryColors {Qt::transparent, QColor(255, 255, 255, 14), QColor(), QColor()};
         entryColors.checked = QColor(0x2B, 0x2D, 0x40);
+        entryColors.text = quietColor;
+        entryColors.hoverText = QColor(0xD0, 0xD3, 0xDC);
+        entryColors.checkedText = Qt::white;
         RoundedSurface::install(entry, 8, entryColors);
         entry->setCursor(Qt::PointingHandCursor);
         sectionButtons->addButton(entry, index);
@@ -169,20 +169,18 @@ SettingsPage::SettingsPage(const QString &distributedPath, int languageIndex, QW
     scroll->setWidgetResizable(true);
     scroll->setFrameShape(QFrame::NoFrame);
     scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    scroll->setStyleSheet(QStringLiteral("QScrollArea { background: transparent; border: none; }") + Look::scrollBarStyleSheet());
-    scroll->viewport()->setAutoFillBackground(false);
     auto *form = new QWidget(scroll);
-    form->setStyleSheet(QStringLiteral("background: transparent;"));
     formLayout = new QVBoxLayout(form);
     formLayout->setContentsMargins(18, 14, 18, 18);
     // Gap between sections; rows inside a section use the tighter 12.
     formLayout->setSpacing(44);
     scroll->setWidget(form);
+    Look::clearScrollArea(scroll);
+    SmoothScroll::install(scroll);
     formSurfaceLayout->addWidget(scroll);
     right->addWidget(formFrame, 1);
 
     saveBar = new QWidget(this);
-    saveBar->setStyleSheet(QStringLiteral("background: transparent;"));
     RoundedSurface::install(saveBar, 10, QColor(0x2B, 0x2D, 0x40));
     auto *saveLayout = new QHBoxLayout(saveBar);
     saveLayout->setContentsMargins(14, 8, 8, 8);
@@ -218,7 +216,7 @@ SettingsPage::SettingsPage(const QString &distributedPath, int languageIndex, QW
     QWidget *blender = addSection(Section::Blender, tr("Blender"));
     auto *blenderHelp = new QLabel(tr("Versions you can render with. Pick the active one in the queue toolbar."), blender);
     blenderHelp->setFont(Look::pixelFont(9));
-    blenderHelp->setStyleSheet(QStringLiteral("color: rgb(110, 115, 130);"));
+    Look::setTextColor(blenderHelp, helpColor);
     blenderHelp->setWordWrap(true);
     static_cast<QVBoxLayout *>(blender->layout())->addWidget(blenderHelp);
     blenderList = new QVBoxLayout();
@@ -229,6 +227,11 @@ SettingsPage::SettingsPage(const QString &distributedPath, int languageIndex, QW
     addRowLayout->addWidget(addBlenderButton);
     addRowLayout->addStretch(1);
     static_cast<QVBoxLayout *>(blender->layout())->addLayout(addRowLayout);
+    maxLoadsBox = spinBox(blender, AppPreferencesLimits::minConcurrentLoads,
+        AppPreferencesLimits::maxConcurrentLoads, QString());
+    maxLoadsBox->setValue(preferences.maxConcurrentLoads);
+    addRow(blender, tr("Parallel loading"),
+        tr("Most Blender processes reading added files at once. The rest wait in line."), maxLoadsBox);
 
     // Farm.
     QWidget *farm = addSection(Section::Farm, tr("Farm"));
@@ -243,10 +246,9 @@ SettingsPage::SettingsPage(const QString &distributedPath, int languageIndex, QW
     tokenEdit = new QLineEdit(tokenField);
     tokenEdit->setEchoMode(QLineEdit::Password);
     tokenEdit->setFixedHeight(30);
-    // Pixel Mixed draws the default mask (U+25CF) almost full height; the
-    // bullet U+2022 keeps the hidden key the size of the visible one.
-    tokenEdit->setStyleSheet(QStringLiteral(
-        "QLineEdit { font-family: 'Pixel Mixed'; lineedit-password-character: 8226; }"));
+    // RendropStyle masks with the bullet U+2022; Pixel Mixed drew the
+    // default U+25CF almost full height.
+    tokenEdit->setFont(Look::monoFont(9));
     showTokenButton = button(tokenField, tr("Show"), false);
     copyTokenButton = button(tokenField, tr("Copy"), false);
     regenerateTokenButton = button(tokenField, tr("New"), false);
@@ -259,21 +261,21 @@ SettingsPage::SettingsPage(const QString &distributedPath, int languageIndex, QW
         tr("Shared secret of the render group. Every machine needs the same key."), tokenField);
     auto *httpPort = new QLabel(QStringLiteral("28528"), farm);
     httpPort->setFixedWidth(fieldWidth);
-    httpPort->setFont(Look::pixelFont(10));
-    httpPort->setStyleSheet(QStringLiteral("color: rgb(150, 155, 170);"));
+    httpPort->setFont(Look::monoFont(9));
+    Look::setTextColor(httpPort, quietColor);
     addRow(farm, tr("HTTP port"), tr("Fixed. Workers and rendropctl connect here."), httpPort);
     discoveryPortBox = spinBox(farm, 0, 65535, QString());
     addRow(farm, tr("Discovery port"), tr("UDP port for LAN announcements. Must match on every machine."), discoveryPortBox);
     peersEdit = new QPlainTextEdit(farm);
     peersEdit->setFixedSize(fieldWidth, 84);
     peersEdit->setPlaceholderText(QStringLiteral("100.64.0.7\nstudio-03:28528"));
-    peersEdit->setStyleSheet(QStringLiteral(
-        "QPlainTextEdit { background: transparent; border: 1px solid transparent;"
-        "  padding: 4px 6px; color: white; }") + Look::scrollBarStyleSheet());
+    peersEdit->setFrameShape(QFrame::NoFrame);
     peersEdit->viewport()->setAutoFillBackground(false);
+    // Room for the rounded outline RoundedSurface draws on the edge.
+    peersEdit->document()->setDocumentMargin(6);
     RoundedSurface::install(peersEdit, 8, RoundedSurface::Colors {
         QColor(0x33, 0x38, 0x42), QColor(), QColor(), QColor(), QColor(65, 65, 85), QColor(110, 110, 180)});
-    peersEdit->setFont(Look::pixelFont(10));
+    peersEdit->setFont(Look::monoFont(9));
     addRow(farm, tr("Manual nodes"),
         tr("One host or host:port per line, for nodes broadcast cannot reach (Tailscale, other subnets)."), peersEdit);
 
@@ -299,7 +301,7 @@ SettingsPage::SettingsPage(const QString &distributedPath, int languageIndex, QW
         tr("Load from programs other than Rendrop marks this machine busy, so it stops taking work from other nodes."),
         load);
     loadHelp->setFont(Look::pixelFont(9));
-    loadHelp->setStyleSheet(QStringLiteral("color: rgb(110, 115, 130);"));
+    Look::setTextColor(loadHelp, helpColor);
     loadHelp->setWordWrap(true);
     static_cast<QVBoxLayout *>(load->layout())->addWidget(loadHelp);
     busyThresholdBox = percentBox(load);
@@ -333,7 +335,6 @@ SettingsPage::SettingsPage(const QString &distributedPath, int languageIndex, QW
         tr("Where projects from other nodes are kept while this machine renders them."), cacheField);
 
     formLayout->addStretch(1);
-    Look::smoothInputs(this);
 
     loadDraft();
 
@@ -366,6 +367,12 @@ SettingsPage::SettingsPage(const QString &distributedPath, int languageIndex, QW
         preferences.shadows = checked;
         AppPreferencesFile::save(preferences);
         DropShadowWidget::setShadowsEnabled(checked);
+    });
+    QObject::connect(maxLoadsBox, &QSpinBox::valueChanged, this, [this](int value) {
+        AppPreferences preferences = AppPreferencesFile::load();
+        preferences.maxConcurrentLoads = value;
+        AppPreferencesFile::save(preferences);
+        emit maxConcurrentLoadsChanged(value);
     });
 
     QObject::connect(enabledSwitch, &ToggleSwitch::toggled, this, [this](bool checked) {
@@ -422,6 +429,35 @@ SettingsPage::SettingsPage(const QString &distributedPath, int languageIndex, QW
     QObject::connect(restoreDefaultsButton, &QPushButton::clicked, this, &SettingsPage::restoreDefaults);
 
     sectionButtons->button(0)->setChecked(true);
+
+    // The wheel scrolls the form even over a spin box or combo box, so a
+    // value never changes just because the pointer passed over its field.
+    const QWidget *formWidget = scroll->widget();
+    for (QAbstractSpinBox *box : formWidget->findChildren<QAbstractSpinBox *>())
+    {
+        box->installEventFilter(this);
+    }
+    for (QComboBox *box : formWidget->findChildren<QComboBox *>())
+    {
+        box->installEventFilter(this);
+    }
+}
+
+bool SettingsPage::eventFilter(QObject *watched, QEvent *event)
+{
+    if (event->type() == QEvent::Wheel
+        && (qobject_cast<QAbstractSpinBox *>(watched) || qobject_cast<QComboBox *>(watched)))
+    {
+        // Hand the wheel to the viewport, where SmoothScroll picks it up.
+        auto *wheel = static_cast<QWheelEvent *>(event);
+        QWidget *viewport = scroll->viewport();
+        const QPointF position = viewport->mapFromGlobal(wheel->globalPosition());
+        QWheelEvent forwarded(position, wheel->globalPosition(), wheel->pixelDelta(), wheel->angleDelta(),
+            wheel->buttons(), wheel->modifiers(), wheel->phase(), wheel->inverted(), wheel->source());
+        QCoreApplication::sendEvent(viewport, &forwarded);
+        return true;
+    }
+    return QWidget::eventFilter(watched, event);
 }
 
 SettingsPage::~SettingsPage()
@@ -437,8 +473,8 @@ QWidget *SettingsPage::addSection(Section section, const QString &title)
     layout->setContentsMargins(0, 0, 0, 0);
     layout->setSpacing(12);
     auto *heading = new QLabel(title, widget);
-    heading->setFont(Look::pixelFont(14));
-    heading->setStyleSheet(QStringLiteral("color: white;"));
+    heading->setFont(Look::pixelFont(14, QFont::DemiBold));
+    Look::setTextColor(heading, Qt::white);
     layout->addWidget(heading);
     formLayout->addWidget(widget);
     sections.resize(std::max(sections.size(), static_cast<size_t>(section) + 1), nullptr);
@@ -453,14 +489,14 @@ void SettingsPage::addRow(QWidget *section, const QString &label, const QString 
     auto *text = new QVBoxLayout();
     text->setSpacing(3);
     auto *name = new QLabel(label, section);
-    name->setFont(Look::pixelFont(10));
-    name->setStyleSheet(QStringLiteral("color: rgb(224, 224, 232);"));
+    name->setFont(Look::pixelFont(10, QFont::Medium));
+    Look::setTextColor(name, QColor(224, 224, 232));
     text->addWidget(name);
     if (!help.isEmpty())
     {
         auto *description = new QLabel(help, section);
         description->setFont(Look::pixelFont(9));
-        description->setStyleSheet(QStringLiteral("color: rgb(110, 115, 130);"));
+        Look::setTextColor(description, helpColor);
         description->setWordWrap(true);
         text->addWidget(description);
     }
@@ -486,24 +522,23 @@ void SettingsPage::setBlenderVersions(const std::vector<BlenderVersionManager::B
     {
         auto *empty = new QLabel(tr("No Blender added yet."), owner);
         empty->setFont(Look::pixelFont(10));
-        empty->setStyleSheet(QStringLiteral("color: rgb(215, 165, 70);"));
+        Look::setTextColor(empty, warningColor);
         blenderList->addWidget(empty);
     }
     for (const auto &version : versions)
     {
         auto *row = new QWidget(owner);
-        row->setStyleSheet(QStringLiteral("background: transparent;"));
         RoundedSurface::install(row, 8, QColor(43, 45, 48));
         auto *layout = new QHBoxLayout(row);
         layout->setContentsMargins(12, 6, 6, 6);
         layout->setSpacing(14);
         auto *name = new QLabel(version.version, row);
-        name->setFont(Look::pixelFont(10));
-        name->setStyleSheet(QStringLiteral("color: white;"));
+        name->setFont(Look::pixelFont(10, QFont::Medium));
+        Look::setTextColor(name, Qt::white);
         name->setMinimumWidth(110);
         auto *path = new QLabel(row);
-        path->setFont(Look::pixelFont(9));
-        path->setStyleSheet(QStringLiteral("color: rgb(110, 115, 130);"));
+        path->setFont(Look::monoFont(8));
+        Look::setTextColor(path, helpColor);
         path->setText(QFontMetrics(path->font()).elidedText(version.path, Qt::ElideMiddle, 420));
         path->setToolTip(version.path);
         auto *remove = button(row, tr("Remove"), false);
@@ -544,7 +579,7 @@ void SettingsPage::showSection(Section section)
     {
         return;
     }
-    scroll->verticalScrollBar()->setValue(target->y() - formLayout->contentsMargins().top());
+    SmoothScroll::scrollTo(scroll, target->y() - formLayout->contentsMargins().top());
     if (QAbstractButton *entry = sectionButtons->button(static_cast<int>(section)))
     {
         entry->setChecked(true);
@@ -553,6 +588,12 @@ void SettingsPage::showSection(Section section)
 
 void SettingsPage::updateSectionHighlight()
 {
+    // On the way to a clicked section the list keeps that entry, instead of
+    // ticking through every section scrolled past.
+    if (SmoothScroll::isJumping(scroll))
+    {
+        return;
+    }
     const QScrollBar *bar = scroll->verticalScrollBar();
     int current = 0;
     if (bar->value() >= bar->maximum() && bar->maximum() > 0)
@@ -632,6 +673,7 @@ void SettingsPage::restoreDefaults()
     const AppPreferences preferences;
     launchAtLoginSwitch->setChecked(preferences.launchAtLogin);
     shadowsSwitch->setChecked(preferences.shadows);
+    maxLoadsBox->setValue(preferences.maxConcurrentLoads);
     saveTimer->stop();
     save();
 }
@@ -694,14 +736,14 @@ void SettingsPage::save()
         // Half-typed keys stay in the field; the file keeps the last valid one.
         saveBarLabel->setText(
             tr("The farm key needs at least %1 characters. Not saved yet.").arg(DistributedConfig::minimumTokenLength));
-        saveBarLabel->setStyleSheet(QStringLiteral("color: rgb(215, 165, 70);"));
+        Look::setTextColor(saveBarLabel, warningColor);
         saveBar->show();
         return;
     }
     if (!DistributedConfig::save(distributedPath, settings))
     {
         saveBarLabel->setText(tr("Failed to save distributed.json."));
-        saveBarLabel->setStyleSheet(QStringLiteral("color: rgb(225, 110, 110);"));
+        Look::setTextColor(saveBarLabel, errorColor);
         saveBar->show();
         return;
     }

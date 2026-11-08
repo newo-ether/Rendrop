@@ -19,6 +19,11 @@ int writeProjectInfo(const QStringList &arguments)
 {
     const QString scriptPath = argumentValue(arguments, QStringLiteral("--python"));
     const QString blendPath = argumentValue(arguments, QStringLiteral("--factory-startup"));
+    if (QFileInfo(blendPath).fileName().contains(QStringLiteral("load_slow"), Qt::CaseInsensitive))
+    {
+        // Long enough that overlapping readers are easy to tell apart.
+        QThread::msleep(600);
+    }
     QFile scriptFile(scriptPath);
     if (!scriptFile.open(QIODevice::ReadOnly | QIODevice::Text))
     {

@@ -3,6 +3,7 @@
 #ifndef WIDGET_H
 #define WIDGET_H
 
+#include <functional>
 #include <vector>
 
 #include <QCloseEvent>
@@ -11,6 +12,8 @@
 #include <QDropEvent>
 #include <QMessageBox>
 #include <QPixmap>
+#include <QPointer>
+#include <QVariantAnimation>
 #include <QString>
 #include <QWidget>
 
@@ -18,13 +21,13 @@
 #include "blender_version_manager.h"
 #include "caption_button.h"
 #include "drop_file_tip.h"
-#include "drop_shadow_renderer.h"
 #include "file_bar.h"
 #include "http_server.h"
 #include "load_monitor.h"
 #include "node_agent.h"
 #include "nodes_page.h"
 #include "project_info.h"
+#include "project_page.h"
 #include "render_queue.h"
 #include "settings_page.h"
 #include "look_widgets.h"
@@ -49,9 +52,16 @@ public:
     Widget(int languageIndex, QWidget *parent = nullptr);
     ~Widget() override;
 
+    // The queue this window drives; owned by the widget.
+    RenderQueue *queue() const { return renderQueue; }
+
     // Brings the window back from the tray, or to the front when another
     // launch of Rendrop asks for it.
     void showFromTray();
+    // Login launch (--tray): the window stays hidden. When the taskbar is
+    // not up yet, the tray icon is retried; only if it never appears does
+    // the window show, minimized, so Rendrop stays reachable.
+    void startInBackground();
 
 protected:
     bool eventFilter(QObject *watched, QEvent *event) override;
@@ -93,22 +103,36 @@ private:
         float offsetX,
         float offsetY,
         float alphaMax,
-        float blurRadius
+        float blurRadius,
+        bool hoverLift
     );
     QString selectedBlenderPath() const;
+    // Refills the selector and keeps the current version selected; the first
+    // version only gets picked when nothing was selected before.
     void updateBlenderVersions();
+    void rebuildBlenderSelector();
     void updateButtonStatus();
     void updateStatisticInfo();
     void clearOutputText();
     void setSelectorEnabled(bool enabled);
-    void updateAllFileBarShadow();
     void installRoundedSurfaces();
     void createPages();
     void setupWindowFrame();
     void showPage(int index);
     void updateStatusChip();
     void updateNodeCounts();
+    // Animated once the window is up; the log card grows or shrinks.
     void setLogVisible(bool visible);
+    // Runs change, which reorders or removes queue bars, and slides every bar
+    // that moved from where it was to where the layout puts it.
+    void animateQueueLayout(const std::function<void ()> &change);
+    // Scrolls the log to its newest line unless the user scrolled up.
+    void followLogTail();
+    // Puts the dragged bar under the pointer and reorders the others live.
+    void placeDraggedBar();
+    // Scrolls the queue while a drag holds the pointer near its edge.
+    void autoScrollDrag();
+    void endDrag();
     void setupTray();
     void startNodeAgent(const DistributedSettings &settings);
     // Asks before quitting while files are rendering or loading.
@@ -117,8 +141,9 @@ private:
 
 private slots:
     void onLanguageChanged(int index);
-    void onFileBarMoveUp(QUuid id);
-    void onFileBarMoveDown(QUuid id);
+    void onFileBarDragStarted(QUuid id, QPointF globalPosition);
+    void onFileBarDragMoved(QUuid id, QPointF globalPosition);
+    void onFileBarDragFinished(QUuid id);
     void onFileBarDelete(QUuid id);
     void onFileBarReload(QUuid id);
     void onFileBarRename(QUuid id, QString name);
@@ -145,9 +170,24 @@ private:
     RenderQueue *renderQueue;
     std::vector<FileBar *> fileBars;
     std::vector<DropShadowWidget *> dropShadowWidgets;
-    DropShadowRenderer *dropShadowRenderer;
-    QPixmap fileBarShadowPixmap;
-    int shadowBufferHandle;
+    // Drag reordering of the queue. Every bar has the same height, so the
+    // slots taken at the start stay valid while bars change places.
+    QPointer<FileBar> draggedBar;
+    std::vector<int> dragSlots;
+    int dragStartIndex = -1;
+    qreal dragGrabOffset = 0.0;
+    // Holds the dragged bar's slot in the layout while the bar itself is out
+    // of it, so nothing re-lays the bar out from under the pointer.
+    QPointer<QWidget> dragPlaceholder;
+    QPointF dragPointer;
+    QTimer *dragScrollTimer = nullptr;
+    QPointer<QVariantAnimation> logAnimation;
+    // Fades with the log card while it grows or shrinks.
+    QPointer<DropShadowWidget> logShadow;
+    // Where the log is headed; it stays visible while it shrinks away.
+    bool logShown = false;
+    // The log keeps its newest line in view until the user scrolls up.
+    bool logFollow = true;
     HttpServer *httpServer;
     LoadMonitor *loadMonitor = nullptr;
     NodeAgent *nodeAgent = nullptr;
@@ -158,12 +198,29 @@ private:
     std::vector<NavButton *> navButtons;
     NodesPage *nodesPage = nullptr;
     SettingsPage *settingsPage = nullptr;
+    ProjectPage *projectPage = nullptr;
+    // Queue, nodes and settings come first in the page stack.
+    static constexpr int projectPageIndex = 3;
     int languageIndex = 0;
     // Throughput since rendering started, for the ETA.
     QElapsedTimer renderClock;
     int framesAtRenderStart = 0;
+    // Set by the Stop button so the end of the run is logged as a manual
+    // stop and does not raise a "finished" notification.
+    bool stopRequested = false;
+    // Jobs that entered Error while this run was going, for the summary.
+    int failedThisRun = 0;
+    int finishedThisRun = 0;
+    // Last state seen per job, to notice Rendering -> Finished / Error.
+    QHash<QUuid, ProjectState> lastJobStates;
+    // Windows toast through the tray icon; silent when there is no tray.
+    void notify(const QString &title, const QString &text, bool error);
     // Closing the window hides it here; only the tray menu quits.
     QSystemTrayIcon *trayIcon = nullptr;
+    // At sign-in Explorer may not have its notification area yet.
+    int trayAttempts = 0;
+    static constexpr int maxTrayAttempts = 60;
+    bool backgroundStart = false;
 };
 
 #endif // WIDGET_H

@@ -3,6 +3,8 @@
 #include <algorithm>
 #include <atomic>
 #include <chrono>
+#include <deque>
+#include <utility>
 
 #include "httplib.h"
 #include "nlohmann/json.hpp"
@@ -219,6 +221,7 @@ public:
     HttpStatus uploadSettled(bool final)
     {
         bool pending = false;
+        oldestPending = QDateTime();
         const QFileInfoList files = QDir(directory).entryInfoList(QDir::Files | QDir::NoDotAndDotDot, QDir::Name);
         const QDateTime now = QDateTime::currentDateTime();
         for (const QFileInfo &info : files)
@@ -234,16 +237,27 @@ public:
             if (!final && !settled)
             {
                 pending = true;
+                notePending(stamp.second);
                 continue;
             }
             const HttpStatus status = worker.uploadFile(assignment, info.filePath(), name);
             if (status != 200)
             {
+                // Files after this one were not looked at, so nothing is
+                // known to have reached the coordinator.
+                oldestPending = QDateTime::fromMSecsSinceEpoch(0);
                 return status;
             }
             uploaded.insert(name, stamp);
         }
         return pending ? 202 : 200;
+    }
+
+    // True when every file last written at or before moment has been
+    // uploaded, as of the last scan.
+    bool uploadedThrough(const QDateTime &moment) const
+    {
+        return !oldestPending.isValid() || oldestPending > moment;
     }
 
     int uploadedCount() const
@@ -253,11 +267,22 @@ public:
 
 private:
     using Stamp = QPair<qint64, QDateTime>;
+
+    void notePending(const QDateTime &modified)
+    {
+        if (!oldestPending.isValid() || modified < oldestPending)
+        {
+            oldestPending = modified;
+        }
+    }
+
     RemoteWorker &worker;
     const Assignment &assignment;
     QString directory;
     QHash<QString, Stamp> observed;
     QHash<QString, Stamp> uploaded;
+    // Write time of the oldest file not yet uploaded in the last scan.
+    QDateTime oldestPending;
 };
 
 RemoteWorker::RemoteWorker(const Config &config):
@@ -455,6 +480,12 @@ bool RemoteWorker::renderInto(const Assignment &assignment, const QString &blend
 
     Uploader uploader(*this, assignment, outputDirectory);
     int reported = -1;
+    // Frames counted as saved, each with the moment it was read. Every file
+    // of those frames was written before that moment, so once all files up
+    // to it are uploaded the frames are safe to report, even while Blender
+    // keeps writing newer ones.
+    std::deque<std::pair<QDateTime, int>> saved;
+    int confirmed = 0;
     QElapsedTimer heartbeat;
     heartbeat.start();
     while (!renderer.wait(QDeadlineTimer(200)))
@@ -474,14 +505,23 @@ bool RemoteWorker::renderInto(const Assignment &assignment, const QString &blend
         }
         // Read the count before scanning: every frame counted here has
         // already been saved, so its files are part of the scan.
+        const QDateTime readAt = QDateTime::currentDateTime();
         const int finished = renderer.getFinishedFrame();
-        HttpStatus status = uploader.uploadSettled(false);
-        const bool allUploaded = status == 200;
-        const bool due = heartbeat.elapsed() >= assignment.heartbeatSeconds * 1000LL;
-        if (!isRevoked(status) && ((allUploaded && finished != reported) || due))
+        if (finished > (saved.empty() ? confirmed : saved.back().second))
         {
-            // Progress only counts frames whose files the coordinator holds.
-            const int count = allUploaded ? finished : std::max(reported, 0);
+            saved.emplace_back(readAt, finished);
+        }
+        HttpStatus status = uploader.uploadSettled(false);
+        // Progress only counts frames whose files the coordinator holds.
+        while (!saved.empty() && uploader.uploadedThrough(saved.front().first))
+        {
+            confirmed = saved.front().second;
+            saved.pop_front();
+        }
+        const bool due = heartbeat.elapsed() >= assignment.heartbeatSeconds * 1000LL;
+        if (!isRevoked(status) && (confirmed != reported || due))
+        {
+            const int count = confirmed;
             status = post(*client, assignment, "/progress", QByteArray::fromStdString(json({{"finishedCount", count}}).dump()));
             if (status == 200)
             {

@@ -59,6 +59,9 @@ struct ProjectInfo
     // Completed frames credited to remote nodes. Unlisted completed frames
     // belong to this machine.
     std::vector<FrameOwnerRanges> frameOwners;
+    // Frames being rendered right now, per node; an empty owner is this
+    // machine. Runtime only, never saved.
+    std::vector<FrameOwnerRanges> frameLeases;
 
     inline ProjectInfo():
         isNull(true),

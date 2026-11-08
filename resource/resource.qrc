@@ -8,8 +8,12 @@
         <file>icon/close.ico</file>
         <file>icon/retry.ico</file>
         <file>i18n/zh_CN.qm</file>
+        <file>i18n/qtbase_zh_CN.qm</file>
         <file>i18n/zh_CN.ts</file>
         <file>font/BitcountSingle-Bold.ttf</file>
         <file>font/PixelMixed.ttf</file>
+        <file>font/MiOutfit.ttf</file>
+        <file>font/JetBrainsMono-Regular.ttf</file>
+        <file>font/JetBrainsMono-Bold.ttf</file>
     </qresource>
 </RCC>

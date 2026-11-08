@@ -3,6 +3,7 @@
 #include <QString>
 
 #include "drop_file_tip.h"
+#include "look_widgets.h"
 #include "ui_drop_file_tip.h"
 
 DropFileTip::DropFileTip(QWidget *parent):
@@ -11,6 +12,7 @@ DropFileTip::DropFileTip(QWidget *parent):
 {
     ui->setupUi(this);
     setAttribute(Qt::WA_TransparentForMouseEvents);
+    Look::setTextColor(ui->label, Qt::white);
     ui->label->setText(tr("Drop your Blender Projects here."));
 }
 

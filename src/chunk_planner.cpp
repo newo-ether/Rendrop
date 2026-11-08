@@ -82,8 +82,12 @@ int ChunkPlanner::chunkFor(const QString &workerId, int pending, int renderers) 
     }
     if (pending > 0)
     {
+        // With others around, take half of an even share. Leases then
+        // shrink as the job runs out, so a slower machine never ends up
+        // holding a big last block while the faster ones sit idle.
         const int sharers = std::max(renderers, 1);
-        const int fairShare = (pending + sharers - 1) / sharers;
+        const int divisor = sharers > 1 ? sharers * 2 : 1;
+        const int fairShare = (pending + divisor - 1) / divisor;
         chunk = std::min(chunk, fairShare);
     }
     return std::max(chunk, 1);

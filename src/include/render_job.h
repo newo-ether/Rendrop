@@ -46,7 +46,16 @@ public:
     // in one Blender process and remote claims are refused.
     void setChunkPolicy(bool distributed, const ChunkPlanner::Settings &settings);
     bool setFrameRange(int frameStart, int frameEnd, int frameStep);
+    // Reads the .blend again right away. Same as requestLoad() + startLoad().
     bool reload();
+    // Enters Loading but leaves the Blender reader idle until startLoad(), so
+    // the queue can cap how many readers run at once.
+    bool requestLoad();
+    bool startLoad();
+    // Loading and waiting for a reader slot.
+    bool isLoadWaiting() const;
+    // A reader runs for this job.
+    bool isLoadActive() const;
     bool startRender();
     void stopRender();
     void shutdown();
@@ -71,6 +80,8 @@ signals:
     void snapshotChanged(ProjectInfo snapshot);
     void renderFinished(QUuid id);
     void outputTextUpdated(QString text);
+    // The reader of startLoad() is done (or stopped); its slot is free.
+    void loadFinished(QUuid id);
 
 private slots:
     void onFinishedReading(int status, BlenderFileInfo info);
@@ -80,6 +91,8 @@ private slots:
 
 private:
     void connectWorkers();
+    // Stops a running reader. Returns true when it held a slot.
+    bool cancelLoad();
     void publishSnapshot();
     void resetProjectData();
     void syncProgressFromLedger();
@@ -104,6 +117,8 @@ private:
     ChunkPlanner planner;
     int remoteFailures = 0;
     bool shuttingDown = false;
+    bool loadWaiting = false;
+    bool loadActive = false;
 };
 
 #endif // RENDER_JOB_H

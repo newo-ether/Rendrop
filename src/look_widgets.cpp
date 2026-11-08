@@ -4,151 +4,190 @@
 #include <cmath>
 #include <numbers>
 
-#include <QAbstractSpinBox>
-#include <QComboBox>
+#include <QAbstractScrollArea>
+#include <QApplication>
 #include <QEvent>
 #include <QFontMetrics>
-#include <QLineEdit>
 #include <QPainter>
 #include <QPainterPath>
 #include <QPixmap>
 #include <QPolygonF>
 
+#include <QScrollArea>
+
 #include "look_widgets.h"
-#include "rounded_surface.h"
 
 namespace Look {
 
 namespace {
-
-// Set on widgets that already carry a RoundedSurface from these helpers, so
-// calling them twice does not stack two surfaces.
-constexpr char smoothProperty[] = "rendropSmooth";
-
-bool markSmooth(QWidget *widget)
+QString &pixelFamilyStorage()
 {
-    if (!widget || widget->property(smoothProperty).toBool())
+    static QString family = QStringLiteral("Mi Outfit");
+    return family;
+}
+}
+
+void selectFontEngine()
+{
+#ifdef Q_OS_WIN
+    if (!qEnvironmentVariableIsSet("QT_QPA_PLATFORM"))
     {
-        return false;
+        qputenv("QT_QPA_PLATFORM", "windows:fontengine=freetype");
     }
-    widget->setProperty(smoothProperty, true);
-    return true;
+#endif
 }
 
-}
-
-QFont pixelFont(int pointSize)
+void applyTextRendering(QFont &font)
 {
-    QFont font(QStringLiteral("Pixel Mixed"));
+    static const bool subpixel = qEnvironmentVariable("RENDROP_TEXT_AA") == QLatin1String("subpixel");
+    static const QFont::HintingPreference hinting = []() {
+        const QString value = qEnvironmentVariable("RENDROP_TEXT_HINT");
+        if (value == QLatin1String("default"))
+        {
+            return QFont::PreferDefaultHinting;
+        }
+        if (value == QLatin1String("none"))
+        {
+            return QFont::PreferNoHinting;
+        }
+        if (value == QLatin1String("full"))
+        {
+            return QFont::PreferFullHinting;
+        }
+        return QFont::PreferVerticalHinting;
+    }();
+    font.setStyleStrategy(subpixel
+        ? QFont::PreferAntialias
+        : QFont::StyleStrategy(QFont::PreferAntialias | QFont::NoSubpixelAntialias));
+    font.setHintingPreference(hinting);
+}
+
+void installTextRendering()
+{
+    QFont font = QApplication::font();
+    applyTextRendering(font);
+    QApplication::setFont(font);
+}
+
+QString pixelFamily()
+{
+    return pixelFamilyStorage();
+}
+
+void setPixelFamily(const QString &family)
+{
+    pixelFamilyStorage() = family;
+}
+
+QFont pixelFont(int pointSize, QFont::Weight weight)
+{
+    QFont font(pixelFamilyStorage());
     font.setPointSize(pointSize);
-    font.setStyleStrategy(QFont::PreferAntialias);
+    font.setWeight(weight);
+    applyTextRendering(font);
     return font;
 }
 
-QString inputStyleSheet()
+QFont monoFont(int pointSize, QFont::Weight weight)
 {
-    return QStringLiteral(
-        // The 1px transparent border keeps the box model of the outline
-        // RoundedSurface draws.
-        "QComboBox, QLineEdit, QSpinBox, QDoubleSpinBox {"
-        "  background: transparent;"
-        "  border: 1px solid transparent;"
-        "  padding: 4px 10px;"
-        "  color: white;"
-        "  selection-background-color: #5A5A96;"
-        // Style-sheeted inputs drop the inherited family; pin it here.
-        "  font-family: 'Pixel Mixed';"
-        "}"
-        "QComboBox { padding-right: 28px; }"
-        "QComboBox:disabled, QLineEdit:disabled, QSpinBox:disabled, QDoubleSpinBox:disabled { color: #888888; }"
-        "QComboBox::drop-down { subcontrol-origin: padding; subcontrol-position: top right; width: 24px; border-left: none; }"
-        "QComboBox::down-arrow { image: url(:/icon/down_arrow.ico); width: 10px; height: 10px; }"
-        "QComboBox QAbstractItemView {"
-        "  background-color: #333842; border: 1px solid #555A66; border-radius: 6px;"
-        "  padding: 4px; color: white; selection-background-color: #4B5362; selection-color: white; outline: none;"
-        "  font-family: 'Pixel Mixed';"
-        "}"
-        "QComboBox QAbstractItemView::item:hover, QComboBox QAbstractItemView::item:selected {"
-        "  background-color: #4B5362; border-left: 3px solid rgb(110, 110, 180); border-radius: 6px; padding: 2px;"
-        "}"
-        "QSpinBox::up-button, QSpinBox::down-button, QDoubleSpinBox::up-button, QDoubleSpinBox::down-button {"
-        "  width: 0px; border: none;"
-        "}"
-    );
+    QFont font(QStringLiteral("JetBrains Mono"));
+    // JetBrains Mono has no CJK; Mi Outfit (Outfit + MiSans) carries it, so
+    // Chinese in mono text matches the rest of the UI instead of the system
+    // fallback.
+    font.setFamilies({QStringLiteral("JetBrains Mono"), pixelFamilyStorage()});
+    font.setPointSize(pointSize);
+    font.setWeight(weight);
+    applyTextRendering(font);
+    return font;
 }
 
-void smoothInputs(QWidget *root)
+RoundedSurface::Colors plainButtonColors()
 {
-    if (!root)
-    {
-        return;
-    }
-    const RoundedSurface::Colors field {
-        QColor(0x33, 0x38, 0x42), QColor(0x3C, 0x42, 0x4D), QColor(), QColor(0x2E, 0x31, 0x38),
-        QColor(65, 65, 85), QColor(110, 110, 180)};
-    RoundedSurface::Colors combo = field;
-    // Combo boxes never showed a focus outline.
-    combo.focusBorder = QColor();
+    RoundedSurface::Colors colors {
+        QColor(0x33, 0x38, 0x42), QColor(0x4B, 0x53, 0x62), QColor(0x2B, 0x2F, 0x38), QColor(0x2E, 0x31, 0x38),
+        QColor(65, 65, 85)};
+    colors.text = textColor;
+    return colors;
+}
 
-    QList<QWidget *> candidates = root->findChildren<QWidget *>();
-    candidates.prepend(root);
-    for (QWidget *widget : candidates)
-    {
-        const bool isCombo = qobject_cast<QComboBox *>(widget) != nullptr;
-        const bool isSpin = qobject_cast<QAbstractSpinBox *>(widget) != nullptr;
-        bool isEdit = qobject_cast<QLineEdit *>(widget) != nullptr;
-        // The editors embedded in spin and combo boxes sit on their parent's surface.
-        if (isEdit && (qobject_cast<QAbstractSpinBox *>(widget->parentWidget())
-                || qobject_cast<QComboBox *>(widget->parentWidget())))
-        {
-            isEdit = false;
-        }
-        if ((isCombo || isSpin || isEdit) && markSmooth(widget))
-        {
-            RoundedSurface::install(widget, 8, isCombo ? combo : field);
-        }
-    }
+RoundedSurface::Colors accentButtonColors()
+{
+    RoundedSurface::Colors colors {
+        QColor(90, 90, 150), QColor(120, 120, 180), QColor(70, 70, 130), QColor(85, 89, 95)};
+    colors.text = Qt::white;
+    return colors;
+}
+
+RoundedSurface::Colors fieldColors()
+{
+    return RoundedSurface::Colors {
+        QColor(0x33, 0x38, 0x42), QColor(0x3C, 0x42, 0x4D), QColor(), QColor(0x2E, 0x31, 0x38),
+        QColor(65, 65, 85), accentColor};
+}
+
+RoundedSurface::Colors comboColors()
+{
+    RoundedSurface::Colors colors = fieldColors();
+    colors.focusBorder = QColor();
+    return colors;
 }
 
 void styleAccentButton(QAbstractButton *button)
 {
-    if (!markSmooth(button))
-    {
-        return;
-    }
-    button->setStyleSheet(QStringLiteral(
-        "QPushButton { background: transparent; border: none; color: white; padding: 4px 14px; }"
-        "QPushButton:disabled { color: #888888; }"));
-    RoundedSurface::install(button, 8, RoundedSurface::Colors {
-        QColor(90, 90, 150), QColor(120, 120, 180), QColor(70, 70, 130), QColor(85, 89, 95)});
+    RoundedSurface::install(button, 8, accentButtonColors());
+    setPadding(button, QMargins(14, 4, 14, 4));
 }
 
 void stylePlainButton(QAbstractButton *button)
 {
-    if (!markSmooth(button))
-    {
-        return;
-    }
-    button->setStyleSheet(QStringLiteral(
-        "QPushButton { background: transparent; border: 1px solid transparent; color: #E0E0E0; padding: 4px 12px; }"
-        "QPushButton:disabled { color: #777777; }"));
-    RoundedSurface::install(button, 8, RoundedSurface::Colors {
-        QColor(0x33, 0x38, 0x42), QColor(0x4B, 0x53, 0x62), QColor(0x2B, 0x2F, 0x38), QColor(0x2E, 0x31, 0x38),
-        QColor(65, 65, 85)});
+    RoundedSurface::install(button, 8, plainButtonColors());
+    setPadding(button, QMargins(12, 4, 12, 4));
 }
 
-QString scrollBarStyleSheet()
+void setPadding(QWidget *button, const QMargins &padding, Qt::Alignment align)
 {
-    return QStringLiteral(
-        "QScrollBar:vertical { background: transparent; border: none; width: 10px; margin: 4px 2px 4px 2px; }"
-        "QScrollBar:horizontal { background: transparent; border: none; height: 10px; margin: 2px 4px 2px 4px; }"
-        "QScrollBar::handle:vertical { background: rgba(255, 255, 255, 40); min-height: 28px; border-radius: 3px; }"
-        "QScrollBar::handle:horizontal { background: rgba(255, 255, 255, 40); min-width: 28px; border-radius: 3px; }"
-        "QScrollBar::handle:hover { background: rgba(255, 255, 255, 70); }"
-        "QScrollBar::handle:pressed { background: rgb(110, 110, 180); }"
-        "QScrollBar::sub-line, QScrollBar::add-line { background: none; width: 0px; height: 0px; }"
-        "QScrollBar::sub-page, QScrollBar::add-page { background: none; }"
-    );
+    button->setProperty(paddingProperty, QVariant::fromValue(padding));
+    button->setProperty(alignProperty, static_cast<int>(align));
+    button->updateGeometry();
+    button->update();
+}
+
+void setTextColor(QWidget *widget, const QColor &color, const QColor &disabled)
+{
+    QPalette palette = widget->palette();
+    for (const QPalette::ColorRole role : {QPalette::WindowText, QPalette::Text, QPalette::ButtonText})
+    {
+        palette.setColor(QPalette::Active, role, color);
+        palette.setColor(QPalette::Inactive, role, color);
+        if (disabled.isValid())
+        {
+            palette.setColor(QPalette::Disabled, role, disabled);
+        }
+    }
+    widget->setPalette(palette);
+}
+
+void clearScrollArea(QAbstractScrollArea *area)
+{
+    area->setFrameShape(QFrame::NoFrame);
+    area->setAutoFillBackground(false);
+    area->viewport()->setAutoFillBackground(false);
+    if (auto *scroll = qobject_cast<QScrollArea *>(area); scroll && scroll->widget())
+    {
+        scroll->widget()->setAutoFillBackground(false);
+    }
+}
+
+void styleDialog(QWidget *dialog)
+{
+    QPalette palette = dialog->palette();
+    palette.setColor(QPalette::Window, QColor(43, 45, 48));
+    dialog->setPalette(palette);
+    dialog->setAutoFillBackground(true);
+    setTextColor(dialog, Qt::white);
+    QFont font = pixelFont(9);
+    font.setPixelSize(12);
+    dialog->setFont(font);
 }
 
 QIcon terminalIcon(const QColor &color)
@@ -171,13 +210,39 @@ QIcon terminalIcon(const QColor &color)
 
 }
 
+namespace {
+
+bool isHoverEvent(const QEvent *event)
+{
+    switch (event->type())
+    {
+    case QEvent::Enter:
+    case QEvent::Leave:
+    case QEvent::HoverEnter:
+    case QEvent::HoverLeave:
+    case QEvent::EnabledChange:
+        return true;
+    default:
+        return false;
+    }
+}
+
+}
+
 ToggleSwitch::ToggleSwitch(QWidget *parent):
-    QAbstractButton(parent)
+    QAbstractButton(parent),
+    // The knob travels: ease in and out over a little longer than a fade.
+    position(this, 0.0, 240, Look::easeInOut()),
+    hover(this)
 {
     setCheckable(true);
     setCursor(Qt::PointingHandCursor);
     setAttribute(Qt::WA_Hover);
     setFixedSize(sizeHint());
+    // A switch flipped before it is shown jumps; Transition skips hidden owners.
+    QObject::connect(this, &QAbstractButton::toggled, this, [this](bool checked) {
+        position.setTarget(checked ? 1.0 : 0.0);
+    });
 }
 
 QSize ToggleSwitch::sizeHint() const
@@ -185,33 +250,48 @@ QSize ToggleSwitch::sizeHint() const
     return {36, 20};
 }
 
+bool ToggleSwitch::event(QEvent *event)
+{
+    if (isHoverEvent(event))
+    {
+        hover.setTarget(underMouse() && isEnabled() ? 1.0 : 0.0);
+        update();
+    }
+    return QAbstractButton::event(event);
+}
+
 void ToggleSwitch::paintEvent(QPaintEvent *)
 {
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing);
     const QRectF track = QRectF(rect()).adjusted(1, 1, -1, -1);
-    QColor trackColor = isChecked() ? Look::accentColor : QColor(0x33, 0x38, 0x42);
-    if (!isEnabled())
-    {
-        trackColor = QColor(0x55, 0x59, 0x5F);
-    }
-    else if (underMouse())
-    {
-        trackColor = trackColor.lighter(125);
-    }
+    // setChecked() under a QSignalBlocker sends no toggled(); it still repaints.
+    position.setTarget(isChecked() ? 1.0 : 0.0);
+    const qreal on = position.value();
+    QColor trackColor = Look::mix(QColor(0x33, 0x38, 0x42), Look::accentColor, on);
+    trackColor = Look::mix(trackColor, trackColor.lighter(125), hover.value());
+    const qreal disabled = Fader::level(this, 0, !isEnabled());
+    trackColor = Look::mix(trackColor, QColor(0x55, 0x59, 0x5F), disabled);
     painter.setPen(QPen(QColor(65, 65, 85), 1));
     painter.setBrush(trackColor);
     painter.drawRoundedRect(track, track.height() / 2, track.height() / 2);
     const qreal knob = track.height() - 4;
-    const qreal x = isChecked() ? track.right() - 2 - knob : track.left() + 2;
+    // Held down, the knob stretches towards where it will go.
+    const qreal stretch = 4.0 * Fader::level(this, 1, isDown());
+    const qreal left = track.left() + 2;
+    const qreal travel = track.right() - 2 - knob - stretch - left;
+    const qreal x = left + travel * on;
     painter.setPen(Qt::NoPen);
-    painter.setBrush(isEnabled() ? QColor(240, 240, 248) : QColor(170, 170, 170));
-    painter.drawEllipse(QRectF(x, track.top() + 2, knob, knob));
+    painter.setBrush(Look::mix(QColor(240, 240, 248), QColor(170, 170, 170), disabled));
+    const QRectF knobRect(x, track.top() + 2, knob + stretch, knob);
+    painter.drawRoundedRect(knobRect, knob / 2, knob / 2);
 }
 
 NavButton::NavButton(Icon icon, QWidget *parent):
     QAbstractButton(parent),
-    icon(icon)
+    icon(icon),
+    hover(this),
+    selected(this)
 {
     setCheckable(true);
     setAutoExclusive(true);
@@ -219,6 +299,9 @@ NavButton::NavButton(Icon icon, QWidget *parent):
     setCursor(Qt::PointingHandCursor);
     setAttribute(Qt::WA_Hover);
     setFixedSize(sizeHint());
+    QObject::connect(this, &QAbstractButton::toggled, this, [this](bool checked) {
+        selected.setTarget(checked ? 1.0 : 0.0);
+    });
 }
 
 QSize NavButton::sizeHint() const
@@ -228,9 +311,9 @@ QSize NavButton::sizeHint() const
 
 bool NavButton::event(QEvent *event)
 {
-    if (event->type() == QEvent::HoverEnter || event->type() == QEvent::HoverLeave)
+    if (isHoverEvent(event))
     {
-        update();
+        hover.setTarget(underMouse() ? 1.0 : 0.0);
     }
     return QAbstractButton::event(event);
 }
@@ -240,22 +323,32 @@ void NavButton::paintEvent(QPaintEvent *)
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing);
     const QRectF area = QRectF(rect());
-    if (isChecked())
+    selected.setTarget(isChecked() ? 1.0 : 0.0);
+    const qreal chosen = selected.value();
+    // Hover only tints buttons that are not (or no longer) selected.
+    const qreal hovered = hover.value() * (1.0 - chosen);
+    painter.setPen(Qt::NoPen);
+    if (hovered > 0.0)
     {
-        painter.setPen(Qt::NoPen);
-        painter.setBrush(QColor(0x2B, 0x2D, 0x40));
+        painter.setBrush(QColor(255, 255, 255, qRound(14 * hovered)));
         painter.drawRoundedRect(area, 8, 8);
-        painter.setBrush(Look::accentColor.lighter(115));
-        painter.drawRoundedRect(QRectF(0, area.center().y() - 8, 3, 16), 1.5, 1.5);
     }
-    else if (underMouse())
+    if (chosen > 0.0)
     {
-        painter.setPen(Qt::NoPen);
-        painter.setBrush(QColor(255, 255, 255, 14));
+        QColor fill(0x2B, 0x2D, 0x40);
+        fill.setAlphaF(static_cast<float>(chosen));
+        painter.setBrush(fill);
         painter.drawRoundedRect(area, 8, 8);
+        // The mark grows from the middle as the button becomes selected.
+        QColor mark = Look::accentColor.lighter(115);
+        mark.setAlphaF(static_cast<float>(chosen));
+        painter.setBrush(mark);
+        const qreal half = 8.0 * chosen;
+        painter.drawRoundedRect(QRectF(0, area.center().y() - half, 3, half * 2), 1.5, 1.5);
     }
 
-    const QColor glyph = isChecked() ? QColor(0xB4, 0xB8, 0xFF) : QColor(0x8A, 0x8F, 0x9C);
+    const QColor rest = Look::mix(QColor(0x8A, 0x8F, 0x9C), QColor(0xC4, 0xC8, 0xD4), hover.value());
+    const QColor glyph = Look::mix(rest, QColor(0xB4, 0xB8, 0xFF), chosen);
     QPen pen(glyph, 1.6);
     pen.setCapStyle(Qt::RoundCap);
     pen.setJoinStyle(Qt::RoundJoin);
@@ -362,7 +455,7 @@ StatusChip::StatusChip(QWidget *parent):
     QWidget(parent),
     dot(Look::dimTextColor)
 {
-    setFont(Look::pixelFont(9));
+    setFont(Look::pixelFont(9, QFont::Medium));
     setAttribute(Qt::WA_TransparentForMouseEvents);
     // Keep the pill short inside the 40 px title bar instead of filling it.
     setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);

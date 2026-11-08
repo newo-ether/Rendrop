@@ -265,6 +265,53 @@ void RenderQueue::connectJob(RenderJob *job)
     QObject::connect(job, &RenderJob::snapshotChanged, this, &RenderQueue::onJobSnapshotChanged);
     QObject::connect(job, &RenderJob::renderFinished, this, &RenderQueue::onJobRenderFinished);
     QObject::connect(job, &RenderJob::outputTextUpdated, this, &RenderQueue::outputTextUpdated);
+    QObject::connect(job, &RenderJob::loadFinished, this, &RenderQueue::scheduleLoadPump);
+}
+
+void RenderQueue::setMaxConcurrentLoads(int limit)
+{
+    loadLimit = std::max(1, limit);
+    scheduleLoadPump();
+}
+
+int RenderQueue::maxConcurrentLoads() const
+{
+    return loadLimit;
+}
+
+void RenderQueue::scheduleLoadPump()
+{
+    if (shuttingDown || loadPumpQueued)
+    {
+        return;
+    }
+    loadPumpQueued = true;
+    QMetaObject::invokeMethod(this, &RenderQueue::pumpLoads, Qt::QueuedConnection);
+}
+
+void RenderQueue::pumpLoads()
+{
+    loadPumpQueued = false;
+    if (shuttingDown)
+    {
+        return;
+    }
+    int active = static_cast<int>(std::count_if(jobs.begin(), jobs.end(), [](const RenderJob *job) {
+        return job->isLoadActive();
+    }));
+    // Lowering the limit never stops readers that already run; the queue
+    // just waits until enough of them finish.
+    for (RenderJob *job : jobs)
+    {
+        if (active >= loadLimit)
+        {
+            break;
+        }
+        if (job->isLoadWaiting() && job->startLoad())
+        {
+            ++active;
+        }
+    }
 }
 
 QUuid RenderQueue::addJob(const QString &filePath, const QString &name)
@@ -290,7 +337,8 @@ bool RenderQueue::addJob(const QUuid &id, const QString &filePath, const QString
     rebuildSnapshotCache();
     emit jobAdded(job->snapshot());
     emit queueChanged();
-    job->reload();
+    job->requestLoad();
+    scheduleLoadPump();
     return true;
 }
 
@@ -307,7 +355,8 @@ QUuid RenderQueue::addJob(const QString &name, const QString &filePath, const QS
     rebuildSnapshotCache();
     emit jobAdded(job->snapshot());
     emit queueChanged();
-    job->reload();
+    job->requestLoad();
+    scheduleLoadPump();
     return id;
 }
 
@@ -329,8 +378,13 @@ bool RenderQueue::removeJob(const QUuid &id)
         currentRenderingId = QUuid();
     }
     jobs.erase(jobs.begin() + index);
+    const bool heldLoadSlot = job->isLoadActive();
     job->shutdown();
     delete job;
+    if (heldLoadSlot)
+    {
+        scheduleLoadPump();
+    }
     persistedSnapshots.remove(id);
     rebuildSnapshotCache();
     writePersistence();
@@ -397,7 +451,12 @@ bool RenderQueue::reloadJob(const QUuid &id, const QString &newBlenderPath)
         return false;
     }
     job->setBlenderPath(newBlenderPath);
-    return job->reload();
+    if (!job->requestLoad())
+    {
+        return false;
+    }
+    scheduleLoadPump();
+    return true;
 }
 
 bool RenderQueue::renameJob(const QUuid &id, const QString &name)

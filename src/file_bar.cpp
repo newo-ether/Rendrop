@@ -3,20 +3,19 @@
 #include <algorithm>
 
 #include <QEvent>
+#include <QMouseEvent>
 #include <QPainter>
 #include <QPen>
 
 #include "file_bar.h"
+#include "look_widgets.h"
+#include "transition.h"
 #include "rounded_surface.h"
 #include "frame_range_dialog.h"
 #include "rename_dialog.h"
 #include "ui_file_bar.h"
 
-FileBar::FileBar(
-    QWidget *parent,
-    DropShadowRenderer *dropShadowRenderer,
-    const ProjectInfo &project
-):
+FileBar::FileBar(QWidget *parent, const ProjectInfo &project):
     QWidget(parent),
     ui(new Ui::fileBar),
     project(project),
@@ -39,38 +38,42 @@ FileBar::FileBar(
     elapsedTimer(new QElapsedTimer())
 {
     ui->setupUi(this);
+    // The name stands out a little; numbers that line up use the mono face.
+    ui->fileNameButton->setFont(Look::pixelFont(10, QFont::Medium));
+    ui->frameButton->setFont(Look::monoFont(9));
+    ui->resolutionLabel->setFont(Look::monoFont(9));
+    ui->renderEngineLabel->setFont(Look::pixelFont(10, QFont::Medium));
+    ui->progressBarLabel->setFont(Look::monoFont(8));
     ui->fileNameButton->setToolTip(tr("Click to rename project"));
     ui->frameButton->setToolTip(tr("Click to edit frame range"));
 
-    // Style sheets draw rounded borders without antialiasing; the pills get
-    // painted surfaces instead and their sheets keep only text and padding.
+    // RoundedSurface paints the pills and fades them between states;
+    // RendropStyle draws the labels with the surface's text color.
     const QColor outline(0x55, 0x5A, 0x66);
-    const QString text = QStringLiteral("color: white; background: transparent; border: none;");
-    ui->fileNameButton->setStyleSheet(
-        QStringLiteral("QPushButton { %1 padding-left: 12px; padding-right: 12px; text-align: left; }").arg(text));
     RoundedSurface::install(ui->fileNameButton, 8, RoundedSurface::Colors {
         QColor(0x33, 0x38, 0x42), QColor(0x4B, 0x53, 0x62), QColor(0x2B, 0x2F, 0x38), QColor(), outline});
-    ui->frameButton->setStyleSheet(QStringLiteral("QPushButton { %1 padding: 0px; }").arg(text));
+    Look::setPadding(ui->fileNameButton, QMargins(12, 0, 12, 0), Qt::AlignLeft | Qt::AlignVCenter);
     RoundedSurface::install(ui->frameButton, 8, RoundedSurface::Colors {
         QColor(40, 42, 42), QColor(50, 52, 52), QColor(30, 32, 32), QColor(), outline});
+    Look::setPadding(ui->frameButton, QMargins());
     for (QLabel *label : {ui->resolutionLabel, ui->renderEngineLabel})
     {
-        label->setStyleSheet(QStringLiteral("QLabel { %1 padding: 0px; }").arg(text));
+        Look::setTextColor(label, Qt::white);
         RoundedSurface::install(label, 8, RoundedSurface::Colors {
             QColor(40, 42, 42), QColor(), QColor(), QColor(), outline});
     }
     for (QPushButton *button : {ui->reloadButton, ui->deleteButton})
     {
-        button->setStyleSheet(QStringLiteral("QPushButton { %1 } QPushButton:disabled { color: #AAAAAA; }").arg(text));
+        Look::setTextColor(button, Qt::white, QColor(0xAA, 0xAA, 0xAA));
         RoundedSurface::install(button, 6, RoundedSurface::Colors {
             QColor(0x33, 0x38, 0x42), QColor(0x4B, 0x53, 0x62), QColor(0x2B, 0x2F, 0x38), QColor(0x55, 0x59, 0x5F), outline});
+        Look::setPadding(button, QMargins());
     }
-    for (QPushButton *button : {ui->upButton, ui->downButton})
-    {
-        button->setStyleSheet(QStringLiteral("QPushButton { %1 }").arg(text));
-        RoundedSurface::install(button, 6, RoundedSurface::Colors {
-            Qt::transparent, QColor(0x4B, 0x53, 0x62), QColor(0x2B, 0x2F, 0x38), QColor(), QColor()});
-    }
+    ui->dragHandle->setAttribute(Qt::WA_Hover);
+    ui->dragHandle->setCursor(Qt::OpenHandCursor);
+    ui->dragHandle->setToolTip(tr("Drag to reorder"));
+    ui->dragHandle->installEventFilter(this);
+    Look::setTextColor(ui->progressBarLabel, Qt::white);
 
     frameLoadingBar = new LoadingBar(ui->frameButton);
     frameLoadingBar->setGeometry(0, 0, ui->frameButton->width(), ui->frameButton->height());
@@ -82,12 +85,6 @@ FileBar::FileBar(
     renderEngineLoadingBar->setGeometry(0, 0, ui->renderEngineLabel->width(), ui->renderEngineLabel->height());
     ui->renderEngineLabel->installEventFilter(this);
 
-    QObject::connect(ui->upButton, &QPushButton::clicked, this, [this]() {
-        emit moveUpRequested(this->project.id);
-    });
-    QObject::connect(ui->downButton, &QPushButton::clicked, this, [this]() {
-        emit moveDownRequested(this->project.id);
-    });
     QObject::connect(ui->deleteButton, &QPushButton::clicked, this, [this]() {
         emit deleteRequested(this->project.id);
     });
@@ -97,21 +94,22 @@ FileBar::FileBar(
     QObject::connect(ui->frameButton, &QPushButton::clicked, this, &FileBar::onFrameButtonClicked);
     QObject::connect(ui->fileNameButton, &QPushButton::clicked, this, &FileBar::onFileNameButtonClicked);
 
-    dropShadowWidget = new DropShadowWidget(parent, this, dropShadowRenderer);
+    dropShadowWidget = new DropShadowWidget(parent, this);
     dropShadowWidget->setBorderRadius(16);
     dropShadowWidget->setOffsetX(2);
     dropShadowWidget->setOffsetY(2);
-    dropShadowWidget->setAlphaMax(0.4f);
-    dropShadowWidget->setBlurRadius(10);
+    dropShadowWidget->setAlphaMax(0.6f);
+    dropShadowWidget->setBlurRadius(15);
+    dropShadowWidget->setHoverLift(true);
 
     QObject::connect(timer, &QTimer::timeout, this, &FileBar::updateStyle);
     elapsedTimer->start();
+    // The event filter paints the rounded background and the state outline,
+    // and opens the project page on a click.
     ui->fileBarContentWidget->installEventFilter(this);
-    ui->fileBarContentWidget->setStyleSheet(
-        "background-color: rgb(43, 45, 48);\n"
-        "border: none;\n"
-        "border-radius: 16px;\n"
-    );
+    ui->fileBarContentWidget->setAttribute(Qt::WA_Hover);
+    ui->fileBarContentWidget->setCursor(Qt::PointingHandCursor);
+    ui->fileBarContentWidget->setToolTip(tr("Click to open the project"));
 
     applySnapshot(project);
     show();
@@ -176,13 +174,85 @@ void FileBar::setNodeCount(int count)
     }
 }
 
+void FileBar::paintDragHandle()
+{
+    QWidget *handle = ui->dragHandle;
+    const qreal hover = Fader::level(handle, 0, handle->underMouse() || dragging);
+    QPainter painter(handle);
+    painter.setRenderHint(QPainter::Antialiasing);
+    painter.setPen(Qt::NoPen);
+    painter.setBrush(Look::mix(QColor(0x6A, 0x70, 0x7E), QColor(0xD0, 0xD3, 0xDC), hover));
+    // Two columns of three dots, centered.
+    constexpr qreal dot = 2.6;
+    constexpr qreal gapX = 5.0;
+    constexpr qreal gapY = 5.5;
+    const QPointF center = QRectF(handle->rect()).center();
+    for (int column = 0; column < 2; ++column)
+    {
+        for (int row = 0; row < 3; ++row)
+        {
+            const QPointF at(center.x() + (column - 0.5) * gapX, center.y() + (row - 1) * gapY);
+            painter.drawEllipse(at, dot / 2, dot / 2);
+        }
+    }
+}
+
 bool FileBar::eventFilter(QObject *object, QEvent *event)
 {
+    if (object == ui->dragHandle)
+    {
+        switch (event->type())
+        {
+        case QEvent::Paint:
+            paintDragHandle();
+            return true;
+        case QEvent::HoverEnter:
+        case QEvent::HoverLeave:
+            ui->dragHandle->update();
+            break;
+        case QEvent::MouseButtonPress:
+        {
+            auto *mouse = static_cast<QMouseEvent *>(event);
+            if (mouse->button() == Qt::LeftButton)
+            {
+                // The press is taken so the handle keeps the mouse grab and
+                // the bar does not open the project page.
+                dragging = true;
+                ui->dragHandle->setCursor(Qt::ClosedHandCursor);
+                ui->dragHandle->update();
+                emit dragStarted(project.id, mouse->globalPosition());
+            }
+            return true;
+        }
+        case QEvent::MouseMove:
+            if (dragging)
+            {
+                emit dragMoved(project.id, static_cast<QMouseEvent *>(event)->globalPosition());
+            }
+            return true;
+        case QEvent::MouseButtonRelease:
+            if (dragging && static_cast<QMouseEvent *>(event)->button() == Qt::LeftButton)
+            {
+                dragging = false;
+                ui->dragHandle->setCursor(Qt::OpenHandCursor);
+                ui->dragHandle->update();
+                emit dragFinished(project.id);
+            }
+            return true;
+        default:
+            break;
+        }
+        return QWidget::eventFilter(object, event);
+    }
     if (object == ui->fileBarContentWidget && event->type() == QEvent::Paint)
     {
-        QPainter painter(ui->fileBarContentWidget);
+        QWidget *content = ui->fileBarContentWidget;
+        const qreal hover = Fader::level(content, 0, content->underMouse());
+        const qreal press = Fader::level(content, 1, bodyPressed && bodyPressInside);
+        QPainter painter(content);
         painter.setRenderHint(QPainter::Antialiasing);
-        painter.setBrush(QColor(43, 45, 48));
+        // Pressed sinks below the resting color, like the pills' pressed state.
+        painter.setBrush(Look::mix(Look::mix(QColor(43, 45, 48), QColor(52, 55, 62), hover), QColor(35, 37, 41), press));
         painter.setPen(Qt::NoPen);
         painter.drawRoundedRect(ui->fileBarContentWidget->rect(), 16, 16);
         // Half-pixel inset keeps the 1px outline on whole device pixels.
@@ -190,6 +260,47 @@ bool FileBar::eventFilter(QObject *object, QEvent *event)
         painter.setBrush(Qt::NoBrush);
         painter.drawRoundedRect(QRectF(ui->fileBarContentWidget->rect()).adjusted(0.5, 0.5, -0.5, -0.5), 15.5, 15.5);
         return true;
+    }
+    if (object == ui->fileBarContentWidget)
+    {
+        if (event->type() == QEvent::Enter || event->type() == QEvent::Leave
+            || event->type() == QEvent::HoverEnter || event->type() == QEvent::HoverLeave)
+        {
+            ui->fileBarContentWidget->update();
+        }
+        else if (event->type() == QEvent::MouseButtonPress
+            && static_cast<QMouseEvent *>(event)->button() == Qt::LeftButton)
+        {
+            // Taken so the release comes back here.
+            bodyPressed = true;
+            bodyPressInside = true;
+            ui->fileBarContentWidget->update();
+            return true;
+        }
+        else if (event->type() == QEvent::MouseMove && bodyPressed)
+        {
+            // Leaving the bar while held lifts the pressed look, as a button
+            // does. The pointer stays grabbed, so underMouse() would not tell.
+            const bool inside = ui->fileBarContentWidget->rect().contains(
+                static_cast<QMouseEvent *>(event)->position().toPoint());
+            if (inside != bodyPressInside)
+            {
+                bodyPressInside = inside;
+                ui->fileBarContentWidget->update();
+            }
+        }
+        else if (event->type() == QEvent::MouseButtonRelease
+            && static_cast<QMouseEvent *>(event)->button() == Qt::LeftButton)
+        {
+            const bool wasPressed = bodyPressed;
+            bodyPressed = false;
+            ui->fileBarContentWidget->update();
+            if (wasPressed && ui->fileBarContentWidget->rect().contains(static_cast<QMouseEvent *>(event)->position().toPoint()))
+            {
+                emit detailsRequested(project.id);
+            }
+            return true;
+        }
     }
     if (object == ui->frameButton && event->type() == QEvent::Resize)
     {

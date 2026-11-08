@@ -5,11 +5,11 @@
 
 #include <QColor>
 #include <QElapsedTimer>
+#include <QPointer>
 #include <QString>
 #include <QTimer>
 #include <QWidget>
 
-#include "drop_shadow_renderer.h"
 #include "drop_shadow_widget.h"
 #include "loading_bar.h"
 #include "project_info.h"
@@ -26,11 +26,7 @@ class FileBar : public QWidget
     Q_OBJECT
 
 public:
-    FileBar(
-        QWidget *parent,
-        DropShadowRenderer *dropShadowRenderer,
-        const ProjectInfo &project
-    );
+    FileBar(QWidget *parent, const ProjectInfo &project);
     ~FileBar() override;
 
     QUuid projectId() const;
@@ -44,12 +40,17 @@ protected:
     bool eventFilter(QObject *object, QEvent *event) override;
 
 signals:
-    void moveUpRequested(QUuid id);
-    void moveDownRequested(QUuid id);
+    // Dragging the grip on the left edge reorders the queue. Positions are
+    // global so the window can map them into its list.
+    void dragStarted(QUuid id, QPointF globalPosition);
+    void dragMoved(QUuid id, QPointF globalPosition);
+    void dragFinished(QUuid id);
     void deleteRequested(QUuid id);
     void reloadRequested(QUuid id);
     void renameRequested(QUuid id, QString name);
     void frameRangeRequested(QUuid id, int frameStart, int frameEnd, int frameStep);
+    // A click on the bar outside its buttons opens the project page.
+    void detailsRequested(QUuid id);
 
 private slots:
     void onFrameButtonClicked();
@@ -62,11 +63,18 @@ private:
     void hideLoadingBars();
     void updateProjectDetails();
     void updateProgress();
+    void paintDragHandle();
 
     Ui::fileBar *ui;
+    bool dragging = false;
+    // Left button held on the bar body, and whether the pointer is still on it.
+    bool bodyPressed = false;
+    bool bodyPressInside = false;
     ProjectInfo project;
     int nodeCount = 0;
-    DropShadowWidget *dropShadowWidget;
+    // A sibling under the same parent, which may delete it first (raise()
+    // reorders the children), so the bar must not delete it twice.
+    QPointer<DropShadowWidget> dropShadowWidget;
     LoadingBar *frameLoadingBar;
     LoadingBar *resolutionLoadingBar;
     LoadingBar *renderEngineLoadingBar;

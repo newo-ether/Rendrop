@@ -6,15 +6,16 @@
 #include <QColor>
 #include <QObject>
 
+#include "transition.h"
+
 class QWidget;
 
-// Paints an antialiased rounded background under a widget. Style sheets clip
-// border-radius backgrounds without antialiasing, which leaves visibly
-// stepped corners at large radii; widgets using this keep their style sheet
-// for text color, font and padding but set "background: transparent".
+// Paints an antialiased rounded background under a widget, and for buttons
+// the text color RendropStyle draws the label with.
 //
 // For buttons the hover, pressed, checked and disabled colors follow the
 // button state; focusBorder replaces the outline while the widget has focus.
+// State changes fade over Look::transitionMs.
 class RoundedSurface : public QObject
 {
     Q_OBJECT
@@ -33,13 +34,26 @@ public:
         QColor focusBorder = QColor();
         // Checkable buttons; wins over hover. Invalid means no checked look.
         QColor checked = QColor();
+        // Button label colors. Invalid text means the palette's ButtonText;
+        // invalid hover and checked text fall back to text. Disabled buttons
+        // always use the palette's disabled ButtonText.
+        QColor text = QColor();
+        QColor hoverText = QColor();
+        QColor checkedText = QColor();
     };
 
-    // The surface is owned by the widget.
+    // The surface is owned by the widget. A widget has at most one: a second
+    // install restyles it.
     static RoundedSurface *install(QWidget *widget, qreal radius, const Colors &colors);
     static RoundedSurface *install(QWidget *widget, qreal radius, const QColor &color);
+    static RoundedSurface *find(const QWidget *widget);
 
+    // Takes effect at once, without a fade.
     void setColors(const Colors &colors);
+    // Re-reads the widget state and fades to the matching colors.
+    void refresh();
+    // Current, possibly mid-fade, label color.
+    QColor textColor() const;
 
 protected:
     bool eventFilter(QObject *watched, QEvent *event) override;
@@ -48,10 +62,14 @@ private:
     RoundedSurface(QWidget *widget, qreal radius, const Colors &colors);
     QColor currentColor() const;
     QColor currentBorder() const;
+    QColor currentText() const;
 
     QWidget *target;
     qreal radius;
     Colors colors;
+    ColorTransition fill;
+    ColorTransition outline;
+    ColorTransition label;
 };
 
 #endif // ROUNDED_SURFACE_H

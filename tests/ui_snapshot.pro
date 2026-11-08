@@ -22,17 +22,19 @@ SOURCES += \
     ../src/chunk_planner.cpp \
     ../src/dependency_packer.cpp \
     ../src/drop_file_tip.cpp \
-    ../src/drop_shadow_renderer.cpp \
     ../src/drop_shadow_widget.cpp \
     ../src/file_bar.cpp \
+    ../src/frame_driver.cpp \
     ../src/frame_ledger.cpp \
     ../src/frame_range_dialog.cpp \
     ../src/http_server.cpp \
+    ../src/list_motion.cpp \
     ../src/load_monitor.cpp \
     ../src/loading_bar.cpp \
     ../src/node_agent.cpp \
     ../src/node_discovery.cpp \
     ../src/nodes_page.cpp \
+    ../src/project_page.cpp \
     ../src/progress_bar.cpp \
     ../src/project_info.cpp \
     ../src/remote_worker.cpp \
@@ -40,8 +42,13 @@ SOURCES += \
     ../src/render_job.cpp \
     ../src/render_queue.cpp \
     ../src/rounded_surface.cpp \
+    ../src/transition.cpp \
+    ../src/rendrop_style.cpp \
+    ../src/popup_motion.cpp \
+    ../src/page_fade.cpp \
     ../src/settings_page.cpp \
     ../src/simple_process.cpp \
+    ../src/smooth_scroll.cpp \
     ../src/look_widgets.cpp \
     ../src/widget.cpp
 
