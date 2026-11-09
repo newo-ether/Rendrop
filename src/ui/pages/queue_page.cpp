@@ -81,8 +81,6 @@ QueuePage::QueuePage(AppController *controller, QWidget *parent):
 
     // Cards lift their shadow under the pointer; controls inside them do not.
     addShadow(this, ui->selectorContainer, 12, 4, 0.8f, 15, true);
-    addShadow(ui->selectorWidgetContent, ui->selectorComboBox, 8, 3, 0.6f, 10, false);
-    addShadow(ui->selectorWidgetContent, ui->renderButton, 10, 3, 0.6f, 10, false);
     addShadow(this, ui->scrollAreaContainer, 12, 4, 0.8f, 15, true);
     addShadow(this, ui->outputContainer, 15, 4, 0.6f, 10, true);
     ui->logContainer->setShadow(addShadow(this, ui->logContainer, 12, 4, 0.8f, 15, true));
@@ -237,9 +235,9 @@ void QueuePage::installRoundedSurfaces()
         Theme::accentFill,
         Theme::accentHover,
         Theme::accentPressed,
-        Theme::Tone(QColor(0x3A, 0x3D, 0x45), QColor(0xC9, 0xCC, 0xD3))
+        Theme::accentDisabled
     });
-    Look::setTextColor(ui->renderButton, Theme::onAccent, Theme::Tone(QColor(0xAA, 0xAA, 0xAA), QColor(0xF4, 0xF5, 0xF7)));
+    Look::setTextColor(ui->renderButton, Theme::onAccent, Theme::textDisabled);
     Look::setPadding(ui->renderButton, QMargins(6, 6, 6, 6));
     // The icon is drawn in a resolved color.
     QObject::connect(Theme::notifier(), &Theme::Notifier::changed, this, [this]() {

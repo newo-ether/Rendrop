@@ -9,6 +9,8 @@
 #include "ui/motion/transition.h"
 #include "ui/style/theme.h"
 
+class QPainter;
+class QRectF;
 class QWidget;
 
 // Paints an antialiased rounded background under a widget, and for buttons
@@ -56,6 +58,14 @@ public:
     void refresh();
     // Current, possibly mid-fade, label color.
     QColor textColor() const;
+
+    // Fills rect as a rounded rectangle with an optional outline, snapped to
+    // device pixels. The outline is a whole number of device pixels wide, so
+    // under fractional scaling (125%, 150%) it stays one crisp pixel instead
+    // of smearing a 1.25px stroke across uneven pixel rows. Invalid or fully
+    // transparent colors are skipped. The painter must not be rotated.
+    static void paintFrame(QPainter &painter, const QRectF &rect, qreal radius,
+        const QColor &fill, const QColor &border);
 
 protected:
     bool eventFilter(QObject *watched, QEvent *event) override;

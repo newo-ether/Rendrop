@@ -3,8 +3,9 @@
 #ifndef POPUP_MOTION_H
 #define POPUP_MOTION_H
 
-#include <QColor>
 #include <QRect>
+
+#include "ui/style/theme.h"
 
 class QDialog;
 class QWidget;
@@ -23,11 +24,12 @@ void disableSystemEffects();
 
 // Animates a menu or a combo popup on every show and hide. border and radius
 // match the outline the popup paints, so the edge stays drawn while the
-// popup unrolls. Call once per popup.
-void attach(QWidget *popup, const QColor &border, qreal radius);
+// popup unrolls. The border keeps both schemes and resolves on every show,
+// so a scheme switch after attach() is followed. Call once per popup.
+void attach(QWidget *popup, const Theme::Tone &border, qreal radius);
 // The same for a dialog shown as a popover (a Qt::Popup window), which
 // unrolls from globalAnchor, the control that opened it.
-void attach(QDialog *popover, const QColor &border, qreal radius, const QRect &globalAnchor);
+void attach(QDialog *popover, const Theme::Tone &border, qreal radius, const QRect &globalAnchor);
 }
 
 #endif // POPUP_MOTION_H

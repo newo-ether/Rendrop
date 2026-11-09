@@ -12,6 +12,7 @@
 #include <QColor>
 
 #include "ui/widgets/progress_bar.h"
+#include "ui/style/rounded_surface.h"
 #include "ui/style/theme.h"
 
 ProgressBar::ProgressBar(QWidget *parent):
@@ -69,11 +70,8 @@ void ProgressBar::paintEvent(QPaintEvent *)
     int h = height();
     int radius = 4;
 
-    QPainterPath backgroundPath;
-    backgroundPath.addRoundedRect(2, 2, w - 4, h - 4, radius, radius);
-    painter.fillPath(backgroundPath, Theme::control.color());
-    painter.setPen(Theme::outline.color());
-    painter.drawPath(backgroundPath);
+    RoundedSurface::paintFrame(painter, QRectF(2, 2, w - 4, h - 4), radius,
+        Theme::control.color(), Theme::outline.color());
 
     float ratio = value / 100.0f;
     int progressWidth = qMax(0, int((w - 6) * ratio));

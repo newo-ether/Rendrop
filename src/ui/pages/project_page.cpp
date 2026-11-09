@@ -69,7 +69,7 @@ Theme::Tone stateColor(ProjectState state)
     case ProjectState::Loading:
     case ProjectState::Queued: break;
     }
-    return Theme::Tone(Look::accentColor.dark.lighter(120), Look::accentColor.light);
+    return Theme::accentInk;
 }
 
 QString stateText(ProjectState state)

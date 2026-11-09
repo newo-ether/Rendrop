@@ -15,6 +15,17 @@
 #include "ui/widgets/rename_dialog.h"
 #include "ui_file_bar.h"
 
+namespace
+{
+
+Style rowStyle(const Theme::Tone &tone)
+{
+    const QColor color = tone.color();
+    return Style(Color(color.red(), color.green(), color.blue()));
+}
+
+}
+
 FileBar::FileBar(QWidget *parent, const ProjectInfo &project):
     QWidget(parent),
     ui(new Ui::fileBar),
@@ -23,11 +34,11 @@ FileBar::FileBar(QWidget *parent, const ProjectInfo &project):
     frameLoadingBar(nullptr),
     resolutionLoadingBar(nullptr),
     renderEngineLoadingBar(nullptr),
-    loadingStyle(Style(Color(80, 150, 210))),
-    queueStyle(Style(Theme::isLight() ? Color(205, 209, 217) : Color(60, 60, 60))),
-    errorStyle(Style(Color(180, 60, 80))),
-    renderingStyle(Style(Color(80, 150, 210))),
-    finishedStyle(Style(Color(60, 150, 80))),
+    loadingStyle(rowStyle(Theme::rowActive)),
+    queueStyle(rowStyle(Theme::rowQueued)),
+    errorStyle(rowStyle(Theme::rowError)),
+    renderingStyle(rowStyle(Theme::rowActive)),
+    finishedStyle(rowStyle(Theme::rowFinished)),
     style(queueStyle),
     targetStyle(queueStyle),
     velocity(Style::zero()),
@@ -50,13 +61,12 @@ FileBar::FileBar(QWidget *parent, const ProjectInfo &project):
     // RoundedSurface paints the pills and fades them between states;
     // RendropStyle draws the labels with the surface's text color.
     const Theme::Tone &outline = Theme::outline;
-    const Theme::Tone pill(QColor(40, 42, 42), QColor(0xFF, 0xFF, 0xFF));
+    const Theme::Tone &pill = Theme::pill;
     RoundedSurface::install(ui->fileNameButton, 8, RoundedSurface::Colors {
         Theme::control, Theme::controlHover, Theme::controlPressed, {}, outline});
     Look::setPadding(ui->fileNameButton, QMargins(12, 0, 12, 0), Qt::AlignLeft | Qt::AlignVCenter);
     RoundedSurface::install(ui->frameButton, 8, RoundedSurface::Colors {
-        pill, Theme::Tone(QColor(50, 52, 52), QColor(0xEE, 0xF0, 0xF3)),
-        Theme::Tone(QColor(30, 32, 32), QColor(0xE3, 0xE6, 0xEB)), {}, outline});
+        pill, Theme::pillHover, Theme::pillPressed, {}, outline});
     Look::setPadding(ui->frameButton, QMargins());
     for (QLabel *label : {ui->resolutionLabel, ui->renderEngineLabel})
     {
@@ -70,7 +80,7 @@ FileBar::FileBar(QWidget *parent, const ProjectInfo &project):
             Theme::control, Theme::controlHover, Theme::controlPressed, Theme::disabledFill, outline});
         Look::setPadding(button, QMargins());
     }
-    const Theme::Tone glyphTone(QColor(), QColor(0x4A, 0x4E, 0x5A));
+    const Theme::Tone &glyphTone = Theme::iconGlyph;
     Look::setGlyphIcon(ui->reloadButton, QStringLiteral(":/icon/retry.ico"), glyphTone);
     Look::setGlyphIcon(ui->deleteButton, QStringLiteral(":/icon/close.ico"), glyphTone);
     ui->dragHandle->setAttribute(Qt::WA_Hover);
@@ -78,15 +88,17 @@ FileBar::FileBar(QWidget *parent, const ProjectInfo &project):
     ui->dragHandle->setToolTip(tr("Drag to reorder"));
     ui->dragHandle->installEventFilter(this);
     Look::setTextColor(ui->progressBarLabel, Theme::textStrong);
-    // The resting outline is a plain gray that differs per scheme.
+    // State outlines differ per scheme; the scheme cross-fade covers the jump.
     QObject::connect(Theme::notifier(), &Theme::Notifier::changed, this, [this]() {
-        queueStyle = Style(Theme::isLight() ? Color(205, 209, 217) : Color(60, 60, 60));
-        if (this->project.state == ProjectState::Queued)
-        {
-            targetStyle = queueStyle;
-            style = queueStyle;
-            velocity = Style::zero();
-        }
+        loadingStyle = rowStyle(Theme::rowActive);
+        queueStyle = rowStyle(Theme::rowQueued);
+        errorStyle = rowStyle(Theme::rowError);
+        renderingStyle = rowStyle(Theme::rowActive);
+        finishedStyle = rowStyle(Theme::rowFinished);
+        setState(this->project.state);
+        timer->stop();
+        style = targetStyle;
+        velocity = Style::zero();
         ui->fileBarContentWidget->update();
     });
 
@@ -196,7 +208,7 @@ void FileBar::paintDragHandle()
     QPainter painter(handle);
     painter.setRenderHint(QPainter::Antialiasing);
     painter.setPen(Qt::NoPen);
-    painter.setBrush(Look::mix(Theme::Tone(QColor(0x6A, 0x70, 0x7E), QColor(0xA4, 0xA9, 0xB4)), Theme::textHover, hover));
+    painter.setBrush(Look::mix(Theme::handle, Theme::textHover, hover));
     // Two columns of three dots, centered.
     constexpr qreal dot = 2.6;
     constexpr qreal gapX = 5.0;
@@ -265,15 +277,10 @@ bool FileBar::eventFilter(QObject *object, QEvent *event)
         const qreal hover = Fader::level(content, 0, content->underMouse());
         const qreal press = Fader::level(content, 1, bodyPressed && bodyPressInside);
         QPainter painter(content);
-        painter.setRenderHint(QPainter::Antialiasing);
         // Pressed sinks below the resting color, like the pills' pressed state.
-        painter.setBrush(Look::mix(Look::mix(Theme::row, Theme::rowHover, hover), Theme::rowPressed, press));
-        painter.setPen(Qt::NoPen);
-        painter.drawRoundedRect(ui->fileBarContentWidget->rect(), 16, 16);
-        // Half-pixel inset keeps the 1px outline on whole device pixels.
-        painter.setPen(QPen(style.borderColor.toQColor(), 1));
-        painter.setBrush(Qt::NoBrush);
-        painter.drawRoundedRect(QRectF(ui->fileBarContentWidget->rect()).adjusted(0.5, 0.5, -0.5, -0.5), 15.5, 15.5);
+        RoundedSurface::paintFrame(painter, QRectF(content->rect()), 16,
+            Look::mix(Look::mix(Theme::row, Theme::rowHover, hover), Theme::rowPressed, press),
+            style.borderColor.toQColor());
         return true;
     }
     if (object == ui->fileBarContentWidget)

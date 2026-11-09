@@ -209,7 +209,6 @@ void Widget::setupTray()
     auto *menu = new QMenu(this);
     menu->setFont(Look::pixelFont(10));
     QAction *showAction = menu->addAction(tr("Show Rendrop"));
-    menu->addSeparator();
     QAction *quitAction = menu->addAction(tr("Quit"));
     QObject::connect(showAction, &QAction::triggered, this, &Widget::showFromTray);
     QObject::connect(quitAction, &QAction::triggered, this, &Widget::requestQuit);

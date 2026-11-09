@@ -1,12 +1,14 @@
 // rounded_surface.cpp
 
 #include <algorithm>
+#include <cmath>
 
 #include <QAbstractButton>
 #include <QEvent>
 #include <QPainter>
 #include <QPainterPath>
 #include <QPalette>
+#include <QTransform>
 #include <QWidget>
 
 #include "ui/style/rounded_surface.h"
@@ -141,6 +143,75 @@ QColor RoundedSurface::currentText() const
     return text;
 }
 
+void RoundedSurface::paintFrame(QPainter &painter, const QRectF &rect, qreal radius,
+    const QColor &fill, const QColor &border)
+{
+    const bool hasFill = fill.isValid() && fill.alpha() > 0;
+    const bool hasBorder = border.isValid() && border.alpha() > 0;
+    if (!hasFill && !hasBorder)
+    {
+        return;
+    }
+
+    // Logical to device pixels. For widgets this already carries the
+    // high-DPI scale and the widget's offset in the backing store.
+    const QTransform toDevice = painter.deviceTransform();
+    const qreal scale = std::abs(toDevice.m11()) > 0.0 ? std::abs(toDevice.m11()) : 1.0;
+    bool invertible = false;
+    const QTransform toLogical = toDevice.inverted(&invertible);
+    if (!invertible)
+    {
+        return;
+    }
+
+    // Snap the edges to whole device pixels, then work back in logical units
+    // so the painter's own transform is left alone.
+    const QRectF device = toDevice.mapRect(rect);
+    const QRectF snapped(QPointF(std::round(device.left()), std::round(device.top())),
+        QPointF(std::round(device.right()), std::round(device.bottom())));
+    const QRectF outer = toLogical.mapRect(snapped);
+    const qreal outerRadius = std::min(radius, std::min(outer.width(), outer.height()) / 2.0);
+
+    painter.save();
+    painter.setRenderHint(QPainter::Antialiasing);
+    QPainterPath outerPath;
+    outerPath.addRoundedRect(outer, outerRadius, outerRadius);
+    if (!hasBorder)
+    {
+        painter.fillPath(outerPath, fill);
+        painter.restore();
+        return;
+    }
+
+    // One device pixel at 100% and 125%, two at 200%.
+    const qreal width = std::max(1.0, std::round(scale)) / scale;
+    const QRectF inner = outer.adjusted(width, width, -width, -width);
+    const qreal innerRadius = std::max(0.0, outerRadius - width);
+    QPainterPath innerPath;
+    innerPath.addRoundedRect(inner, innerRadius, innerRadius);
+    if (hasFill && fill.alpha() == 255)
+    {
+        // Opaque fill over a border-colored base: the inner edge blends
+        // border into fill directly, with no background seam between them.
+        painter.fillPath(outerPath, border);
+        painter.fillPath(innerPath, fill);
+    }
+    else
+    {
+        // A translucent fill must not show the border through it, so the
+        // border is a ring.
+        if (hasFill)
+        {
+            painter.fillPath(innerPath, fill);
+        }
+        QPainterPath ring = outerPath;
+        ring.addPath(innerPath);
+        ring.setFillRule(Qt::OddEvenFill);
+        painter.fillPath(ring, border);
+    }
+    painter.restore();
+}
+
 bool RoundedSurface::eventFilter(QObject *watched, QEvent *event)
 {
     if (watched != target)
@@ -164,26 +235,8 @@ bool RoundedSurface::eventFilter(QObject *watched, QEvent *event)
         break;
     case QEvent::Paint:
     {
-        const QColor color = fill.value();
-        const QColor border = outline.value();
-        const QRectF bounds = QRectF(target->rect());
-        const qreal clamped = std::min(radius, std::min(bounds.width(), bounds.height()) / 2.0);
         QPainter painter(target);
-        painter.setRenderHint(QPainter::Antialiasing);
-        painter.setPen(Qt::NoPen);
-        painter.setBrush(color.isValid() ? QBrush(color) : QBrush(Qt::NoBrush));
-        if (border.isValid() && border.alpha() > 0)
-        {
-            // A 1px stroke on the half-pixel inset lands on whole device
-            // pixels instead of smearing over two.
-            painter.setPen(QPen(border, 1.0));
-            const QRectF inset = bounds.adjusted(0.5, 0.5, -0.5, -0.5);
-            painter.drawRoundedRect(inset, std::max(0.0, clamped - 0.5), std::max(0.0, clamped - 0.5));
-        }
-        else if (color.isValid() && color.alpha() > 0)
-        {
-            painter.drawRoundedRect(bounds, clamped, clamped);
-        }
+        paintFrame(painter, QRectF(target->rect()), radius, fill.value(), outline.value());
         // Fall through: the widget paints its own content on top.
         break;
     }

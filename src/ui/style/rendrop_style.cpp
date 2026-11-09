@@ -172,19 +172,18 @@ QPalette RendropStyle::standardPalette() const
     both(QPalette::Light, Theme::controlHover);
     both(QPalette::Midlight, Theme::fieldHover);
     both(QPalette::Mid, Theme::controlDisabled);
-    both(QPalette::Dark, Theme::Tone(QColor(0x1A, 0x1C, 0x20), QColor(0xC4, 0xC8, 0xD1)));
+    both(QPalette::Dark, Theme::outline);
     both(QPalette::Shadow, Qt::black);
     both(QPalette::Highlight, Theme::highlight);
-    both(QPalette::HighlightedText, Theme::onAccent);
+    both(QPalette::HighlightedText, Theme::onHighlight);
     both(QPalette::Link, Theme::accentInk);
-    both(QPalette::LinkVisited, Theme::isLight() ? Look::accentColor.color() : Look::accentColor.lighter(115));
+    both(QPalette::LinkVisited, Theme::accentInk);
     const QColor disabledText = Theme::textDisabled;
     for (const QPalette::ColorRole role : {QPalette::WindowText, QPalette::Text, QPalette::ButtonText})
     {
         palette.setColor(QPalette::Disabled, role, disabledText);
     }
-    palette.setColor(QPalette::Disabled, QPalette::Highlight,
-        Theme::Tone(QColor(0x44, 0x44, 0x5A), QColor(0xC8, 0xC9, 0xDC)).color());
+    palette.setColor(QPalette::Disabled, QPalette::Highlight, Theme::disabledFill.color());
     return palette;
 }
 
@@ -271,6 +270,21 @@ void RendropStyle::polish(QWidget *widget)
         }
         return;
     }
+    if (widget->inherits("QTipLabel"))
+    {
+        // Qt polishes a tool tip in its constructor, before its window
+        // exists, so it can still become see-through for the rounded
+        // corners. A tool tip lives for one showing; its colors are read
+        // here, in the scheme on screen.
+        widget->setAttribute(Qt::WA_TranslucentBackground);
+        widget->setWindowFlags(widget->windowFlags() | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint);
+        widget->setContentsMargins(4, 1, 4, 1);
+        QPalette palette = widget->palette();
+        palette.setColor(QPalette::ToolTipText, Look::textColor);
+        palette.setColor(QPalette::WindowText, Look::textColor);
+        widget->setPalette(palette);
+        return;
+    }
     if (isComboPopup(widget) && markOnce(widget))
     {
         // Translucency is set up with the combo box above; changing window
@@ -309,10 +323,7 @@ bool RendropStyle::eventFilter(QObject *watched, QEvent *event)
         if (isComboPopup(popup))
         {
             QPainter painter(popup);
-            painter.setRenderHint(QPainter::Antialiasing);
-            painter.setPen(QPen(popupBorder.color(), 1.0));
-            painter.setBrush(popupColor.color());
-            painter.drawRoundedRect(QRectF(popup->rect()).adjusted(0.5, 0.5, -0.5, -0.5), 8, 8);
+            RoundedSurface::paintFrame(painter, QRectF(popup->rect()), 8, popupColor.color(), popupBorder.color());
             return true;
         }
     }
@@ -334,14 +345,12 @@ void RendropStyle::drawPrimitive(PrimitiveElement element, const QStyleOption *o
     case PE_FrameFocusRect:
     case PE_FrameMenu:
         return;
+    case PE_PanelTipLabel:
+        RoundedSurface::paintFrame(*painter, QRectF(option->rect), 6, popupColor.color(), popupBorder.color());
+        return;
     case PE_PanelMenu:
     {
-        painter->save();
-        painter->setRenderHint(QPainter::Antialiasing);
-        painter->setPen(QPen(popupBorder.color(), 1.0));
-        painter->setBrush(popupColor.color());
-        painter->drawRoundedRect(QRectF(option->rect).adjusted(0.5, 0.5, -0.5, -0.5), 8, 8);
-        painter->restore();
+        RoundedSurface::paintFrame(*painter, QRectF(option->rect), 8, popupColor.color(), popupBorder.color());
         return;
     }
     case PE_IndicatorArrowDown:
@@ -693,6 +702,9 @@ int RendropStyle::pixelMetric(PixelMetric metric, const QStyleOption *option, co
         return 0;
     case PM_MenuPanelWidth:
         return 1;
+    case PM_ToolTipLabelFrameWidth:
+        // Room inside the rounded outline; the label adds one more pixel.
+        return 5;
     case PM_MenuHMargin:
     case PM_MenuVMargin:
         return 4;

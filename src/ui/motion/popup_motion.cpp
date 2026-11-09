@@ -27,7 +27,8 @@ constexpr int closeMs = 140;
 constexpr qreal startHeight = 18.0;
 constexpr qreal openScale = 0.94;
 constexpr qreal closeScale = 0.97;
-constexpr char borderProperty[] = "rendropPopupBorder";
+constexpr char borderDarkProperty[] = "rendropPopupBorderDark";
+constexpr char borderLightProperty[] = "rendropPopupBorderLight";
 constexpr char radiusProperty[] = "rendropPopupRadius";
 constexpr char anchorProperty[] = "rendropPopupAnchor";
 
@@ -69,6 +70,15 @@ QRect anchorOf(const QWidget *popup)
     return QRect(QCursor::pos(), QSize(1, 1));
 }
 
+// The popup's outline in the scheme on screen now, not the one it was
+// attached in.
+QColor borderOf(const QWidget *popup)
+{
+    const Theme::Tone tone(popup->property(borderDarkProperty).value<QColor>(),
+        popup->property(borderLightProperty).value<QColor>());
+    return tone.color();
+}
+
 // Click-through window that plays the motion with a snapshot of the popup.
 class PopupOverlay : public QWidget
 {
@@ -79,7 +89,7 @@ public:
         popup(popup),
         shot(shot),
         opening(opening),
-        border(popup->property(borderProperty).value<QColor>()),
+        border(borderOf(popup)),
         radius(popup->property(radiusProperty).toReal())
     {
         setAttribute(Qt::WA_TranslucentBackground);
@@ -316,14 +326,15 @@ void PopupMotion::disableSystemEffects()
     QApplication::setEffectEnabled(Qt::UI_AnimateCombo, false);
 }
 
-void PopupMotion::attach(QWidget *popup, const QColor &border, qreal radius)
+void PopupMotion::attach(QWidget *popup, const Theme::Tone &border, qreal radius)
 {
-    popup->setProperty(borderProperty, border);
+    popup->setProperty(borderDarkProperty, border.dark);
+    popup->setProperty(borderLightProperty, border.light);
     popup->setProperty(radiusProperty, radius);
     popup->installEventFilter(MotionFilter::instance());
 }
 
-void PopupMotion::attach(QDialog *popover, const QColor &border, qreal radius, const QRect &globalAnchor)
+void PopupMotion::attach(QDialog *popover, const Theme::Tone &border, qreal radius, const QRect &globalAnchor)
 {
     popover->setProperty(anchorProperty, globalAnchor);
     attach(static_cast<QWidget *>(popover), border, radius);

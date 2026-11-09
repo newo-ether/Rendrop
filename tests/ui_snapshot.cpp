@@ -10,7 +10,8 @@
 // including the native shadow and corners around the custom frame.
 // RENDROP_SNAPSHOT_PAGE=0|1|2 captures the queue, nodes or settings page.
 // RENDROP_SNAPSHOT_BLENDER=<blender.exe> registers a Blender version first.
-// RENDROP_SNAPSHOT_FILEBAR=1 adds a sample project bar to the queue.
+// RENDROP_SNAPSHOT_FILEBAR=1 adds a sample project bar to the queue
+// (RENDROP_SNAPSHOT_FILEBAR_STATE=rendering|finished|error for its state).
 // RENDROP_SNAPSHOT_LOG=1 opens the log card.
 // RENDROP_SNAPSHOT_DETAILS=1 opens the project page with a sample split
 // between three nodes, with leases in flight.
@@ -28,8 +29,12 @@
 // RENDROP_SNAPSHOT_SCROLL=1 fills the queue and prints how many scroll steps
 // per second a smooth scroll gets, with and without the frame driver.
 // RENDROP_SNAPSHOT_SWITCH=light|dark switches the scheme with its fade.
+// RENDROP_SNAPSHOT_TOGGLES=1 saves a sheet of toggle switches instead: rows
+// off and on, columns rest, hovered, pressed and disabled.
+// RENDROP_SNAPSHOT_TOOLTIP=1 saves a tool tip drawn over the window surface.
 
 #include <algorithm>
+#include <cstdio>
 
 #include <QApplication>
 #include <QMouseEvent>
@@ -39,6 +44,8 @@
 #include <QFile>
 #include <QElapsedTimer>
 #include <QFontDatabase>
+#include <QGridLayout>
+#include <QPalette>
 #include <QGuiApplication>
 #include <QHostAddress>
 #include <QPlainTextEdit>
@@ -56,6 +63,7 @@
 #include <QComboBox>
 #include <QLabel>
 #include <QMessageBox>
+#include <QToolTip>
 #include <QTranslator>
 #include <QWindow>
 #include <QScrollArea>
@@ -67,6 +75,7 @@
 #include "config/app_paths.h"
 #include "core/render_queue.h"
 #include "ui/widgets/file_bar.h"
+#include "ui/style/look_widgets.h"
 #include "ui/motion/frame_driver.h"
 #include "ui/motion/smooth_scroll.h"
 #include "ui/widgets/frame_range_dialog.h"
@@ -176,6 +185,85 @@ int main(int argc, char *argv[])
     QFontDatabase::addApplicationFont(":/font/MiOutfit.ttf");
     QFontDatabase::addApplicationFont(":/font/JetBrainsMono-Regular.ttf");
     QFontDatabase::addApplicationFont(":/font/JetBrainsMono-Bold.ttf");
+    if (qEnvironmentVariableIntValue("RENDROP_SNAPSHOT_TOGGLES") == 1 && argc > 1)
+    {
+        QWidget sheet;
+        sheet.setAutoFillBackground(true);
+        QPalette palette = sheet.palette();
+        palette.setColor(QPalette::Window, Theme::surface.color());
+        sheet.setPalette(palette);
+        auto *grid = new QGridLayout(&sheet);
+        grid->setContentsMargins(16, 16, 16, 16);
+        grid->setSpacing(16);
+        std::vector<ToggleSwitch *> hovered;
+        std::vector<ToggleSwitch *> pressed;
+        for (int row = 0; row < 2; ++row)
+        {
+            for (int column = 0; column < 4; ++column)
+            {
+                auto *toggle = new ToggleSwitch(&sheet);
+                toggle->setChecked(row == 1);
+                toggle->setEnabled(column != 3);
+                grid->addWidget(toggle, row, column);
+                if (column == 1)
+                {
+                    hovered.push_back(toggle);
+                }
+                else if (column == 2)
+                {
+                    pressed.push_back(toggle);
+                }
+            }
+        }
+        sheet.show();
+        QCoreApplication::processEvents();
+        for (ToggleSwitch *toggle : hovered)
+        {
+            toggle->setAttribute(Qt::WA_UnderMouse);
+            QEvent enter(QEvent::Enter);
+            QCoreApplication::sendEvent(toggle, &enter);
+        }
+        for (ToggleSwitch *toggle : pressed)
+        {
+            toggle->setDown(true);
+        }
+        QElapsedTimer settle;
+        settle.start();
+        while (settle.elapsed() < 600)
+        {
+            QCoreApplication::processEvents(QEventLoop::AllEvents, 16);
+        }
+        return sheet.grab().save(QString::fromLocal8Bit(argv[1])) ? 0 : 2;
+    }
+    if (qEnvironmentVariableIntValue("RENDROP_SNAPSHOT_TOOLTIP") == 1 && argc > 1)
+    {
+        QWidget anchor;
+        anchor.resize(200, 60);
+        anchor.show();
+        QToolTip::showText(anchor.mapToGlobal(QPoint(20, 20)), QObject::tr("Click to open the project"), &anchor);
+        QCoreApplication::processEvents();
+        QWidget *tip = nullptr;
+        for (QWidget *window : QApplication::topLevelWidgets())
+        {
+            if (window->inherits("QTipLabel"))
+            {
+                tip = window;
+            }
+        }
+        if (!tip)
+        {
+            return 3;
+        }
+        // The tip is see-through around its corners; draw it over the surface
+        // it normally floats above.
+        const int margin = 12;
+        QPixmap sheet(tip->size() + QSize(2 * margin, 2 * margin));
+        sheet.fill(Theme::surface.color());
+        tip->render(&sheet, QPoint(margin, margin), QRegion(), QWidget::DrawChildren);
+        std::printf("tip %dx%d translucent=%d\n", tip->width(), tip->height(),
+            tip->testAttribute(Qt::WA_TranslucentBackground) ? 1 : 0);
+        return sheet.scaled(sheet.size() * 3).save(QString::fromLocal8Bit(argv[1])) ? 0 : 2;
+    }
     // RENDROP_SNAPSHOT_FONT=<font file> draws everything that asks for the UI
     // font with that font instead, to compare typefaces. Substitution only
     // applies to missing families, so the family is swapped on each widget.
@@ -299,8 +387,16 @@ int main(int argc, char *argv[])
         // Built directly: a real job needs a readable .blend and Blender.
         QWidget *content = widget.findChild<QWidget *>(QStringLiteral("scrollAreaContent"));
         auto *list = widget.findChild<QVBoxLayout *>(QStringLiteral("scrollAreaVerticalLayout"));
+        // RENDROP_SNAPSHOT_FILEBAR_STATE=rendering|finished|error picks the
+        // outline color; the default is queued.
+        const QString stateName = qEnvironmentVariable("RENDROP_SNAPSHOT_FILEBAR_STATE");
+        const ProjectState state = stateName == QLatin1String("rendering") ? ProjectState::Rendering
+            : stateName == QLatin1String("finished") ? ProjectState::Finished
+            : stateName == QLatin1String("error") ? ProjectState::Error
+            : ProjectState::Queued;
+        const int finished = state == ProjectState::Finished ? 250 : state == ProjectState::Rendering ? 120 : 0;
         const ProjectInfo sample(QUuid::createUuid(), QStringLiteral("shot_010_lighting"), QString(), QString(),
-            ProjectState::Queued, 1, 250, 1, 1920, 1080, 100, QStringLiteral("CYCLES"), 0, 250);
+            state, 1, 250, 1, 1920, 1080, 100, QStringLiteral("CYCLES"), finished, 250);
         if (content && list)
         {
             sampleBar = std::make_unique<FileBar>(content, sample);

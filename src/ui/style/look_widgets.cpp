@@ -238,7 +238,7 @@ void stylePopover(QDialog *dialog, const QWidget *anchor)
 {
     constexpr qreal radius = 10;
     constexpr int gap = 6;
-    const QColor border = Theme::popupBorder;
+    const Theme::Tone &border = Theme::popupBorder;
     styleDialog(dialog);
     // Qt::Popup closes the window on a click anywhere outside it, which
     // rejects the dialog like Esc does. Rounded corners need a see-through
@@ -370,9 +370,42 @@ ToggleSwitch::ToggleSwitch(QWidget *parent):
     });
 }
 
+namespace {
+
+// Material 3 switch geometry in dp. The desktop switch draws it at 3/4 so it
+// sits on a settings row; the widget leaves room for the 40 dp state layer
+// around the handle at either end.
+constexpr qreal switchScale = 0.75;
+constexpr qreal switchTrackWidth = 52.0;
+constexpr qreal switchTrackHeight = 32.0;
+constexpr qreal switchStateLayer = 40.0;
+constexpr qreal switchBorder = 2.0;
+constexpr qreal switchHandleOff = 16.0;
+constexpr qreal switchHandleOn = 24.0;
+constexpr qreal switchHandlePressed = 28.0;
+
+// Rounds a logical rectangle to whole device pixels.
+QRectF snapToDevice(const QPainter &painter, const QRectF &rect)
+{
+    const QTransform toDevice = painter.deviceTransform();
+    bool invertible = false;
+    const QTransform toLogical = toDevice.inverted(&invertible);
+    if (!invertible)
+    {
+        return rect;
+    }
+    const QRectF device = toDevice.mapRect(rect);
+    const QRectF snapped(QPointF(std::round(device.left()), std::round(device.top())),
+        QPointF(std::round(device.right()), std::round(device.bottom())));
+    return toLogical.mapRect(snapped);
+}
+
+}
+
 QSize ToggleSwitch::sizeHint() const
 {
-    return {36, 20};
+    const qreal pad = switchStateLayer - switchTrackHeight;
+    return {qRound((switchTrackWidth + pad) * switchScale), qRound(switchStateLayer * switchScale)};
 }
 
 bool ToggleSwitch::event(QEvent *event)
@@ -389,27 +422,65 @@ void ToggleSwitch::paintEvent(QPaintEvent *)
 {
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing);
-    const QRectF track = QRectF(rect()).adjusted(1, 1, -1, -1);
+    painter.setPen(Qt::NoPen);
     // setChecked() under a QSignalBlocker sends no toggled(); it still repaints.
     position.setTarget(isChecked() ? 1.0 : 0.0);
     const qreal on = position.value();
-    QColor trackColor = Look::mix(Theme::switchOff, Look::accentColor, on);
-    trackColor = Look::mix(trackColor, Theme::isLight() ? trackColor.darker(108) : trackColor.lighter(125), hover.value());
+    const qreal pressed = Fader::level(this, 1, isDown());
     const qreal disabled = Fader::level(this, 0, !isEnabled());
-    trackColor = Look::mix(trackColor, Theme::disabledFill, disabled);
-    painter.setPen(QPen(Theme::controlBorder.color(), 1));
-    painter.setBrush(trackColor);
-    painter.drawRoundedRect(track, track.height() / 2, track.height() / 2);
-    const qreal knob = track.height() - 4;
-    // Held down, the knob stretches towards where it will go.
-    const qreal stretch = 4.0 * Fader::level(this, 1, isDown());
-    const qreal left = track.left() + 2;
-    const qreal travel = track.right() - 2 - knob - stretch - left;
-    const qreal x = left + travel * on;
-    painter.setPen(Qt::NoPen);
-    painter.setBrush(Look::mix(Theme::knob, Theme::knobDisabled, disabled));
-    const QRectF knobRect(x, track.top() + 2, knob + stretch, knob);
-    painter.drawRoundedRect(knobRect, knob / 2, knob / 2);
+    const qreal active = std::max(hover.value(), pressed);
+    const qreal s = switchScale;
+
+    QRectF track(0, 0, switchTrackWidth * s, switchTrackHeight * s);
+    track.moveCenter(QRectF(rect()).center());
+    track = snapToDevice(painter, track);
+    const qreal radius = track.height() / 2;
+
+    // Track: the off fill drops to 12% when disabled, the on fill becomes
+    // onSurface at 12%; the border only belongs to the off state.
+    QColor offFill = Theme::switchTrackOff;
+    offFill.setAlphaF(static_cast<float>(1.0 - 0.88 * disabled));
+    const QColor onFill = Look::mix(Theme::accent, Theme::switchDisabledTrack, disabled);
+    painter.setBrush(Look::mix(offFill, onFill, on));
+    painter.drawRoundedRect(track, radius, radius);
+    QColor border = Look::mix(Theme::switchOutline, Theme::switchDisabledTrack, disabled);
+    border.setAlphaF(border.alphaF() * static_cast<float>(1.0 - on));
+    if (border.alpha() > 0)
+    {
+        // Whole device pixels, so the ring stays crisp at fractional scales.
+        const qreal dpr = std::max<qreal>(1.0, painter.deviceTransform().m11());
+        const qreal width = std::max<qreal>(1.0, std::round(switchBorder * s * dpr)) / dpr;
+        const QRectF inner = track.adjusted(width, width, -width, -width);
+        QPainterPath ring;
+        ring.setFillRule(Qt::OddEvenFill);
+        ring.addRoundedRect(track, radius, radius);
+        ring.addRoundedRect(inner, radius - width, radius - width);
+        painter.setBrush(border);
+        painter.drawPath(ring);
+    }
+
+    // Handle: 16 dp off, 24 dp on, 28 dp held down; its center slides
+    // between the two ends of the track.
+    const qreal endInset = track.height() / 2;
+    const QPointF center(track.left() + endInset + (track.width() - 2 * endInset) * on, track.center().y());
+    const qreal rest = switchHandleOff + (switchHandleOn - switchHandleOff) * on;
+    const qreal diameter = (rest + (switchHandlePressed - rest) * pressed) * s;
+
+    // State layer: onSurface off, primary on; 8% hovered, 12% pressed.
+    QColor layer = Look::mix(Theme::switchStateOff, Theme::switchStateOn, on);
+    layer.setAlphaF(static_cast<float>(std::max(0.08 * hover.value(), 0.12 * pressed) * (1.0 - disabled)));
+    if (layer.alpha() > 0)
+    {
+        const qreal halo = switchStateLayer * s / 2;
+        painter.setBrush(layer);
+        painter.drawEllipse(center, halo, halo);
+    }
+
+    const QColor handleOff = Look::mix(Theme::switchOutline, Theme::switchHandleOffHover, active);
+    const QColor handleOn = Look::mix(Theme::switchHandleOn, Theme::switchHandleOnHover, active);
+    const QColor handleDisabled = Look::mix(Theme::switchDisabledHandleOff, Theme::switchDisabledHandleOn, on);
+    painter.setBrush(Look::mix(Look::mix(handleOff, handleOn, on), handleDisabled, disabled));
+    painter.drawEllipse(center, diameter / 2, diameter / 2);
 }
 
 NavButton::NavButton(Icon icon, QWidget *parent):
@@ -465,7 +536,7 @@ void NavButton::paintEvent(QPaintEvent *)
         painter.setBrush(fill);
         painter.drawRoundedRect(area, 8, 8);
         // The mark grows from the middle as the button becomes selected.
-        QColor mark = Theme::isLight() ? Look::accentColor.color() : Look::accentColor.lighter(115);
+        QColor mark = Theme::accentInk;
         mark.setAlphaF(static_cast<float>(chosen));
         painter.setBrush(mark);
         const qreal half = 8.0 * chosen;
@@ -571,7 +642,7 @@ void LinearProgress::paintEvent(QPaintEvent *)
     {
         QRectF fill = track;
         fill.setWidth(std::max(track.height(), track.width() * value / 100.0));
-        painter.setBrush(Theme::isLight() ? Look::accentColor.color() : Look::accentColor.lighter(110));
+        painter.setBrush(Theme::accent.color());
         painter.drawRoundedRect(fill, radius, radius);
     }
 }
