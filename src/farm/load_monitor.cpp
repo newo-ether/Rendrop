@@ -399,9 +399,11 @@ private:
             }
             DWORD size = 0;
             DWORD count = 0;
-            PDH_STATUS status = PDH_MORE_DATA;
+            // PDH_MORE_DATA is a DWORD constant, PDH_STATUS a signed LONG.
+            constexpr PDH_STATUS moreData = static_cast<PDH_STATUS>(PDH_MORE_DATA);
+            PDH_STATUS status = moreData;
             std::vector<BYTE> buffer;
-            for (int attempt = 0; attempt < 3 && status == PDH_MORE_DATA; ++attempt)
+            for (int attempt = 0; attempt < 3 && status == moreData; ++attempt)
             {
                 status = PdhGetFormattedCounterArrayW(
                     counter,
@@ -410,7 +412,7 @@ private:
                     &count,
                     buffer.empty() ? nullptr : reinterpret_cast<PDH_FMT_COUNTERVALUE_ITEM_W *>(buffer.data())
                 );
-                if (status == PDH_MORE_DATA)
+                if (status == moreData)
                 {
                     buffer.assign(size, 0);
                 }

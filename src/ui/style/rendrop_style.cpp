@@ -33,9 +33,9 @@ constexpr char polishedProperty[] = "rendropPolished";
 
 constexpr int comboArrowWidth = 24;
 constexpr int spinButtonWidth = 18;
-const QColor popupColor(0x2B, 0x2E, 0x35);
-const QColor popupBorder(0x45, 0x4A, 0x56);
-const QColor rowHover(0x4B, 0x53, 0x62);
+const Theme::Tone &popupColor = Theme::popup;
+const Theme::Tone &popupBorder = Theme::popupBorder;
+const Theme::Tone &rowHover = Theme::menuRowHover;
 
 bool markOnce(QWidget *widget)
 {
@@ -115,14 +115,14 @@ public:
             painter->setPen(Qt::NoPen);
             painter->setBrush(Look::mix(QColor(), rowHover, level));
             painter->drawRoundedRect(row, 6, 6);
-            QColor mark = Look::accentColor;
+            QColor mark = Look::accentColor.color();
             mark.setAlphaF(static_cast<float>(level));
             painter->setBrush(mark);
             const qreal half = (row.height() / 2.0 - 5.0) * level;
             painter->drawRoundedRect(QRectF(row.left() + 1, row.center().y() - half, 3, half * 2), 1.5, 1.5);
         }
         const bool enabled = item.state & QStyle::State_Enabled;
-        painter->setPen(enabled ? QColor(Qt::white) : QColor(0x88, 0x88, 0x88));
+        painter->setPen(enabled ? Theme::textStrong.color() : Theme::textDisabled.color());
         painter->setFont(item.font);
         const QRect text = item.rect.adjusted(12, 0, -8, 0);
         painter->drawText(text, Qt::AlignVCenter | Qt::AlignLeft,
@@ -160,30 +160,31 @@ QPalette RendropStyle::standardPalette() const
     };
     both(QPalette::Window, Look::windowColor);
     both(QPalette::WindowText, Look::textColor);
-    both(QPalette::Base, QColor(0x33, 0x38, 0x42));
-    both(QPalette::AlternateBase, QColor(0x2B, 0x2D, 0x33));
+    both(QPalette::Base, Theme::control);
+    both(QPalette::AlternateBase, Theme::chip);
     both(QPalette::ToolTipBase, popupColor);
     both(QPalette::ToolTipText, Look::textColor);
-    both(QPalette::PlaceholderText, QColor(0x6E, 0x73, 0x82));
-    both(QPalette::Text, Qt::white);
-    both(QPalette::Button, QColor(0x33, 0x38, 0x42));
-    both(QPalette::ButtonText, Qt::white);
-    both(QPalette::BrightText, Qt::white);
-    both(QPalette::Light, QColor(0x4B, 0x53, 0x62));
-    both(QPalette::Midlight, QColor(0x3C, 0x42, 0x4D));
-    both(QPalette::Mid, QColor(0x2E, 0x31, 0x38));
-    both(QPalette::Dark, QColor(0x1A, 0x1C, 0x20));
+    both(QPalette::PlaceholderText, Theme::placeholder);
+    both(QPalette::Text, Theme::textStrong);
+    both(QPalette::Button, Theme::control);
+    both(QPalette::ButtonText, Theme::textStrong);
+    both(QPalette::BrightText, Theme::textStrong);
+    both(QPalette::Light, Theme::controlHover);
+    both(QPalette::Midlight, Theme::fieldHover);
+    both(QPalette::Mid, Theme::controlDisabled);
+    both(QPalette::Dark, Theme::Tone(QColor(0x1A, 0x1C, 0x20), QColor(0xC4, 0xC8, 0xD1)));
     both(QPalette::Shadow, Qt::black);
-    both(QPalette::Highlight, QColor(0x5A, 0x5A, 0x96));
-    both(QPalette::HighlightedText, Qt::white);
-    both(QPalette::Link, Look::accentColor.lighter(130));
-    both(QPalette::LinkVisited, Look::accentColor.lighter(115));
-    const QColor disabledText(0x88, 0x88, 0x88);
+    both(QPalette::Highlight, Theme::highlight);
+    both(QPalette::HighlightedText, Theme::onAccent);
+    both(QPalette::Link, Theme::accentInk);
+    both(QPalette::LinkVisited, Theme::isLight() ? Look::accentColor.color() : Look::accentColor.lighter(115));
+    const QColor disabledText = Theme::textDisabled;
     for (const QPalette::ColorRole role : {QPalette::WindowText, QPalette::Text, QPalette::ButtonText})
     {
         palette.setColor(QPalette::Disabled, role, disabledText);
     }
-    palette.setColor(QPalette::Disabled, QPalette::Highlight, QColor(0x44, 0x44, 0x5A));
+    palette.setColor(QPalette::Disabled, QPalette::Highlight,
+        Theme::Tone(QColor(0x44, 0x44, 0x5A), QColor(0xC8, 0xC9, 0xDC)).color());
     return palette;
 }
 
@@ -309,8 +310,8 @@ bool RendropStyle::eventFilter(QObject *watched, QEvent *event)
         {
             QPainter painter(popup);
             painter.setRenderHint(QPainter::Antialiasing);
-            painter.setPen(QPen(popupBorder, 1.0));
-            painter.setBrush(popupColor);
+            painter.setPen(QPen(popupBorder.color(), 1.0));
+            painter.setBrush(popupColor.color());
             painter.drawRoundedRect(QRectF(popup->rect()).adjusted(0.5, 0.5, -0.5, -0.5), 8, 8);
             return true;
         }
@@ -337,8 +338,8 @@ void RendropStyle::drawPrimitive(PrimitiveElement element, const QStyleOption *o
     {
         painter->save();
         painter->setRenderHint(QPainter::Antialiasing);
-        painter->setPen(QPen(popupBorder, 1.0));
-        painter->setBrush(popupColor);
+        painter->setPen(QPen(popupBorder.color(), 1.0));
+        painter->setBrush(popupColor.color());
         painter->drawRoundedRect(QRectF(option->rect).adjusted(0.5, 0.5, -0.5, -0.5), 8, 8);
         painter->restore();
         return;
@@ -376,9 +377,13 @@ void RendropStyle::drawControl(ControlElement element, const QStyleOption *optio
         const int gap = hasIcon && hasText ? 6 : 0;
         const int iconWidth = hasIcon ? button->iconSize.width() : 0;
         const int available = std::max(0, area.width() - iconWidth - gap);
-        const QString text = hasText
-            ? button->fontMetrics.elidedText(button->text, Qt::ElideRight, available, Qt::TextShowMnemonic)
-            : QString();
+        // elidedText() counts the '&' of a mnemonic, so a label such as
+        // "是(&Y)" that fits would still be cut; only elide what does not fit.
+        QString text = button->text;
+        if (hasText && button->fontMetrics.size(Qt::TextShowMnemonic, text).width() > available)
+        {
+            text = button->fontMetrics.elidedText(text, Qt::ElideRight, available, Qt::TextShowMnemonic);
+        }
         const int textWidth = hasText ? button->fontMetrics.size(Qt::TextShowMnemonic, text).width() : 0;
         const int total = iconWidth + gap + textWidth;
         const Qt::Alignment align = buttonAlignment(widget);
@@ -439,7 +444,7 @@ void RendropStyle::drawControl(ControlElement element, const QStyleOption *optio
         if (item->menuItemType == QStyleOptionMenuItem::Separator)
         {
             painter->save();
-            painter->setPen(QPen(QColor(0x3A, 0x3E, 0x48), 1.0));
+            painter->setPen(QPen(Theme::separator.color(), 1.0));
             const qreal y = item->rect.center().y() + 0.5;
             painter->drawLine(QPointF(item->rect.left() + 8, y), QPointF(item->rect.right() - 8, y));
             painter->restore();
@@ -477,9 +482,8 @@ void RendropStyle::drawComplexControl(ComplexControl control, const QStyleOption
     {
         const QRect arrow = subControlRect(control, option, SC_ComboBoxArrow, widget);
         const qreal hover = Fader::level(widget, 0, (option->state & State_MouseOver) && (option->state & State_Enabled));
-        const QColor rest(0xA8, 0xAC, 0xB8);
         const QColor color = option->state & State_Enabled
-            ? Look::mix(rest, Qt::white, hover)
+            ? Look::mix(Theme::textMuted, Theme::textStrong, hover)
             : option->palette.color(QPalette::Disabled, QPalette::ButtonText);
         drawChevron(painter, arrow, 8, color, false);
         return;
@@ -517,19 +521,19 @@ void RendropStyle::drawComplexControl(ComplexControl control, const QStyleOption
             const bool active = enabled && button.enabled && (spin->activeSubControls & button.part);
             const qreal hover = Fader::level(widget, static_cast<quintptr>(button.part), active && hovered);
             const qreal press = Fader::level(widget, static_cast<quintptr>(button.part) << 8, active && sunken);
-            QColor fill = Look::mix(QColor(), QColor(0x4B, 0x53, 0x62), hover);
-            fill = Look::mix(fill, QColor(0x2B, 0x2F, 0x38), press);
+            QColor fill = Look::mix(QColor(), Theme::controlHover, hover);
+            fill = Look::mix(fill, Theme::controlPressed, press);
             if (fill.alpha() > 0)
             {
                 painter->fillRect(button.area, fill);
             }
             const QColor glyph = enabled && button.enabled
-                ? QColor(0xD0, 0xD3, 0xDC)
+                ? Theme::textHover.color()
                 : option->palette.color(QPalette::Disabled, QPalette::ButtonText);
             drawChevron(painter, button.area, 7, glyph, button.part == SC_SpinBoxUp);
         }
         painter->setClipping(false);
-        painter->setPen(QPen(QColor(85, 90, 102), 1.0));
+        painter->setPen(QPen(Theme::outline.color(), 1.0));
         const qreal x = up.left() + 0.5;
         painter->drawLine(QPointF(x, bounds.top()), QPointF(x, bounds.bottom()));
         const qreal y = down.top() + 0.5;
@@ -550,7 +554,7 @@ void RendropStyle::drawComplexControl(ComplexControl control, const QStyleOption
         const qreal press = Fader::level(widget, 1, onHandle && (bar->state & State_Sunken));
         painter->save();
         painter->setRenderHint(QPainter::Antialiasing);
-        QColor color = Look::mix(QColor(255, 255, 255, 40), QColor(255, 255, 255, 70), hover);
+        QColor color = Look::mix(Theme::veil(Theme::isLight() ? 60 : 40), Theme::veil(Theme::isLight() ? 105 : 70), hover);
         color = Look::mix(color, Look::accentColor, press);
         if (bar->maximum > bar->minimum && !handle.isEmpty())
         {

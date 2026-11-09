@@ -8,8 +8,6 @@ FrameRangeDialog::FrameRangeDialog(int start, int end, int step, QWidget *parent
     ui(new Ui::FrameRangeDialog)
 {
     ui->setupUi(this);
-    setWindowFlags(windowFlags() & ~Qt::WindowContextHelpButtonHint);
-    Look::styleDialog(this);
 
     // Keeps the fixed-width dialog from squeezing the form labels.
     for (QSpinBox *spin : {ui->startSpin, ui->endSpin, ui->stepSpin})
@@ -17,13 +15,12 @@ FrameRangeDialog::FrameRangeDialog(int start, int end, int step, QWidget *parent
         spin->setMinimumWidth(96);
         // RendropStyle draws the step buttons; the box is painted antialiased.
         RoundedSurface::install(spin, 6, RoundedSurface::Colors {
-            QColor(43, 45, 48), QColor(), QColor(), QColor(), QColor(85, 90, 102), QColor(110, 110, 180)});
+            Theme::row, {}, {}, {}, Theme::outline, Theme::accent});
     }
     for (QPushButton *button : {ui->okButton, ui->cancelButton})
     {
         RoundedSurface::install(button, 6, RoundedSurface::Colors {
-            QColor(0x33, 0x38, 0x42), QColor(0x4B, 0x53, 0x62), QColor(0x2B, 0x2F, 0x38), QColor(),
-            QColor(0x55, 0x5A, 0x66)});
+            Theme::control, Theme::controlHover, Theme::controlPressed, {}, Theme::outline});
         Look::setPadding(button, QMargins(6, 6, 6, 6));
     }
 
@@ -41,6 +38,8 @@ FrameRangeDialog::FrameRangeDialog(int start, int end, int step, QWidget *parent
         accept();
     });
     connect(ui->cancelButton, &QPushButton::clicked, this, &QDialog::reject);
+    // The parent is the control that opened it.
+    Look::stylePopover(this, parent);
 }
 
 FrameRangeDialog::~FrameRangeDialog()

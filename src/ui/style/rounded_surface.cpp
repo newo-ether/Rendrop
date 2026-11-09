@@ -33,6 +33,12 @@ RoundedSurface::RoundedSurface(QWidget *widget, qreal radius, const Colors &colo
     fill.jumpTo(currentColor());
     outline.jumpTo(currentBorder());
     label.jumpTo(currentText());
+    // The scheme cross-fade covers the switch; the surface just takes the
+    // new colors.
+    QObject::connect(Theme::notifier(), &Theme::Notifier::changed, this, [this]() {
+        setColors(this->colors);
+        target->update();
+    });
 }
 
 RoundedSurface *RoundedSurface::install(QWidget *widget, qreal radius, const Colors &colors)
@@ -51,9 +57,9 @@ RoundedSurface *RoundedSurface::install(QWidget *widget, qreal radius, const Col
     return new RoundedSurface(widget, radius, colors);
 }
 
-RoundedSurface *RoundedSurface::install(QWidget *widget, qreal radius, const QColor &color)
+RoundedSurface *RoundedSurface::install(QWidget *widget, qreal radius, const Theme::Tone &color)
 {
-    return install(widget, radius, Colors {color, QColor(), QColor(), QColor()});
+    return install(widget, radius, Colors {color, {}, {}, {}});
 }
 
 RoundedSurface *RoundedSurface::find(const QWidget *widget)
@@ -63,7 +69,10 @@ RoundedSurface *RoundedSurface::find(const QWidget *widget)
 
 void RoundedSurface::setColors(const Colors &newColors)
 {
-    colors = newColors;
+    if (&newColors != &colors)
+    {
+        colors = newColors;
+    }
     fill.jumpTo(currentColor());
     outline.jumpTo(currentBorder());
     label.jumpTo(currentText());
@@ -85,7 +94,7 @@ QColor RoundedSurface::currentColor() const
 {
     if (!target->isEnabled())
     {
-        return colors.disabled.isValid() ? colors.disabled : colors.normal;
+        return colors.disabled.isValid() ? colors.disabled.color() : colors.normal.color();
     }
     const auto *button = qobject_cast<const QAbstractButton *>(target);
     if (button && button->isDown() && colors.pressed.isValid())
@@ -107,9 +116,9 @@ QColor RoundedSurface::currentBorder() const
 {
     if (colors.focusBorder.isValid() && target->isEnabled() && target->hasFocus())
     {
-        return colors.focusBorder;
+        return colors.focusBorder.color();
     }
-    return colors.border;
+    return colors.border.color();
 }
 
 QColor RoundedSurface::currentText() const
@@ -119,7 +128,7 @@ QColor RoundedSurface::currentText() const
     {
         return palette.color(QPalette::Disabled, QPalette::ButtonText);
     }
-    const QColor text = colors.text.isValid() ? colors.text : palette.color(QPalette::Active, QPalette::ButtonText);
+    const QColor text = colors.text.isValid() ? colors.text.color() : palette.color(QPalette::Active, QPalette::ButtonText);
     const auto *button = qobject_cast<const QAbstractButton *>(target);
     if (button && button->isChecked() && colors.checkedText.isValid())
     {

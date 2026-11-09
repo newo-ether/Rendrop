@@ -56,20 +56,20 @@ QEasingCurve foldCurve()
     return curve;
 }
 
-const QColor helpColor(110, 115, 130);
-const QColor tileColor(0x2B, 0x2E, 0x35);
+const Theme::Tone &helpColor = Theme::textHelp;
+const Theme::Tone &tileColor = Theme::tile;
 
-QColor stateColor(ProjectState state)
+Theme::Tone stateColor(ProjectState state)
 {
     switch (state)
     {
-    case ProjectState::Rendering: return QColor(80, 150, 210);
-    case ProjectState::Finished: return QColor(90, 185, 120);
-    case ProjectState::Error: return QColor(225, 110, 110);
+    case ProjectState::Rendering: return Theme::info;
+    case ProjectState::Finished: return Theme::ok;
+    case ProjectState::Error: return Theme::error;
     case ProjectState::Loading:
     case ProjectState::Queued: break;
     }
-    return Look::accentColor.lighter(120);
+    return Theme::Tone(Look::accentColor.dark.lighter(120), Look::accentColor.light);
 }
 
 QString stateText(ProjectState state)
@@ -127,7 +127,7 @@ QWidget *card(QWidget *parent, QLayout *content, const QMargins &margins)
     return frame;
 }
 
-QLabel *label(QWidget *parent, int pointSize, const QColor &color)
+QLabel *label(QWidget *parent, int pointSize, const Theme::Tone &color)
 {
     auto *result = new QLabel(parent);
     result->setFont(Look::pixelFont(pointSize));
@@ -286,7 +286,7 @@ void ProgressOverview::paintEvent(QPaintEvent *)
     clip.addRoundedRect(bar, barHeight / 2.0, barHeight / 2.0);
     painter.save();
     painter.setClipPath(clip);
-    QColor track = multiNode ? QColor(150, 155, 170) : stateColor;
+    QColor track = multiNode ? Theme::textQuiet.color() : stateColor.color();
     track.setAlphaF(0.18f);
     painter.fillRect(bar, track);
     const int total = project.totalFrame;
@@ -315,7 +315,7 @@ void ProgressOverview::paintEvent(QPaintEvent *)
             {
                 continue;
             }
-            QColor fill = multiNode ? ProjectView::nodeColor(run.node) : stateColor;
+            QColor fill = multiNode ? ProjectView::nodeColor(run.node) : stateColor.color();
             if (run.leased)
             {
                 fill.setAlphaF(0.38f);
@@ -340,7 +340,7 @@ void ProgressOverview::paintEvent(QPaintEvent *)
         painter.setBrush(entry.color);
         painter.drawEllipse(QRectF(x, top + legendHeight / 2.0 - 4, 8, 8));
         x += 14;
-        painter.setPen(Look::textColor);
+        painter.setPen(Look::textColor.color());
         painter.drawText(QRectF(x, top, metrics.horizontalAdvance(entry.name) + 1, legendHeight),
             Qt::AlignVCenter | Qt::AlignLeft | Qt::TextDontClip, entry.name);
         x += metrics.horizontalAdvance(entry.name) + 8;
@@ -349,7 +349,7 @@ void ProgressOverview::paintEvent(QPaintEvent *)
         {
             count += QStringLiteral(" +%1").arg(entry.leased);
         }
-        painter.setPen(helpColor);
+        painter.setPen(helpColor.color());
         painter.drawText(QRectF(x, top, metrics.horizontalAdvance(count) + 1, legendHeight),
             Qt::AlignVCenter | Qt::AlignLeft | Qt::TextDontClip, count);
         x += metrics.horizontalAdvance(count) + 22;
@@ -589,7 +589,7 @@ void FrameGrid::paintEvent(QPaintEvent *event)
     if (groups.empty())
     {
         painter.setFont(Look::pixelFont(10));
-        painter.setPen(helpColor);
+        painter.setPen(helpColor.color());
         painter.drawText(rect(), Qt::AlignCenter, tr("No finished frames yet."));
         return;
     }
@@ -610,7 +610,7 @@ void FrameGrid::paintEvent(QPaintEvent *event)
                 item.group == hoveredHeader);
             if (headerHover > 0.0)
             {
-                QColor veil(255, 255, 255);
+                QColor veil = Theme::veil(255);
                 veil.setAlphaF(static_cast<float>(0.05 * headerHover));
                 painter.setPen(Qt::NoPen);
                 painter.setBrush(veil);
@@ -621,10 +621,10 @@ void FrameGrid::paintEvent(QPaintEvent *event)
             painter.setBrush(ProjectView::nodeColor(name));
             painter.drawEllipse(QRectF(item.rect.left() + 10, item.rect.center().y() - 4, 9, 9));
             painter.setFont(headerFont);
-            painter.setPen(Qt::white);
+            painter.setPen(Theme::textStrong.color());
             painter.drawText(item.rect.adjusted(28, 0, -110, 0), Qt::AlignVCenter | Qt::AlignLeft, name);
             painter.setFont(countFont);
-            painter.setPen(helpColor);
+            painter.setPen(helpColor.color());
             painter.drawText(item.rect.adjusted(0, 0, -32, 0), Qt::AlignVCenter | Qt::AlignRight,
                 tr("%n frame(s)", nullptr, static_cast<int>(group.frames.size())));
 
@@ -633,7 +633,7 @@ void FrameGrid::paintEvent(QPaintEvent *event)
             painter.save();
             painter.translate(item.rect.right() - 14.0, item.rect.center().y() + 0.5);
             painter.rotate(-90.0 * (1.0 - open));
-            painter.setPen(QPen(Look::mix(helpColor, Qt::white, headerHover), 1.6, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+            painter.setPen(QPen(Look::mix(helpColor, Theme::textStrong, headerHover), 1.6, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
             painter.setBrush(Qt::NoBrush);
             const QPointF chevron[] = {QPointF(-4.0, -2.0), QPointF(0.0, 2.0), QPointF(4.0, -2.0)};
             painter.drawPolyline(chevron, 3);
@@ -648,7 +648,7 @@ void FrameGrid::paintEvent(QPaintEvent *event)
         const QRectF tile(item.rect.left(), item.rect.top(), item.rect.width(), item.rect.width());
         QPainterPath shape;
         shape.addRoundedRect(tile, 10, 10);
-        painter.fillPath(shape, tileColor);
+        painter.fillPath(shape, tileColor.color());
         const QPixmap *thumbnail = thumbnails.object(item.frame);
         if (thumbnail && !thumbnail->isNull())
         {
@@ -670,7 +670,7 @@ void FrameGrid::paintEvent(QPaintEvent *event)
                 requestThumbnail(item.frame);
             }
             painter.setFont(countFont);
-            painter.setPen(helpColor);
+            painter.setPen(helpColor.color());
             const QString text = unreadable.contains(item.frame)
                 ? QFileInfo(queue->framePath(project.id, item.frame)).suffix().toUpper()
                 : QStringLiteral("...");
@@ -678,17 +678,17 @@ void FrameGrid::paintEvent(QPaintEvent *event)
         }
         if (hover > 0.0)
         {
-            QColor veil(255, 255, 255);
+            QColor veil = Theme::veil(255);
             veil.setAlphaF(static_cast<float>(0.08 * hover));
             painter.fillPath(shape, veil);
-            QColor ring = Look::accentColor.lighter(130);
+            QColor ring = Theme::accentInk;
             ring.setAlphaF(static_cast<float>(hover));
             painter.setPen(QPen(ring, 1.5));
             painter.setBrush(Qt::NoBrush);
             painter.drawRoundedRect(tile.adjusted(0.75, 0.75, -0.75, -0.75), 9.5, 9.5);
         }
         painter.setFont(countFont);
-        painter.setPen(Look::mix(helpColor, Qt::white, hover));
+        painter.setPen(Look::mix(helpColor, Theme::textStrong, hover));
         painter.drawText(QRectF(item.rect.left(), tile.bottom(), item.rect.width(), labelHeight),
             Qt::AlignCenter, QString::number(item.frame));
         painter.restore();
@@ -895,13 +895,13 @@ ProjectPage::ProjectPage(RenderQueue *queue, const QString &localName, QWidget *
     backButton->setCursor(Qt::PointingHandCursor);
     backButton->setToolTip(tr("Back to the queue"));
     titleRow->addWidget(backButton);
-    nameLabel = label(this, 14, Qt::white);
+    nameLabel = label(this, 14, Theme::textStrong);
     nameLabel->setFont(Look::pixelFont(14, QFont::DemiBold));
     nameLabel->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Preferred);
     titleRow->addWidget(nameLabel, 1);
     stateLabel = label(this, 10, Look::textColor);
     titleRow->addWidget(stateLabel);
-    percentLabel = label(this, 16, Qt::white);
+    percentLabel = label(this, 16, Theme::textStrong);
     percentLabel->setFont(Look::monoFont(15, QFont::Bold));
     percentLabel->setMinimumWidth(QFontMetrics(percentLabel->font()).horizontalAdvance(QStringLiteral("100%")) + 4);
     percentLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);

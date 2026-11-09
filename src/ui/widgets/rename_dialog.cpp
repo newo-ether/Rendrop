@@ -11,17 +11,14 @@ RenameDialog::RenameDialog(QString currentName, QWidget *parent) :
     ui(new Ui::RenameDialog)
 {
     ui->setupUi(this);
-    setWindowFlags(windowFlags() & ~Qt::WindowContextHelpButtonHint);
-    Look::styleDialog(this);
 
     // The boxes are painted antialiased.
     RoundedSurface::install(ui->nameEdit, 4, RoundedSurface::Colors {
-        QColor(43, 45, 48), QColor(), QColor(), QColor(), QColor(85, 90, 102), QColor(110, 110, 180)});
+        Theme::row, {}, {}, {}, Theme::outline, Theme::accent});
     for (QPushButton *button : {ui->okButton, ui->cancelButton})
     {
         RoundedSurface::install(button, 6, RoundedSurface::Colors {
-            QColor(0x33, 0x38, 0x42), QColor(0x4B, 0x53, 0x62), QColor(0x2B, 0x2F, 0x38), QColor(),
-            QColor(0x55, 0x5A, 0x66)});
+            Theme::control, Theme::controlHover, Theme::controlPressed, {}, Theme::outline});
         Look::setPadding(button, QMargins(6, 6, 6, 6));
     }
 
@@ -33,6 +30,8 @@ RenameDialog::RenameDialog(QString currentName, QWidget *parent) :
 
     connect(ui->okButton, &QPushButton::clicked, this, &QDialog::accept);
     connect(ui->cancelButton, &QPushButton::clicked, this, &QDialog::reject);
+    // The parent is the control that opened it.
+    Look::stylePopover(this, parent);
 }
 
 RenameDialog::~RenameDialog()

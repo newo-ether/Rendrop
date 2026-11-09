@@ -94,6 +94,19 @@ QueuePage::QueuePage(AppController *controller, QWidget *parent):
     dropFileTip->setGraphicsEffect(opacity);
 
     QObject::connect(ui->renderButton, &QPushButton::clicked, this, &QueuePage::onRenderButtonClicked);
+    // The page's gaps become items of their own, so the log card can carry
+    // the gap in front of it while it grows and shrinks; layout spacing next
+    // to a zero-height card would appear and vanish in one step.
+    {
+        QBoxLayout *page = ui->queuePageLayout;
+        const int gap = page->spacing();
+        page->setSpacing(0);
+        page->insertSpacing(page->indexOf(ui->scrollAreaContainer), gap);
+        auto *logGap = new QSpacerItem(0, 0, QSizePolicy::Minimum, QSizePolicy::Fixed);
+        page->insertItem(page->indexOf(ui->logContainer), logGap);
+        page->insertSpacing(page->indexOf(ui->outputContainer), gap);
+        ui->logContainer->setLeadingGap(logGap, gap);
+    }
     setLogShown(false);
     QObject::connect(ui->logToggleButton, &QPushButton::clicked, this, [this]() {
         setLogShown(!ui->logContainer->isShown());
@@ -197,8 +210,8 @@ void QueuePage::installRoundedSurfaces()
     // Everything here is painted: RoundedSurface draws the backgrounds and
     // fades them, RendropStyle the controls; palettes carry the text colors.
     // The log card styles itself.
-    const QColor frame(0x2C, 0x31, 0x3C);
-    const QColor content(26, 28, 32);
+    const Theme::Tone &frame = Theme::frame;
+    const Theme::Tone &content = Theme::surface;
     RoundedSurface::install(ui->selectorContainer, 12, frame);
     RoundedSurface::install(ui->selectorWidgetContent, 12, content);
     RoundedSurface::install(ui->scrollAreaContainer, 12, frame);
@@ -206,28 +219,35 @@ void QueuePage::installRoundedSurfaces()
     Look::clearScrollArea(ui->scrollArea);
     SmoothScroll::install(ui->scrollArea);
     RoundedSurface::install(ui->outputContainer, 15, frame);
-    RoundedSurface::install(ui->outputText, 15, QColor(80, 80, 130));
-    Look::setTextColor(ui->outputText, QColor(200, 200, 240));
+    RoundedSurface::install(ui->outputText, 15, Theme::outputFill);
+    Look::setTextColor(ui->outputText, Theme::outputText);
     ui->outputLabel->setContentsMargins(10, 0, 10, 0);
     // Blender's last line, same face as the log it comes from.
     ui->outputLabel->setFont(Look::monoFont(8));
-    Look::setTextColor(ui->outputLabel, QColor(180, 180, 200));
+    Look::setTextColor(ui->outputLabel, Theme::logText);
     RoundedSurface::install(ui->selectorComboBox, 8, RoundedSurface::Colors {
-        QColor(0x33, 0x38, 0x42), QColor(0x4B, 0x53, 0x62), QColor(), QColor(0x55, 0x59, 0x5F), QColor(65, 65, 85)});
-    Look::setTextColor(ui->selectorComboBox, Qt::white, QColor(0xAA, 0xAA, 0xAA));
-    RoundedSurface::Colors logToggle {Qt::transparent, QColor(255, 255, 255, 18), QColor(), QColor()};
-    logToggle.text = QColor(150, 150, 190);
-    logToggle.hoverText = Qt::white;
+        Theme::control, Theme::controlHover, {}, Theme::disabledFill, Theme::controlBorder});
+    Look::setTextColor(ui->selectorComboBox, Theme::textStrong, Theme::textDisabledLight);
+    RoundedSurface::Colors logToggle {Qt::transparent, Theme::Tone(QColor(255, 255, 255, 18), QColor(0, 0, 0, 14)), {}, {}};
+    logToggle.text = Theme::logToggleText;
+    logToggle.hoverText = Theme::textStrong;
     RoundedSurface::install(ui->logToggleButton, 8, logToggle);
     Look::setPadding(ui->logToggleButton, QMargins(8, 2, 8, 2));
     RoundedSurface::install(ui->renderButton, 10, RoundedSurface::Colors {
-        QColor(90, 90, 150),
-        QColor(120, 120, 180),
-        QColor(70, 70, 130),
-        QColor(0x3A, 0x3D, 0x45)
+        Theme::accentFill,
+        Theme::accentHover,
+        Theme::accentPressed,
+        Theme::Tone(QColor(0x3A, 0x3D, 0x45), QColor(0xC9, 0xCC, 0xD3))
     });
-    Look::setTextColor(ui->renderButton, Qt::white, QColor(0xAA, 0xAA, 0xAA));
+    Look::setTextColor(ui->renderButton, Theme::onAccent, Theme::Tone(QColor(0xAA, 0xAA, 0xAA), QColor(0xF4, 0xF5, 0xF7)));
     Look::setPadding(ui->renderButton, QMargins(6, 6, 6, 6));
+    // The icon is drawn in a resolved color.
+    QObject::connect(Theme::notifier(), &Theme::Notifier::changed, this, [this]() {
+        ui->logToggleButton->setIcon(Look::terminalIcon(
+            ui->logContainer->isShown() ? Theme::accentInk : Theme::logToggleText));
+        // The summary's rich text carries its colors.
+        updateStatisticInfo();
+    });
 }
 
 void QueuePage::setLogShown(bool shown)
@@ -237,7 +257,7 @@ void QueuePage::setLogShown(bool shown)
     ui->logToggleButton->setText(QString());
     ui->logToggleButton->setFixedSize(32, 24);
     ui->logToggleButton->setIconSize(QSize(16, 16));
-    ui->logToggleButton->setIcon(Look::terminalIcon(shown ? Look::accentColor.lighter(130) : QColor(150, 150, 190)));
+    ui->logToggleButton->setIcon(Look::terminalIcon(shown ? Theme::accentInk : Theme::logToggleText));
     ui->logToggleButton->setToolTip(shown ? tr("Hide log") : tr("Show log"));
     ui->logToggleButton->setAccessibleName(ui->logToggleButton->toolTip());
 }
@@ -816,8 +836,11 @@ void QueuePage::updateStatisticInfo()
         detail += QStringLiteral(" · ") + tr("ETA %1").arg(eta);
     }
     ui->summaryLabel->setText(
-        QStringLiteral("<span style=\"color:#FFFFFF\">%1</span>&nbsp;&nbsp;<span style=\"color:#6E7382\">%2</span>")
-            .arg(tr("Frames %1 / %2").arg(finishedFrames).arg(totalFrames).toHtmlEscaped(), detail.toHtmlEscaped())
+        QStringLiteral("<span style=\"color:%1\">%2</span>&nbsp;&nbsp;<span style=\"color:%3\">%4</span>")
+            .arg(Theme::textStrong.color().name(),
+                 tr("Frames %1 / %2").arg(finishedFrames).arg(totalFrames).toHtmlEscaped(),
+                 Theme::placeholder.color().name(),
+                 detail.toHtmlEscaped())
     );
     ui->summaryProgress->setValue(totalFrames == 0 ? 0.0 : 100.0 * finishedFrames / totalFrames);
 }

@@ -2,26 +2,48 @@
 
 #include <algorithm>
 #include <cmath>
+#include <functional>
 
+#include <QAbstractAnimation>
 #include <QAbstractScrollArea>
 #include <QApplication>
-#include <QEasingCurve>
 #include <QScrollBar>
-#include <QVariantAnimation>
 #include <QWheelEvent>
 
 #include "ui/motion/smooth_scroll.h"
-#include "ui/motion/transition.h"
 
 namespace {
 
-// Both a wheel notch and a jump to a section ease in and out on a quart
-// Bezier, firmer than the list's cubic; a notch arriving mid-way carries the
-// current speed into the next move.
-constexpr int wheelMs = 220;
-constexpr int jumpMinMs = 260;
-constexpr int jumpMaxMs = 520;
+// Time constant of the wheel chase: every chaseTauMs the view closes about
+// 63% of what is left, so a notch is 90% there after ~2.3 tau and the view
+// answers on the very next frame. Browsers land in the same 100-200 ms.
+constexpr qreal chaseTauMs = 45.0;
+// A jump to a section follows the same curve, slower: it covers a long way
+// at once and would otherwise look like a cut.
+constexpr qreal jumpTauMs = 90.0;
+// Closer than this the chase lands on the target.
+constexpr qreal chaseLand = 0.5;
 constexpr char handleName[] = "rendropSmoothScroll";
+
+// An open-ended animation that hands each frame's time to a callback, so the
+// chase runs on the same refresh-rate ticks as every other animation.
+class FrameTicker : public QAbstractAnimation
+{
+public:
+    FrameTicker(QObject *parent, std::function<void (int)> step):
+        QAbstractAnimation(parent),
+        step(std::move(step))
+    {
+    }
+
+    int duration() const override { return -1; }
+
+protected:
+    void updateCurrentTime(int currentTime) override { step(currentTime); }
+
+private:
+    std::function<void (int)> step;
+};
 
 }
 
@@ -36,13 +58,13 @@ SmoothScroll::SmoothScroll(QAbstractScrollArea *area):
     // Dragging the handle, keys or code moving the bar take over.
     QObject::connect(bar, &QScrollBar::sliderPressed, this, &SmoothScroll::stop);
     QObject::connect(bar, &QScrollBar::valueChanged, this, [this](int value) {
-        if (animation && value != written)
+        if (chase && value != written)
         {
             stop();
         }
     });
     QObject::connect(bar, &QScrollBar::rangeChanged, this, [this](int minimum, int maximum) {
-        target = std::clamp(target, minimum, maximum);
+        goal = std::clamp(goal, static_cast<qreal>(minimum), static_cast<qreal>(maximum));
     });
 }
 
@@ -71,61 +93,71 @@ void SmoothScroll::scrollTo(QAbstractScrollArea *area, int value)
         }
         return;
     }
-    const int clamped = std::clamp(value, scroll->bar->minimum(), scroll->bar->maximum());
-    const int distance = std::abs(clamped - scroll->bar->value());
-    // Longer trips take a little longer, within bounds.
-    const int duration = std::clamp(jumpMinMs + distance / 4, jumpMinMs, jumpMaxMs);
-    scroll->animateTo(clamped, duration);
-    scroll->jumping = scroll->animation != nullptr;
+    // The same chase as the wheel, so both move on one curve; a chase already
+    // running just gets the new goal.
+    scroll->tauMs = jumpTauMs;
+    scroll->chaseTo(value);
+    scroll->jumping = scroll->chase != nullptr;
 }
 
 bool SmoothScroll::isJumping(const QAbstractScrollArea *area)
 {
     const SmoothScroll *scroll = of(area);
-    return scroll && scroll->jumping && scroll->animation;
+    return scroll && scroll->jumping && scroll->chase;
 }
 
 void SmoothScroll::stop()
 {
     jumping = false;
-    if (animation)
+    if (chase)
     {
-        animation->stop();
+        chase->stop();
     }
 }
 
-void SmoothScroll::animateTo(int value, int durationMs)
+void SmoothScroll::write(qreal value)
 {
-    qreal from = bar->value();
-    qreal speed = 0.0; // units per ms
-    if (animation)
-    {
-        if (moveMs > 0)
-        {
-            const qreal s = std::clamp(static_cast<qreal>(animation->currentTime()) / moveMs, 0.0, 1.0);
-            from = move.at(s);
-            speed = move.rate(s) / moveMs;
-        }
-        animation->stop();
-    }
-    target = value;
-    jumping = false;
-    if (value == bar->value() && speed == 0.0)
+    written = std::clamp(static_cast<int>(std::lround(value)), bar->minimum(), bar->maximum());
+    bar->setValue(written);
+}
+
+void SmoothScroll::chaseTo(qreal value)
+{
+    goal = std::clamp(value, static_cast<qreal>(bar->minimum()), static_cast<qreal>(bar->maximum()));
+    if (chase)
     {
         return;
     }
-    move = Look::Move::make(from, static_cast<qreal>(value), Look::quartInOut, speed, durationMs);
-    moveMs = durationMs;
-    auto *next = new QVariantAnimation(this);
-    next->setStartValue(0.0);
-    next->setEndValue(1.0);
-    next->setDuration(durationMs);
-    QObject::connect(next, &QVariantAnimation::valueChanged, this, [this](const QVariant &current) {
-        written = std::clamp(static_cast<int>(std::lround(move.at(current.toReal()))), bar->minimum(), bar->maximum());
-        bar->setValue(written);
-    });
-    animation = next;
-    next->start(QAbstractAnimation::DeleteWhenStopped);
+    position = bar->value();
+    if (std::abs(goal - position) < chaseLand)
+    {
+        return;
+    }
+    chaseMs = 0;
+    auto *ticker = new FrameTicker(this, [this](int ms) { chaseStep(ms); });
+    chase = ticker;
+    ticker->start(QAbstractAnimation::DeleteWhenStopped);
+}
+
+void SmoothScroll::chaseStep(int elapsedMs)
+{
+    const int dt = elapsedMs - chaseMs;
+    chaseMs = elapsedMs;
+    if (dt <= 0)
+    {
+        return;
+    }
+    // Frame-rate independent: two 4 ms frames cover what one 8 ms frame does.
+    position = goal + (position - goal) * std::exp(-dt / tauMs);
+    if (std::abs(goal - position) < chaseLand)
+    {
+        position = goal;
+    }
+    write(position);
+    if (position == goal && chase)
+    {
+        chase->stop();
+    }
 }
 
 bool SmoothScroll::eventFilter(QObject *watched, QEvent *event)
@@ -144,15 +176,14 @@ bool SmoothScroll::eventFilter(QObject *watched, QEvent *event)
         stop();
         return false;
     }
-    // Same distance per notch as Qt's own wheel scrolling, only eased.
+    // Same distance per notch as Qt's own wheel scrolling.
     const qreal step = QApplication::wheelScrollLines() * bar->singleStep() * (notches / 120.0);
     // Notches in quick succession add up from where the last one was going.
-    const int from = animation && !jumping ? target : bar->value();
-    const int to = std::clamp(static_cast<int>(std::lround(from - step)), bar->minimum(), bar->maximum());
-    if (to != from || animation)
-    {
-        animateTo(to, wheelMs);
-    }
+    // A section jump on its way becomes wheel scrolling from where it was going.
+    const qreal from = chase ? goal : static_cast<qreal>(bar->value());
+    jumping = false;
+    tauMs = chaseTauMs;
+    chaseTo(from - step);
     wheel->accept();
     return true;
 }

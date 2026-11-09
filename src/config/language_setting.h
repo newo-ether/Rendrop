@@ -15,7 +15,8 @@ enum Index
     Chinese = 1
 };
 
-// The stored locale, e.g. "zh_CN". A missing file is created as en_US.
+// The stored locale, e.g. "zh_CN". A missing file is created from the
+// system display language: zh_CN for any Chinese, en_US otherwise.
 QString load();
 bool save(const QString &locale);
 

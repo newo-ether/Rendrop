@@ -24,7 +24,7 @@ FileBar::FileBar(QWidget *parent, const ProjectInfo &project):
     resolutionLoadingBar(nullptr),
     renderEngineLoadingBar(nullptr),
     loadingStyle(Style(Color(80, 150, 210))),
-    queueStyle(Style(Color(60, 60, 60))),
+    queueStyle(Style(Theme::isLight() ? Color(205, 209, 217) : Color(60, 60, 60))),
     errorStyle(Style(Color(180, 60, 80))),
     renderingStyle(Style(Color(80, 150, 210))),
     finishedStyle(Style(Color(60, 150, 80))),
@@ -49,31 +49,46 @@ FileBar::FileBar(QWidget *parent, const ProjectInfo &project):
 
     // RoundedSurface paints the pills and fades them between states;
     // RendropStyle draws the labels with the surface's text color.
-    const QColor outline(0x55, 0x5A, 0x66);
+    const Theme::Tone &outline = Theme::outline;
+    const Theme::Tone pill(QColor(40, 42, 42), QColor(0xFF, 0xFF, 0xFF));
     RoundedSurface::install(ui->fileNameButton, 8, RoundedSurface::Colors {
-        QColor(0x33, 0x38, 0x42), QColor(0x4B, 0x53, 0x62), QColor(0x2B, 0x2F, 0x38), QColor(), outline});
+        Theme::control, Theme::controlHover, Theme::controlPressed, {}, outline});
     Look::setPadding(ui->fileNameButton, QMargins(12, 0, 12, 0), Qt::AlignLeft | Qt::AlignVCenter);
     RoundedSurface::install(ui->frameButton, 8, RoundedSurface::Colors {
-        QColor(40, 42, 42), QColor(50, 52, 52), QColor(30, 32, 32), QColor(), outline});
+        pill, Theme::Tone(QColor(50, 52, 52), QColor(0xEE, 0xF0, 0xF3)),
+        Theme::Tone(QColor(30, 32, 32), QColor(0xE3, 0xE6, 0xEB)), {}, outline});
     Look::setPadding(ui->frameButton, QMargins());
     for (QLabel *label : {ui->resolutionLabel, ui->renderEngineLabel})
     {
-        Look::setTextColor(label, Qt::white);
-        RoundedSurface::install(label, 8, RoundedSurface::Colors {
-            QColor(40, 42, 42), QColor(), QColor(), QColor(), outline});
+        Look::setTextColor(label, Theme::textStrong);
+        RoundedSurface::install(label, 8, RoundedSurface::Colors {pill, {}, {}, {}, outline});
     }
     for (QPushButton *button : {ui->reloadButton, ui->deleteButton})
     {
-        Look::setTextColor(button, Qt::white, QColor(0xAA, 0xAA, 0xAA));
+        Look::setTextColor(button, Theme::textStrong, Theme::textDisabledLight);
         RoundedSurface::install(button, 6, RoundedSurface::Colors {
-            QColor(0x33, 0x38, 0x42), QColor(0x4B, 0x53, 0x62), QColor(0x2B, 0x2F, 0x38), QColor(0x55, 0x59, 0x5F), outline});
+            Theme::control, Theme::controlHover, Theme::controlPressed, Theme::disabledFill, outline});
         Look::setPadding(button, QMargins());
     }
+    const Theme::Tone glyphTone(QColor(), QColor(0x4A, 0x4E, 0x5A));
+    Look::setGlyphIcon(ui->reloadButton, QStringLiteral(":/icon/retry.ico"), glyphTone);
+    Look::setGlyphIcon(ui->deleteButton, QStringLiteral(":/icon/close.ico"), glyphTone);
     ui->dragHandle->setAttribute(Qt::WA_Hover);
     ui->dragHandle->setCursor(Qt::OpenHandCursor);
     ui->dragHandle->setToolTip(tr("Drag to reorder"));
     ui->dragHandle->installEventFilter(this);
-    Look::setTextColor(ui->progressBarLabel, Qt::white);
+    Look::setTextColor(ui->progressBarLabel, Theme::textStrong);
+    // The resting outline is a plain gray that differs per scheme.
+    QObject::connect(Theme::notifier(), &Theme::Notifier::changed, this, [this]() {
+        queueStyle = Style(Theme::isLight() ? Color(205, 209, 217) : Color(60, 60, 60));
+        if (this->project.state == ProjectState::Queued)
+        {
+            targetStyle = queueStyle;
+            style = queueStyle;
+            velocity = Style::zero();
+        }
+        ui->fileBarContentWidget->update();
+    });
 
     frameLoadingBar = new LoadingBar(ui->frameButton);
     frameLoadingBar->setGeometry(0, 0, ui->frameButton->width(), ui->frameButton->height());
@@ -181,7 +196,7 @@ void FileBar::paintDragHandle()
     QPainter painter(handle);
     painter.setRenderHint(QPainter::Antialiasing);
     painter.setPen(Qt::NoPen);
-    painter.setBrush(Look::mix(QColor(0x6A, 0x70, 0x7E), QColor(0xD0, 0xD3, 0xDC), hover));
+    painter.setBrush(Look::mix(Theme::Tone(QColor(0x6A, 0x70, 0x7E), QColor(0xA4, 0xA9, 0xB4)), Theme::textHover, hover));
     // Two columns of three dots, centered.
     constexpr qreal dot = 2.6;
     constexpr qreal gapX = 5.0;
@@ -252,7 +267,7 @@ bool FileBar::eventFilter(QObject *object, QEvent *event)
         QPainter painter(content);
         painter.setRenderHint(QPainter::Antialiasing);
         // Pressed sinks below the resting color, like the pills' pressed state.
-        painter.setBrush(Look::mix(Look::mix(QColor(43, 45, 48), QColor(52, 55, 62), hover), QColor(35, 37, 41), press));
+        painter.setBrush(Look::mix(Look::mix(Theme::row, Theme::rowHover, hover), Theme::rowPressed, press));
         painter.setPen(Qt::NoPen);
         painter.drawRoundedRect(ui->fileBarContentWidget->rect(), 16, 16);
         // Half-pixel inset keeps the 1px outline on whole device pixels.
@@ -325,7 +340,8 @@ void FileBar::onFrameButtonClicked()
     {
         return;
     }
-    FrameRangeDialog dialog(project.frameStart, project.frameEnd, project.frameStep, this);
+    // Opens as a popover under the button.
+    FrameRangeDialog dialog(project.frameStart, project.frameEnd, project.frameStep, ui->frameButton);
     if (dialog.exec() == QDialog::Accepted)
     {
         emit frameRangeRequested(
@@ -339,7 +355,7 @@ void FileBar::onFrameButtonClicked()
 
 void FileBar::onFileNameButtonClicked()
 {
-    RenameDialog dialog(project.name, this);
+    RenameDialog dialog(project.name, ui->fileNameButton);
     if (dialog.exec() == QDialog::Accepted && !dialog.getName().isEmpty())
     {
         emit renameRequested(project.id, dialog.getName());

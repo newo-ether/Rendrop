@@ -5,7 +5,10 @@
 
 #include <QString>
 
+// Qt's headers may have defined it already.
+#ifndef NOMINMAX
 #define NOMINMAX
+#endif
 #include <windows.h>
 
 class SimpleProcess

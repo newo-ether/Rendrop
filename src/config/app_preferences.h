@@ -25,6 +25,8 @@ struct AppPreferences
     bool launchAtLogin = true;
     // Soft drop shadows under the large cards.
     bool shadows = true;
+    // Color scheme: "system", "dark" or "light".
+    QString theme = QStringLiteral("system");
     // The "keeps running in the tray" balloon has been shown once already.
     bool trayHintShown = false;
     // Blender processes that may read .blend files at the same time when
@@ -56,6 +58,7 @@ inline AppPreferences load()
     preferences.launchAtLogin = object.value(QStringLiteral("launchAtLogin")).toBool(preferences.launchAtLogin);
     preferences.shadows = object.value(QStringLiteral("shadows")).toBool(preferences.shadows);
     preferences.trayHintShown = object.value(QStringLiteral("trayHintShown")).toBool(preferences.trayHintShown);
+    preferences.theme = object.value(QStringLiteral("theme")).toString(preferences.theme);
     preferences.maxConcurrentLoads = std::clamp(
         object.value(QStringLiteral("maxConcurrentLoads")).toInt(preferences.maxConcurrentLoads),
         AppPreferencesLimits::minConcurrentLoads,
@@ -73,6 +76,7 @@ inline bool save(const AppPreferences &preferences)
     const QJsonObject object {
         {QStringLiteral("launchAtLogin"), preferences.launchAtLogin},
         {QStringLiteral("shadows"), preferences.shadows},
+        {QStringLiteral("theme"), preferences.theme},
         {QStringLiteral("trayHintShown"), preferences.trayHintShown},
         {QStringLiteral("maxConcurrentLoads"), preferences.maxConcurrentLoads}
     };

@@ -12,7 +12,8 @@ DropFileTip::DropFileTip(QWidget *parent):
 {
     ui->setupUi(this);
     setAttribute(Qt::WA_TransparentForMouseEvents);
-    Look::setTextColor(ui->label, Qt::white);
+    Look::setTextColor(ui->label, Theme::textStrong);
+    Look::setGlyphPixmap(ui->icon, QStringLiteral(":/icon/3d_file.ico"), Theme::Tone(QColor(), QColor(0xB4, 0xB8, 0xC2)));
     ui->label->setText(tr("Drop your Blender Projects here."));
 }
 

@@ -22,13 +22,13 @@
 
 namespace {
 
-const QColor workingColor(110, 110, 180);
-const QColor sharingColor(90, 160, 220);
-const QColor idleColor(90, 185, 120);
-const QColor busyColor(215, 165, 70);
-const QColor offColor(110, 115, 130);
-const QColor nameColor(224, 224, 232);
-const QColor cellColor(170, 174, 186);
+const Theme::Tone &workingColor = Theme::accent;
+const Theme::Tone &sharingColor = Theme::sharing;
+const Theme::Tone &idleColor = Theme::ok;
+const Theme::Tone &busyColor = Theme::warning;
+const Theme::Tone &offColor = Theme::textHelp;
+const Theme::Tone &nameColor = Theme::textName;
+const Theme::Tone &cellColor = Theme::textCell;
 
 constexpr int headerHeight = 30;
 constexpr int rowHeight = 32;
@@ -143,7 +143,7 @@ void NodeTable::paintEvent(QPaintEvent *)
         tr("Node"), tr("Address"), tr("State"), tr("s/frame"), tr("Lease"), tr("Leases done")
     };
     painter.setFont(headerFont);
-    painter.setPen(Look::dimTextColor);
+    painter.setPen(Look::dimTextColor.color());
     for (int column = 0; column < headers.size(); ++column)
     {
         QRect area = cell(column, 0, headerHeight);
@@ -154,7 +154,7 @@ void NodeTable::paintEvent(QPaintEvent *)
         painter.drawText(area, Qt::AlignVCenter | Qt::AlignLeft,
             cellMetrics.elidedText(headers[column], Qt::ElideRight, area.width()));
     }
-    painter.setPen(QPen(QColor(0x33, 0x35, 0x3C), 1));
+    painter.setPen(QPen(Theme::track.color(), 1));
     painter.drawLine(QPointF(left, headerHeight - 0.5), QPointF(width() - left, headerHeight - 0.5));
 
     int y = headerHeight;
@@ -164,16 +164,16 @@ void NodeTable::paintEvent(QPaintEvent *)
         if (index % 2 == 1)
         {
             painter.setPen(Qt::NoPen);
-            painter.setBrush(QColor(255, 255, 255, 6));
+            painter.setBrush(Theme::isLight() ? QColor(0, 0, 0, 7) : QColor(255, 255, 255, 6));
             painter.drawRoundedRect(QRectF(left / 2.0, y + 1, width() - left, rowHeight - 2), 6, 6);
         }
         painter.setPen(Qt::NoPen);
-        painter.setBrush(row.dot);
+        painter.setBrush(row.dot.color());
         painter.drawEllipse(QRectF(edges[0] + 2, y + rowHeight / 2.0 - 4, 8, 8));
 
         const QRect nameArea = cell(0, y, rowHeight).adjusted(16, 0, 0, 0);
         painter.setFont(nameFont);
-        painter.setPen(nameColor);
+        painter.setPen(nameColor.color());
         painter.drawText(nameArea, Qt::AlignVCenter | Qt::AlignLeft,
             nameMetrics.elidedText(row.name, Qt::ElideRight, nameArea.width()));
 
@@ -184,7 +184,7 @@ void NodeTable::paintEvent(QPaintEvent *)
             // State is a word; the other columns are numbers.
             const bool number = column != 2;
             painter.setFont(number ? numberFont : cellFont);
-            painter.setPen(column == 1 ? Look::dimTextColor : cellColor);
+            painter.setPen(column == 1 ? Look::dimTextColor.color() : cellColor.color());
             painter.drawText(area, Qt::AlignVCenter | Qt::AlignLeft,
                 (number ? numberMetrics : cellMetrics).elidedText(*values[column - 1], Qt::ElideRight, area.width()));
         }
@@ -206,16 +206,16 @@ void NodeTable::paintEvent(QPaintEvent *)
             const QPointF centre(width() / 2.0, groupTop + diameter / 2.0);
             const QRectF ring(centre.x() - diameter / 2.0, centre.y() - diameter / 2.0, diameter, diameter);
             painter.setBrush(Qt::NoBrush);
-            painter.setPen(QPen(QColor(255, 255, 255, 20), stroke));
+            painter.setPen(QPen(Theme::veil(20), stroke));
             painter.drawEllipse(ring);
-            painter.setPen(QPen(workingColor.lighter(130), stroke, Qt::SolidLine, Qt::RoundCap));
+            painter.setPen(QPen(Theme::accentInk.color(), stroke, Qt::SolidLine, Qt::RoundCap));
             // Qt angles are counter-clockwise in 1/16 degree; negate to spin clockwise.
             painter.drawArc(ring, -spinAngle * 16, 100 * 16);
             textArea.setTop(static_cast<int>(centre.y() + diameter / 2.0 + gap));
             textArea.setHeight(cellMetrics.height() * 3);
         }
         painter.setFont(cellFont);
-        painter.setPen(Look::dimTextColor);
+        painter.setPen(Look::dimTextColor.color());
         painter.drawText(textArea,
             (searching ? Qt::AlignHCenter | Qt::AlignTop : Qt::AlignCenter) | Qt::TextWordWrap, emptyText);
     }
@@ -237,7 +237,7 @@ NodesPage::NodesPage(NodeAgent *agent, RenderQueue *queue, const LoadMonitor *mo
     selfText->setSpacing(4);
     selfName = new QLabel(this);
     selfName->setFont(Look::pixelFont(13, QFont::DemiBold));
-    Look::setTextColor(selfName, Qt::white);
+    Look::setTextColor(selfName, Theme::textStrong);
     selfState = new QLabel(this);
     selfState->setFont(Look::pixelFont(10));
     Look::setTextColor(selfState, cellColor);
@@ -246,13 +246,13 @@ NodesPage::NodesPage(NodeAgent *agent, RenderQueue *queue, const LoadMonitor *mo
     selfLayout->addLayout(selfText, 1);
     selfLoad = new QLabel(this);
     selfLoad->setFont(Look::monoFont(9));
-    Look::setTextColor(selfLoad, QColor(150, 155, 170));
+    Look::setTextColor(selfLoad, Theme::textQuiet);
     selfLoad->setToolTip(tr("Load from programs other than Rendrop, averaged over the busy window"));
     selfLayout->addWidget(selfLoad);
     selfLayout->addSpacing(18);
     acceptLabel = new QLabel(tr("Accept work"), this);
     acceptLabel->setFont(Look::pixelFont(10, QFont::Medium));
-    Look::setTextColor(acceptLabel, cellColor, QColor(100, 104, 115));
+    Look::setTextColor(acceptLabel, cellColor, Theme::textFaint);
     acceptLabel->setToolTip(tr("Let other Rendrop nodes render on this machine while it is idle"));
     selfLayout->addWidget(acceptLabel);
     acceptSwitch = new ToggleSwitch(this);
@@ -265,7 +265,7 @@ NodesPage::NodesPage(NodeAgent *agent, RenderQueue *queue, const LoadMonitor *mo
     auto *tableHeader = new QHBoxLayout();
     auto *tableTitle = new QLabel(tr("Render group"), this);
     tableTitle->setFont(Look::pixelFont(12, QFont::DemiBold));
-    Look::setTextColor(tableTitle, QColor(150, 155, 170));
+    Look::setTextColor(tableTitle, Theme::textQuiet);
     tableHeader->addWidget(tableTitle);
     tableHeader->addStretch(1);
     manageButton = new QPushButton(tr("Manage nodes..."), this);
@@ -323,9 +323,9 @@ void NodesPage::setAgent(NodeAgent *newAgent)
     }
 }
 
-QString NodesPage::describeSelf(const NodeAgent::Snapshot &snapshot, QColor *dot)
+QString NodesPage::describeSelf(const NodeAgent::Snapshot &snapshot, Theme::Tone *dot)
 {
-    QColor color = offColor;
+    Theme::Tone color = offColor;
     QString text;
     switch (snapshot.workerState)
     {
@@ -380,9 +380,10 @@ void NodesPage::refresh()
     }
     const NodeAgent::Snapshot snapshot = agent->snapshot();
     selfName->setText(snapshot.name);
-    QColor dot;
+    Theme::Tone dot;
     selfState->setText(describeSelf(snapshot, &dot));
-    Look::setTextColor(selfState, dot.lighter(130));
+    // Lifted on the dark scheme; the light one reads the plain color.
+    Look::setTextColor(selfState, Theme::Tone(dot.dark.lighter(130), dot.light));
 
     const LoadStatus load = monitor->status();
     const QString gpu = load.gpuAvailable

@@ -19,13 +19,15 @@
 // RENDROP_SNAPSHOT_HOLD_MS shorter than 400 catches it mid-way.
 // RENDROP_SNAPSHOT_NO_PEERS=1 skips the fake beacons (empty node table).
 // RENDROP_SNAPSHOT_DIALOG=frame|rename captures that dialog instead, parented
-// inside the queue so it inherits the same style sheets as a real one.
+// inside the queue so it inherits the same style sheets as a real one;
+// =message captures a Yes/No message box with Qt's Chinese button labels.
 // RENDROP_SNAPSHOT_MOTION=1 also saves mid-way frames of the queue motions.
 // RENDROP_SNAPSHOT_FONT=<font file> swaps the UI font for that one.
 // RENDROP_SNAPSHOT_POPUP=1 opens the Blender selector and saves the screen
 // around it as <out>.popup.png, printing the popup window's attributes.
 // RENDROP_SNAPSHOT_SCROLL=1 fills the queue and prints how many scroll steps
 // per second a smooth scroll gets, with and without the frame driver.
+// RENDROP_SNAPSHOT_SWITCH=light|dark switches the scheme with its fade.
 
 #include <algorithm>
 
@@ -53,6 +55,8 @@
 #include <QAbstractItemView>
 #include <QComboBox>
 #include <QLabel>
+#include <QMessageBox>
+#include <QTranslator>
 #include <QWindow>
 #include <QScrollArea>
 #include <QScrollBar>
@@ -73,6 +77,7 @@
 #include "ui/pages/project_page.h"
 #include "ui/style/look_widgets.h"
 #include "ui/style/rendrop_style.h"
+#include "ui/style/theme.h"
 #include "ui/window/widget.h"
 
 // Rewrites one family to another on every widget as it is polished, which
@@ -160,6 +165,8 @@ int main(int argc, char *argv[])
         QGuiApplication::styleHints()->setColorScheme(Qt::ColorScheme::Dark);
     }
     RendropStyle::install();
+    // Follows the scheme forced above, as the app does with "Follow system".
+    Theme::init(Theme::Mode::System);
     Look::installTextRendering();
     if (qEnvironmentVariableIntValue("RENDROP_SNAPSHOT_DRIVER") == 1)
     {
@@ -448,6 +455,21 @@ int main(int argc, char *argv[])
                     meter->worstNs / 1e6);
                 meter->reset();
             };
+            // Animation ticks with nothing to paint: the driver's own rate.
+            int ticks = 0;
+            const auto countTicks = [&widget, &ticks](int ms) {
+                auto *control = new QVariantAnimation(&widget);
+                control->setDuration(ms);
+                control->setStartValue(0.0);
+                control->setEndValue(1.0);
+                QObject::connect(control, &QVariantAnimation::valueChanged, [&ticks]() { ++ticks; });
+                control->start(QAbstractAnimation::DeleteWhenStopped);
+            };
+            countTicks(1000);
+            settle(1000);
+            fprintf(stderr, "idle ticks=%d/s\n", ticks);
+            ticks = 0;
+            countTicks(3000);
             clock.start();
             // Long jumps back and forth so the motion never rests.
             for (int round = 0; round < 6; ++round)
@@ -486,6 +508,32 @@ int main(int argc, char *argv[])
                     settle(300);
                 }
                 report("fade", clock.nsecsElapsed() / 1e9);
+                // Section jumps on the settings page.
+                navigation[2]->click();
+                settle(400);
+                QScrollArea *settingsArea = nullptr;
+                for (QScrollArea *candidate : widget.findChildren<QScrollArea *>())
+                {
+                    if (candidate->isVisible() && candidate != area)
+                    {
+                        settingsArea = candidate;
+                    }
+                }
+                if (settingsArea)
+                {
+                    QScrollBar *settingsBar = settingsArea->verticalScrollBar();
+                    meter->reset();
+                    ticks = 0;
+                    countTicks(3000);
+                    clock.restart();
+                    for (int round = 0; round < 6; ++round)
+                    {
+                        SmoothScroll::scrollTo(settingsArea, round % 2 == 0 ? settingsBar->maximum() : 0);
+                        settle(500);
+                    }
+                    fprintf(stderr, "settings max=%d ticks=%d\n", settingsBar->maximum(), ticks);
+                    report("settings", clock.nsecsElapsed() / 1e9);
+                }
             }
             widget.removeEventFilter(meter);
             for (auto &sample : bars)
@@ -680,6 +728,25 @@ int main(int argc, char *argv[])
         const bool saved = screen->grabWindow(0, local.x(), local.y(), local.width(), local.height()).save(output);
         return saved ? 0 : 2;
     }
+    // RENDROP_SNAPSHOT_SWITCH=light|dark switches the scheme on the shown
+    // window, saves <out>.mid.png half-way through the cross-fade and then
+    // the settled result as <out>.
+    const QByteArray switchTo = qgetenv("RENDROP_SNAPSHOT_SWITCH");
+    if (!switchTo.isEmpty())
+    {
+        Theme::setMode(switchTo == "light" ? Theme::Mode::Light : Theme::Mode::Dark);
+        const auto pumpFor = [&app](int ms) {
+            QElapsedTimer settle;
+            settle.start();
+            while (settle.elapsed() < ms)
+            {
+                app.processEvents(QEventLoop::AllEvents, 5);
+            }
+        };
+        pumpFor(160);
+        widget.grab().save(output + QStringLiteral(".mid.png"));
+        pumpFor(400);
+    }
     const QByteArray dialogKind = qgetenv("RENDROP_SNAPSHOT_DIALOG");
     if (!dialogKind.isEmpty())
     {
@@ -688,6 +755,22 @@ int main(int argc, char *argv[])
         if (dialogKind == "frame")
         {
             dialog = new FrameRangeDialog(1, 250, 1, host);
+        }
+        else if (dialogKind == "message")
+        {
+            // Same setup as MessageDialog::show, with Qt's Chinese strings.
+            auto *qtTranslator = new QTranslator(&app);
+            if (qtTranslator->load(QStringLiteral(":/i18n/qtbase_zh_CN.qm")))
+            {
+                app.installTranslator(qtTranslator);
+            }
+            auto *box = new QMessageBox(&widget);
+            box->setIcon(QMessageBox::Warning);
+            box->setText(QStringLiteral("确定要删除这个任务吗？"));
+            box->setWindowTitle(QStringLiteral("Warning"));
+            box->setFont(Look::pixelFont(12));
+            box->setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+            dialog = box;
         }
         else
         {

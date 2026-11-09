@@ -8,6 +8,7 @@
 
 #include "ui/widgets/caption_button.h"
 #include "ui/motion/transition.h"
+#include "ui/style/theme.h"
 
 namespace
 {
@@ -68,16 +69,17 @@ void CaptionButton::paintEvent(QPaintEvent *)
     const qreal hovered = Fader::level(this, 0, underMouse() && isEnabled());
     const qreal pressed = Fader::level(this, 1, isDown());
     const bool close = kind == Kind::Close;
-    const QColor hoverFill = close ? QColor(0xC4, 0x2B, 0x1C) : QColor(255, 255, 255, 22);
-    const QColor pressFill = close ? QColor(0xA3, 0x23, 0x17) : QColor(255, 255, 255, 12);
+    const QColor hoverFill = close ? Theme::closeHover.color() : Theme::veil(22);
+    const QColor pressFill = close ? Theme::closePressed.color() : Theme::veil(12);
     QColor background = Look::mix(QColor(), hoverFill, hovered);
     background = Look::mix(background, pressFill, pressed);
+    // The close glyph turns white on its red fill in both schemes.
     QColor glyph = close
-        ? Look::mix(QColor(0xE0, 0xE0, 0xE0), Qt::white, std::max(hovered, pressed))
-        : QColor(0xE0, 0xE0, 0xE0);
+        ? Look::mix(Theme::captionGlyph, Qt::white, std::max(hovered, pressed))
+        : Theme::captionGlyph.color();
     if (!isEnabled())
     {
-        glyph = QColor(0xAA, 0xAA, 0xAA);
+        glyph = Theme::textDisabledLight;
     }
 
     if (background.alpha() > 0)

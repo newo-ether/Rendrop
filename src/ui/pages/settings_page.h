@@ -92,6 +92,8 @@ private:
     QVBoxLayout *formLayout;
 
     QComboBox *languageBox;
+    // Item data is the Theme::modeName() saved in preferences.json.
+    QComboBox *themeBox;
     ToggleSwitch *launchAtLoginSwitch;
     ToggleSwitch *shadowsSwitch;
     QVBoxLayout *blenderList;

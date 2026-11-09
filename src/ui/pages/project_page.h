@@ -16,6 +16,7 @@
 #include <QWidget>
 
 #include "core/project_info.h"
+#include "ui/style/theme.h"
 
 class QLabel;
 class QPushButton;
@@ -75,7 +76,7 @@ private:
     ProjectInfo project;
     std::vector<ProjectView::Segment> runs;
     std::vector<LegendEntry> legend;
-    QColor stateColor;
+    Theme::Tone stateColor;
     bool multiNode = false;
 };
 

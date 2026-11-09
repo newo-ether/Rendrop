@@ -15,6 +15,7 @@ SOURCES += \
     $$PWD/style/look_widgets.cpp \
     $$PWD/style/rendrop_style.cpp \
     $$PWD/style/rounded_surface.cpp \
+    $$PWD/style/theme.cpp \
     $$PWD/widgets/add_file_button.cpp \
     $$PWD/widgets/caption_button.cpp \
     $$PWD/widgets/drop_file_tip.cpp \
@@ -44,6 +45,7 @@ HEADERS += \
     $$PWD/style/rendrop_style.h \
     $$PWD/style/rounded_surface.h \
     $$PWD/style/style.h \
+    $$PWD/style/theme.h \
     $$PWD/widgets/add_file_button.h \
     $$PWD/widgets/caption_button.h \
     $$PWD/widgets/drop_file_tip.h \
@@ -55,6 +57,9 @@ HEADERS += \
     $$PWD/widgets/progress_bar.h \
     $$PWD/widgets/rename_dialog.h \
     $$PWD/window/widget.h
+
+# FrameDriver paces frames on DWM compositions.
+win32: LIBS += -ldwmapi
 
 FORMS += \
     $$PWD/forms/drop_file_tip.ui \

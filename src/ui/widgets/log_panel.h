@@ -9,6 +9,7 @@
 
 class DropShadowWidget;
 class QPlainTextEdit;
+class QSpacerItem;
 class QVariantAnimation;
 
 // The log card: timestamped lines in a read-only view that follows its
@@ -23,6 +24,11 @@ public:
 
     // Fades with the card while it grows or shrinks.
     void setShadow(DropShadowWidget *shadow);
+    // The layout gap in front of the card. The card brings it along when it
+    // grows in and takes it away when it shrinks out, so the cards around it
+    // never jump by a gap at either end. The page layout itself has no
+    // spacing next to the card.
+    void setLeadingGap(QSpacerItem *gap, int size);
     void append(const QString &text);
     // Where the card is headed; it stays visible while it shrinks away.
     bool isShown() const { return shown; }
@@ -31,10 +37,15 @@ public:
 private:
     // Scrolls to the newest line unless the user scrolled up.
     void followTail();
+    // Gap plus card height, 0 to logHeight + gap.
+    void applySlot(int value);
 
     QPlainTextEdit *view = nullptr;
     QPointer<QVariantAnimation> animation;
     QPointer<DropShadowWidget> shadow;
+    QSpacerItem *gap = nullptr;
+    int gapSize = 0;
+    int slot = 0;
     bool shown = false;
     bool follow = true;
 };

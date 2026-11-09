@@ -14,10 +14,10 @@ AddFileButton::AddFileButton(QWidget *parent):
     setMaximumSize(60, 60);
     // RoundedSurface paints the antialiased circle and fades its states.
     RoundedSurface::install(this, 30, RoundedSurface::Colors {
-        QColor(90, 90, 150),
-        QColor(120, 120, 180),
-        QColor(70, 70, 130),
-        QColor(85, 89, 95)
+        Theme::accentFill,
+        Theme::accentHover,
+        Theme::accentPressed,
+        Theme::accentDisabled
     });
     setIcon(QIcon(":/icon/plus.ico"));
     setIconSize(QSize(20, 20));

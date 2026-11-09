@@ -30,15 +30,16 @@
 #include "ui/pages/settings_page.h"
 #include "ui/style/look_widgets.h"
 #include "ui/motion/smooth_scroll.h"
+#include "ui/style/theme.h"
 
 namespace {
 
 constexpr int fieldWidth = 280;
 
-const QColor helpColor(110, 115, 130);
-const QColor quietColor(150, 155, 170);
-const QColor warningColor(215, 165, 70);
-const QColor errorColor(225, 110, 110);
+const Theme::Tone &helpColor = Theme::textHelp;
+const Theme::Tone &quietColor = Theme::textQuiet;
+const Theme::Tone &warningColor = Theme::warning;
+const Theme::Tone &errorColor = Theme::error;
 
 QWidget *framedSurface(QWidget *parent, QWidget **surfaceOut)
 {
@@ -145,11 +146,12 @@ SettingsPage::SettingsPage(const QString &distributedPath, int languageIndex, QW
         entry->setCheckable(true);
         entry->setFont(Look::pixelFont(10, QFont::Medium));
         Look::setPadding(entry, QMargins(12, 7, 12, 7), Qt::AlignLeft | Qt::AlignVCenter);
-        RoundedSurface::Colors entryColors {Qt::transparent, QColor(255, 255, 255, 14), QColor(), QColor()};
-        entryColors.checked = QColor(0x2B, 0x2D, 0x40);
+        RoundedSurface::Colors entryColors {
+            Qt::transparent, Theme::Tone(QColor(255, 255, 255, 14), QColor(0, 0, 0, 11)), {}, {}};
+        entryColors.checked = Theme::selected;
         entryColors.text = quietColor;
-        entryColors.hoverText = QColor(0xD0, 0xD3, 0xDC);
-        entryColors.checkedText = Qt::white;
+        entryColors.hoverText = Theme::textHover;
+        entryColors.checkedText = Theme::textStrong;
         RoundedSurface::install(entry, 8, entryColors);
         entry->setCursor(Qt::PointingHandCursor);
         sectionButtons->addButton(entry, index);
@@ -181,7 +183,7 @@ SettingsPage::SettingsPage(const QString &distributedPath, int languageIndex, QW
     right->addWidget(formFrame, 1);
 
     saveBar = new QWidget(this);
-    RoundedSurface::install(saveBar, 10, QColor(0x2B, 0x2D, 0x40));
+    RoundedSurface::install(saveBar, 10, Theme::selected);
     auto *saveLayout = new QHBoxLayout(saveBar);
     saveLayout->setContentsMargins(14, 8, 8, 8);
     saveLayout->setSpacing(8);
@@ -201,6 +203,13 @@ SettingsPage::SettingsPage(const QString &distributedPath, int languageIndex, QW
     languageBox->setFixedSize(fieldWidth, 30);
     addRow(general, tr("Language"), tr("Takes effect after a restart."), languageBox);
     const AppPreferences preferences = AppPreferencesFile::load();
+    themeBox = new QComboBox(general);
+    themeBox->addItem(tr("Follow system"), Theme::modeName(Theme::Mode::System));
+    themeBox->addItem(tr("Dark"), Theme::modeName(Theme::Mode::Dark));
+    themeBox->addItem(tr("Light"), Theme::modeName(Theme::Mode::Light));
+    themeBox->setCurrentIndex(std::max(0, themeBox->findData(Theme::modeName(Theme::mode()))));
+    themeBox->setFixedSize(fieldWidth, 30);
+    addRow(general, tr("Appearance"), tr("Follow system switches with the Windows color mode."), themeBox);
     launchAtLoginSwitch = new ToggleSwitch(general);
     launchAtLoginSwitch->setChecked(preferences.launchAtLogin);
     addRow(general, tr("Launch at login"),
@@ -274,7 +283,7 @@ SettingsPage::SettingsPage(const QString &distributedPath, int languageIndex, QW
     // Room for the rounded outline RoundedSurface draws on the edge.
     peersEdit->document()->setDocumentMargin(6);
     RoundedSurface::install(peersEdit, 8, RoundedSurface::Colors {
-        QColor(0x33, 0x38, 0x42), QColor(), QColor(), QColor(), QColor(65, 65, 85), QColor(110, 110, 180)});
+        Theme::control, {}, {}, {}, Theme::controlBorder, Theme::accent});
     peersEdit->setFont(Look::monoFont(9));
     addRow(farm, tr("Manual nodes"),
         tr("One host or host:port per line, for nodes broadcast cannot reach (Tailscale, other subnets)."), peersEdit);
@@ -362,6 +371,13 @@ SettingsPage::SettingsPage(const QString &distributedPath, int languageIndex, QW
             Autostart::setEnabled(checked);
         }
     });
+    QObject::connect(themeBox, &QComboBox::currentIndexChanged, this, [this]() {
+        const QString name = themeBox->currentData().toString();
+        AppPreferences preferences = AppPreferencesFile::load();
+        preferences.theme = name;
+        AppPreferencesFile::save(preferences);
+        Theme::setMode(Theme::modeFromName(name));
+    });
     QObject::connect(shadowsSwitch, &ToggleSwitch::toggled, this, [](bool checked) {
         AppPreferences preferences = AppPreferencesFile::load();
         preferences.shadows = checked;
@@ -432,13 +448,22 @@ SettingsPage::SettingsPage(const QString &distributedPath, int languageIndex, QW
 
     // The wheel scrolls the form even over a spin box or combo box, so a
     // value never changes just because the pointer passed over its field.
+    // Their default WheelFocus would still take focus on the way, before
+    // the filter sees the wheel, so they only take it on click and Tab.
     const QWidget *formWidget = scroll->widget();
     for (QAbstractSpinBox *box : formWidget->findChildren<QAbstractSpinBox *>())
     {
+        box->setFocusPolicy(Qt::StrongFocus);
+        // The wheel lands on the editor inside first.
+        for (QLineEdit *edit : box->findChildren<QLineEdit *>())
+        {
+            edit->setFocusPolicy(Qt::StrongFocus);
+        }
         box->installEventFilter(this);
     }
     for (QComboBox *box : formWidget->findChildren<QComboBox *>())
     {
+        box->setFocusPolicy(Qt::StrongFocus);
         box->installEventFilter(this);
     }
 }
@@ -473,8 +498,9 @@ QWidget *SettingsPage::addSection(Section section, const QString &title)
     layout->setContentsMargins(0, 0, 0, 0);
     layout->setSpacing(12);
     auto *heading = new QLabel(title, widget);
-    heading->setFont(Look::pixelFont(14, QFont::DemiBold));
-    Look::setTextColor(heading, Qt::white);
+    // The heaviest weight Mi Outfit has, well apart from the Medium row names.
+    heading->setFont(Look::pixelFont(14, QFont::Bold));
+    Look::setTextColor(heading, Theme::textStrong);
     layout->addWidget(heading);
     formLayout->addWidget(widget);
     sections.resize(std::max(sections.size(), static_cast<size_t>(section) + 1), nullptr);
@@ -490,7 +516,7 @@ void SettingsPage::addRow(QWidget *section, const QString &label, const QString 
     text->setSpacing(3);
     auto *name = new QLabel(label, section);
     name->setFont(Look::pixelFont(10, QFont::Medium));
-    Look::setTextColor(name, QColor(224, 224, 232));
+    Look::setTextColor(name, Theme::textName);
     text->addWidget(name);
     if (!help.isEmpty())
     {
@@ -528,13 +554,13 @@ void SettingsPage::setBlenderVersions(const std::vector<BlenderVersionManager::B
     for (const auto &version : versions)
     {
         auto *row = new QWidget(owner);
-        RoundedSurface::install(row, 8, QColor(43, 45, 48));
+        RoundedSurface::install(row, 8, Theme::row);
         auto *layout = new QHBoxLayout(row);
         layout->setContentsMargins(12, 6, 6, 6);
         layout->setSpacing(14);
         auto *name = new QLabel(version.version, row);
         name->setFont(Look::pixelFont(10, QFont::Medium));
-        Look::setTextColor(name, Qt::white);
+        Look::setTextColor(name, Theme::textStrong);
         name->setMinimumWidth(110);
         auto *path = new QLabel(row);
         path->setFont(Look::monoFont(8));
@@ -673,6 +699,7 @@ void SettingsPage::restoreDefaults()
     const AppPreferences preferences;
     launchAtLoginSwitch->setChecked(preferences.launchAtLogin);
     shadowsSwitch->setChecked(preferences.shadows);
+    themeBox->setCurrentIndex(std::max(0, themeBox->findData(preferences.theme)));
     maxLoadsBox->setValue(preferences.maxConcurrentLoads);
     saveTimer->stop();
     save();

@@ -12,6 +12,7 @@
 #include <QColor>
 
 #include "ui/widgets/progress_bar.h"
+#include "ui/style/theme.h"
 
 ProgressBar::ProgressBar(QWidget *parent):
     QWidget(parent),
@@ -70,8 +71,8 @@ void ProgressBar::paintEvent(QPaintEvent *)
 
     QPainterPath backgroundPath;
     backgroundPath.addRoundedRect(2, 2, w - 4, h - 4, radius, radius);
-    painter.fillPath(backgroundPath, QColor(51, 56, 66));
-    painter.setPen(QColor(85, 90, 102));
+    painter.fillPath(backgroundPath, Theme::control.color());
+    painter.setPen(Theme::outline.color());
     painter.drawPath(backgroundPath);
 
     float ratio = value / 100.0f;
@@ -81,7 +82,7 @@ void ProgressBar::paintEvent(QPaintEvent *)
     {
         QPainterPath progressPath;
         progressPath.addRoundedRect(3, 3, progressWidth, h - 6, radius, radius);
-        painter.fillPath(progressPath, QColor(66, 165, 245));
+        painter.fillPath(progressPath, Theme::progress.color());
     }
 }
 

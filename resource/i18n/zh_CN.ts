@@ -46,7 +46,7 @@
     </message>
     <message>
         <location filename="../../src/ui/forms/drop_file_tip.ui" line="85"/>
-        <location filename="../../src/ui/widgets/drop_file_tip.cpp" line="16"/>
+        <location filename="../../src/ui/widgets/drop_file_tip.cpp" line="17"/>
         <source>Drop your Blender Projects here.</source>
         <translation>将你的 Blender 工程文件拖拽至此处.</translation>
     </message>
@@ -59,12 +59,12 @@
         <translation>点击修改帧范围</translation>
     </message>
     <message>
-        <location filename="../../src/ui/widgets/file_bar.cpp" line="112"/>
+        <location filename="../../src/ui/widgets/file_bar.cpp" line="127"/>
         <source>Click to open the project</source>
         <translation>点击查看工程详情</translation>
     </message>
     <message numerus="yes">
-        <location filename="../../src/ui/widgets/file_bar.cpp" line="448"/>
+        <location filename="../../src/ui/widgets/file_bar.cpp" line="464"/>
         <source> · %n node(s)</source>
         <translation>
             <numerusform> · %n 个节点</numerusform>
@@ -76,7 +76,7 @@
         <translation>点击重命名项目</translation>
     </message>
     <message>
-        <location filename="../../src/ui/widgets/file_bar.cpp" line="74"/>
+        <location filename="../../src/ui/widgets/file_bar.cpp" line="78"/>
         <source>Drag to reorder</source>
         <translation>拖动排序</translation>
     </message>
@@ -254,7 +254,7 @@
     </message>
     <message>
         <location filename="../../src/ui/pages/nodes_page.cpp" line="350"/>
-        <location filename="../../src/ui/pages/nodes_page.cpp" line="450"/>
+        <location filename="../../src/ui/pages/nodes_page.cpp" line="451"/>
         <source>Not accepting work</source>
         <translation>不接受任务</translation>
     </message>
@@ -265,7 +265,7 @@
     </message>
     <message>
         <location filename="../../src/ui/pages/nodes_page.cpp" line="357"/>
-        <location filename="../../src/ui/pages/nodes_page.cpp" line="460"/>
+        <location filename="../../src/ui/pages/nodes_page.cpp" line="461"/>
         <source>Idle</source>
         <translation>空闲</translation>
     </message>
@@ -275,58 +275,58 @@
         <translation>分布式渲染已关闭</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/nodes_page.cpp" line="390"/>
+        <location filename="../../src/ui/pages/nodes_page.cpp" line="391"/>
         <source>n/a</source>
         <translation>无</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/nodes_page.cpp" line="391"/>
+        <location filename="../../src/ui/pages/nodes_page.cpp" line="392"/>
         <source>CPU %1%   GPU %2</source>
         <translation>CPU %1%   GPU %2</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/nodes_page.cpp" line="404"/>
+        <location filename="../../src/ui/pages/nodes_page.cpp" line="405"/>
         <source>Distributed rendering is off. Turn it on in Settings &gt; Farm to join a render group.</source>
         <translation>分布式渲染已关闭。在 设置 &gt; 集群 中开启后即可加入渲染组。</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/nodes_page.cpp" line="435"/>
-        <location filename="../../src/ui/pages/nodes_page.cpp" line="476"/>
+        <location filename="../../src/ui/pages/nodes_page.cpp" line="436"/>
+        <location filename="../../src/ui/pages/nodes_page.cpp" line="477"/>
         <source>Rendering for this machine</source>
         <translation>正在为本机渲染</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/nodes_page.cpp" line="440"/>
+        <location filename="../../src/ui/pages/nodes_page.cpp" line="441"/>
         <source>Sharing frames</source>
         <translation>分发帧</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/nodes_page.cpp" line="445"/>
+        <location filename="../../src/ui/pages/nodes_page.cpp" line="446"/>
         <source>Rendering</source>
         <translation>渲染中</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/nodes_page.cpp" line="455"/>
+        <location filename="../../src/ui/pages/nodes_page.cpp" line="456"/>
         <source>Busy</source>
         <translation>忙碌</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/nodes_page.cpp" line="476"/>
+        <location filename="../../src/ui/pages/nodes_page.cpp" line="477"/>
         <source>Worker, waiting</source>
         <translation>工作进程，等待中</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/nodes_page.cpp" line="499"/>
+        <location filename="../../src/ui/pages/nodes_page.cpp" line="500"/>
         <source>Looking for other nodes on the LAN...</source>
         <translation>正在局域网内查找其他节点...</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/nodes_page.cpp" line="500"/>
+        <location filename="../../src/ui/pages/nodes_page.cpp" line="501"/>
         <source>No other nodes found.</source>
         <translation>没有发现其他节点。</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/nodes_page.cpp" line="488"/>
+        <location filename="../../src/ui/pages/nodes_page.cpp" line="489"/>
         <source>Discovery port unavailable. Add nodes manually with &quot;Manage nodes...&quot;.</source>
         <translation>发现端口不可用。请通过“管理节点...”手动添加节点。</translation>
     </message>
@@ -367,7 +367,7 @@
 <context>
     <name>QObject</name>
     <message>
-        <location filename="../../src/ui/pages/settings_page.cpp" line="101"/>
+        <location filename="../../src/ui/pages/settings_page.cpp" line="102"/>
         <source>Browse</source>
         <translation>浏览</translation>
     </message>
@@ -401,139 +401,139 @@
     <name>QueuePage</name>
     <message>
         <location filename="../../src/ui/pages/queue_page.cpp" line="63"/>
-        <location filename="../../src/ui/pages/queue_page.cpp" line="763"/>
+        <location filename="../../src/ui/pages/queue_page.cpp" line="783"/>
         <source>Add Blender...</source>
         <translation>添加 Blender...</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/queue_page.cpp" line="241"/>
+        <location filename="../../src/ui/pages/queue_page.cpp" line="261"/>
         <source>Hide log</source>
         <translation>隐藏日志</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/queue_page.cpp" line="241"/>
+        <location filename="../../src/ui/pages/queue_page.cpp" line="261"/>
         <source>Show log</source>
         <translation>显示日志</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/queue_page.cpp" line="488"/>
-        <location filename="../../src/ui/pages/queue_page.cpp" line="501"/>
+        <location filename="../../src/ui/pages/queue_page.cpp" line="508"/>
+        <location filename="../../src/ui/pages/queue_page.cpp" line="521"/>
         <source>Warning</source>
         <translation>警告</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/queue_page.cpp" line="489"/>
+        <location filename="../../src/ui/pages/queue_page.cpp" line="509"/>
         <source> is still loading. Are you sure to delete?</source>
         <translation> 正在加载中，确定要删除吗？</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/queue_page.cpp" line="502"/>
+        <location filename="../../src/ui/pages/queue_page.cpp" line="522"/>
         <source> is still rendering. Are you sure to delete?</source>
         <translation> 正在渲染中，确定要删除吗？</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/queue_page.cpp" line="544"/>
+        <location filename="../../src/ui/pages/queue_page.cpp" line="564"/>
         <source>Render failed</source>
         <translation>渲染失败</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/queue_page.cpp" line="545"/>
+        <location filename="../../src/ui/pages/queue_page.cpp" line="565"/>
         <source>%1 stopped at frame %2 / %3. See the log for details.</source>
         <translation>%1 在第 %2 / %3 帧中止，详情见日志。</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/queue_page.cpp" line="657"/>
+        <location filename="../../src/ui/pages/queue_page.cpp" line="677"/>
         <source>Stop Render</source>
         <translation>停止渲染</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/queue_page.cpp" line="657"/>
+        <location filename="../../src/ui/pages/queue_page.cpp" line="677"/>
         <source>Start Render</source>
         <translation>开始渲染</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/queue_page.cpp" line="677"/>
+        <location filename="../../src/ui/pages/queue_page.cpp" line="697"/>
         <source>Render complete: %1 finished.</source>
         <translation>渲染完成：%1 个项目已完成。</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/queue_page.cpp" line="678"/>
+        <location filename="../../src/ui/pages/queue_page.cpp" line="698"/>
         <source>Render ended: %1 finished, %2 failed.</source>
         <translation>渲染结束：%1 个完成，%2 个失败。</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/queue_page.cpp" line="684"/>
+        <location filename="../../src/ui/pages/queue_page.cpp" line="704"/>
         <source>Render complete</source>
         <translation>渲染完成</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/queue_page.cpp" line="684"/>
+        <location filename="../../src/ui/pages/queue_page.cpp" line="704"/>
         <source>Render ended with errors</source>
         <translation>渲染结束，有项目出错</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/queue_page.cpp" line="705"/>
+        <location filename="../../src/ui/pages/queue_page.cpp" line="725"/>
         <source>Open File</source>
         <translation>打开文件</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/queue_page.cpp" line="707"/>
+        <location filename="../../src/ui/pages/queue_page.cpp" line="727"/>
         <source>Blender Projects (*.blend)</source>
         <translation>Blender 工程文件 (*.blend)</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/queue_page.cpp" line="720"/>
+        <location filename="../../src/ui/pages/queue_page.cpp" line="740"/>
         <source> (%1 at frame %2 / %3)</source>
         <translation>（%1，第 %2 / %3 帧）</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/queue_page.cpp" line="726"/>
+        <location filename="../../src/ui/pages/queue_page.cpp" line="746"/>
         <source>Render stopped manually</source>
         <translation>已手动停止渲染</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/queue_page.cpp" line="805"/>
+        <location filename="../../src/ui/pages/queue_page.cpp" line="825"/>
         <source>Projects %1 / %2</source>
         <translation>工程 %1 / %2</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/queue_page.cpp" line="814"/>
+        <location filename="../../src/ui/pages/queue_page.cpp" line="834"/>
         <source>%1 h %2 min</source>
         <translation>%1 小时 %2 分</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/queue_page.cpp" line="815"/>
+        <location filename="../../src/ui/pages/queue_page.cpp" line="835"/>
         <source>%1 min</source>
         <translation>%1 分钟</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/queue_page.cpp" line="816"/>
+        <location filename="../../src/ui/pages/queue_page.cpp" line="836"/>
         <source>ETA %1</source>
         <translation>预计剩余 %1</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/queue_page.cpp" line="820"/>
+        <location filename="../../src/ui/pages/queue_page.cpp" line="841"/>
         <source>Frames %1 / %2</source>
         <translation>帧 %1 / %2</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/queue_page.cpp" line="833"/>
-        <location filename="../../src/ui/pages/queue_page.cpp" line="834"/>
+        <location filename="../../src/ui/pages/queue_page.cpp" line="856"/>
+        <location filename="../../src/ui/pages/queue_page.cpp" line="857"/>
         <source>Add a Blender version in Settings first.</source>
         <translation>请先在设置中添加 Blender 版本。</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/queue_page.cpp" line="838"/>
+        <location filename="../../src/ui/pages/queue_page.cpp" line="861"/>
         <source>Add a Blender project to get started.</source>
         <translation>添加一个 Blender 项目以开始.</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/queue_page.cpp" line="839"/>
+        <location filename="../../src/ui/pages/queue_page.cpp" line="862"/>
         <source>Drop your Blender Projects here.</source>
         <translation>将你的 Blender 工程文件拖拽至此处.</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/queue_page.cpp" line="843"/>
+        <location filename="../../src/ui/pages/queue_page.cpp" line="866"/>
         <source>Ready to render.</source>
         <translation>准备渲染.</translation>
     </message>
@@ -593,392 +593,417 @@
 <context>
     <name>SettingsPage</name>
     <message>
-        <location filename="../../src/ui/pages/settings_page.cpp" line="140"/>
-        <location filename="../../src/ui/pages/settings_page.cpp" line="196"/>
+        <location filename="../../src/ui/pages/settings_page.cpp" line="141"/>
+        <location filename="../../src/ui/pages/settings_page.cpp" line="198"/>
         <source>General</source>
         <translation>常规</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/settings_page.cpp" line="140"/>
-        <location filename="../../src/ui/pages/settings_page.cpp" line="216"/>
+        <location filename="../../src/ui/pages/settings_page.cpp" line="141"/>
+        <location filename="../../src/ui/pages/settings_page.cpp" line="225"/>
         <source>Blender</source>
         <translation>Blender</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/settings_page.cpp" line="140"/>
-        <location filename="../../src/ui/pages/settings_page.cpp" line="237"/>
+        <location filename="../../src/ui/pages/settings_page.cpp" line="141"/>
+        <location filename="../../src/ui/pages/settings_page.cpp" line="246"/>
         <source>Farm</source>
         <translation>集群</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/settings_page.cpp" line="140"/>
-        <location filename="../../src/ui/pages/settings_page.cpp" line="283"/>
+        <location filename="../../src/ui/pages/settings_page.cpp" line="141"/>
+        <location filename="../../src/ui/pages/settings_page.cpp" line="292"/>
         <source>Scheduling</source>
         <translation>调度</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/settings_page.cpp" line="140"/>
-        <location filename="../../src/ui/pages/settings_page.cpp" line="299"/>
+        <location filename="../../src/ui/pages/settings_page.cpp" line="141"/>
+        <location filename="../../src/ui/pages/settings_page.cpp" line="308"/>
         <source>Load detection</source>
         <translation>负载检测</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/settings_page.cpp" line="140"/>
-        <location filename="../../src/ui/pages/settings_page.cpp" line="319"/>
+        <location filename="../../src/ui/pages/settings_page.cpp" line="141"/>
+        <location filename="../../src/ui/pages/settings_page.cpp" line="328"/>
         <source>Dependencies</source>
         <translation>依赖</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/settings_page.cpp" line="140"/>
-        <location filename="../../src/ui/pages/settings_page.cpp" line="331"/>
+        <location filename="../../src/ui/pages/settings_page.cpp" line="141"/>
+        <location filename="../../src/ui/pages/settings_page.cpp" line="340"/>
         <source>Cache</source>
         <translation>缓存</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/settings_page.cpp" line="212"/>
-        <location filename="../../src/ui/pages/settings_page.cpp" line="654"/>
+        <location filename="../../src/ui/pages/settings_page.cpp" line="221"/>
+        <location filename="../../src/ui/pages/settings_page.cpp" line="680"/>
         <source>Restore defaults</source>
         <translation>恢复默认设置</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/settings_page.cpp" line="202"/>
+        <location filename="../../src/ui/pages/settings_page.cpp" line="204"/>
         <source>Language</source>
         <translation>语言</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/settings_page.cpp" line="202"/>
+        <location filename="../../src/ui/pages/settings_page.cpp" line="204"/>
         <source>Takes effect after a restart.</source>
         <translation>重启后生效。</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/settings_page.cpp" line="206"/>
+        <location filename="../../src/ui/pages/settings_page.cpp" line="215"/>
         <source>Launch at login</source>
         <translation>开机启动</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/settings_page.cpp" line="207"/>
+        <location filename="../../src/ui/pages/settings_page.cpp" line="216"/>
         <source>Start Rendrop in the system tray when you sign in to Windows.</source>
         <translation>登录 Windows 时在系统托盘中启动 Rendrop。</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/settings_page.cpp" line="210"/>
+        <location filename="../../src/ui/pages/settings_page.cpp" line="219"/>
         <source>Shadows</source>
         <translation>阴影</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/settings_page.cpp" line="210"/>
+        <location filename="../../src/ui/pages/settings_page.cpp" line="219"/>
         <source>Soft shadows under cards. Turn off to save some drawing work.</source>
         <translation>在卡片下方绘制柔和阴影。关闭后可减少一些绘制开销。</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/settings_page.cpp" line="233"/>
+        <location filename="../../src/ui/pages/settings_page.cpp" line="242"/>
         <source>Parallel loading</source>
         <translation>并行加载</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/settings_page.cpp" line="234"/>
+        <location filename="../../src/ui/pages/settings_page.cpp" line="243"/>
         <source>Most Blender processes reading added files at once. The rest wait in line.</source>
         <translation>同时读取新加文件的 Blender 进程上限，其余文件排队等待。</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/settings_page.cpp" line="211"/>
+        <location filename="../../src/ui/pages/settings_page.cpp" line="220"/>
         <source>Restore</source>
         <translation>恢复</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/settings_page.cpp" line="213"/>
+        <location filename="../../src/ui/pages/settings_page.cpp" line="207"/>
+        <source>Follow system</source>
+        <translation>跟随系统</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/pages/settings_page.cpp" line="208"/>
+        <source>Dark</source>
+        <translation>深色</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/pages/settings_page.cpp" line="209"/>
+        <source>Light</source>
+        <translation>浅色</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/pages/settings_page.cpp" line="212"/>
+        <source>Appearance</source>
+        <translation>外观</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/pages/settings_page.cpp" line="212"/>
+        <source>Follow system switches with the Windows color mode.</source>
+        <translation>跟随系统时随 Windows 颜色模式切换。</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/pages/settings_page.cpp" line="222"/>
         <source>Keeps the farm key, manual nodes, Blender versions and language.</source>
         <translation>保留集群密钥、手动节点、Blender 版本和语言。</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/settings_page.cpp" line="217"/>
+        <location filename="../../src/ui/pages/settings_page.cpp" line="226"/>
         <source>Versions you can render with. Pick the active one in the queue toolbar.</source>
         <translation>可用于渲染的版本。在队列工具栏中选择当前使用的版本。</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/settings_page.cpp" line="225"/>
-        <location filename="../../src/ui/pages/settings_page.cpp" line="571"/>
+        <location filename="../../src/ui/pages/settings_page.cpp" line="234"/>
+        <location filename="../../src/ui/pages/settings_page.cpp" line="597"/>
         <source>Add Blender...</source>
         <translation>添加 Blender...</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/settings_page.cpp" line="239"/>
+        <location filename="../../src/ui/pages/settings_page.cpp" line="248"/>
         <source>Distributed rendering</source>
         <translation>分布式渲染</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/settings_page.cpp" line="240"/>
+        <location filename="../../src/ui/pages/settings_page.cpp" line="249"/>
         <source>Announce this machine on the LAN, share queued frames and render for other nodes.</source>
         <translation>在局域网内广播本机，分发排队的帧，并为其他节点渲染。</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/settings_page.cpp" line="252"/>
-        <location filename="../../src/ui/pages/settings_page.cpp" line="389"/>
+        <location filename="../../src/ui/pages/settings_page.cpp" line="261"/>
+        <location filename="../../src/ui/pages/settings_page.cpp" line="405"/>
         <source>Show</source>
         <translation>显示</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/settings_page.cpp" line="253"/>
+        <location filename="../../src/ui/pages/settings_page.cpp" line="262"/>
         <source>Copy</source>
         <translation>复制</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/settings_page.cpp" line="254"/>
+        <location filename="../../src/ui/pages/settings_page.cpp" line="263"/>
         <source>New</source>
         <translation>新建</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/settings_page.cpp" line="255"/>
+        <location filename="../../src/ui/pages/settings_page.cpp" line="264"/>
         <source>Generate a new farm key</source>
         <translation>生成新的集群密钥</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/settings_page.cpp" line="260"/>
+        <location filename="../../src/ui/pages/settings_page.cpp" line="269"/>
         <source>Farm key</source>
         <translation>集群密钥</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/settings_page.cpp" line="261"/>
+        <location filename="../../src/ui/pages/settings_page.cpp" line="270"/>
         <source>Shared secret of the render group. Every machine needs the same key.</source>
         <translation>渲染组的共享密钥。每台机器都需要相同的密钥。</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/settings_page.cpp" line="266"/>
+        <location filename="../../src/ui/pages/settings_page.cpp" line="275"/>
         <source>HTTP port</source>
         <translation>HTTP 端口</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/settings_page.cpp" line="266"/>
+        <location filename="../../src/ui/pages/settings_page.cpp" line="275"/>
         <source>Fixed. Workers and rendropctl connect here.</source>
         <translation>固定值。工作进程和 rendropctl 连接到这个端口。</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/settings_page.cpp" line="268"/>
+        <location filename="../../src/ui/pages/settings_page.cpp" line="277"/>
         <source>Discovery port</source>
         <translation>发现端口</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/settings_page.cpp" line="268"/>
+        <location filename="../../src/ui/pages/settings_page.cpp" line="277"/>
         <source>UDP port for LAN announcements. Must match on every machine.</source>
         <translation>局域网广播用的 UDP 端口。所有机器必须一致。</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/settings_page.cpp" line="279"/>
+        <location filename="../../src/ui/pages/settings_page.cpp" line="288"/>
         <source>Manual nodes</source>
         <translation>手动节点</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/settings_page.cpp" line="280"/>
+        <location filename="../../src/ui/pages/settings_page.cpp" line="289"/>
         <source>One host or host:port per line, for nodes broadcast cannot reach (Tailscale, other subnets).</source>
         <translation>每行一个 host 或 host:port，用于广播无法到达的节点（Tailscale、其他子网）。</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/settings_page.cpp" line="285"/>
+        <location filename="../../src/ui/pages/settings_page.cpp" line="294"/>
         <source>Adaptive chunks</source>
         <translation>自适应分块</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/settings_page.cpp" line="286"/>
+        <location filename="../../src/ui/pages/settings_page.cpp" line="295"/>
         <source>Size each lease from the node&apos;s measured speed.</source>
         <translation>按节点实测速度决定每个租约的大小。</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/settings_page.cpp" line="287"/>
-        <location filename="../../src/ui/pages/settings_page.cpp" line="294"/>
-        <location filename="../../src/ui/pages/settings_page.cpp" line="309"/>
-        <location filename="../../src/ui/pages/settings_page.cpp" line="313"/>
+        <location filename="../../src/ui/pages/settings_page.cpp" line="296"/>
+        <location filename="../../src/ui/pages/settings_page.cpp" line="303"/>
+        <location filename="../../src/ui/pages/settings_page.cpp" line="318"/>
+        <location filename="../../src/ui/pages/settings_page.cpp" line="322"/>
         <source> s</source>
         <translation> 秒</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/settings_page.cpp" line="288"/>
+        <location filename="../../src/ui/pages/settings_page.cpp" line="297"/>
         <source>Target lease length</source>
         <translation>目标租约时长</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/settings_page.cpp" line="288"/>
+        <location filename="../../src/ui/pages/settings_page.cpp" line="297"/>
         <source>How long one adaptive lease should take.</source>
         <translation>单个自适应租约的预期耗时。</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/settings_page.cpp" line="289"/>
-        <location filename="../../src/ui/pages/settings_page.cpp" line="292"/>
+        <location filename="../../src/ui/pages/settings_page.cpp" line="298"/>
+        <location filename="../../src/ui/pages/settings_page.cpp" line="301"/>
         <source> frames</source>
         <translation> 帧</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/settings_page.cpp" line="290"/>
+        <location filename="../../src/ui/pages/settings_page.cpp" line="299"/>
         <source>Initial chunk</source>
         <translation>初始分块</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/settings_page.cpp" line="291"/>
+        <location filename="../../src/ui/pages/settings_page.cpp" line="300"/>
         <source>Frames per lease before a node is measured, or always when adaptive chunks are off.</source>
         <translation>节点测速前每个租约的帧数；关闭自适应分块时始终用这个值。</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/settings_page.cpp" line="293"/>
+        <location filename="../../src/ui/pages/settings_page.cpp" line="302"/>
         <source>Largest chunk</source>
         <translation>最大分块</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/settings_page.cpp" line="293"/>
+        <location filename="../../src/ui/pages/settings_page.cpp" line="302"/>
         <source>Upper limit for adaptive leases.</source>
         <translation>自适应租约的帧数上限。</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/settings_page.cpp" line="295"/>
+        <location filename="../../src/ui/pages/settings_page.cpp" line="304"/>
         <source>Lease timeout</source>
         <translation>租约超时</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/settings_page.cpp" line="296"/>
+        <location filename="../../src/ui/pages/settings_page.cpp" line="305"/>
         <source>Frames of a node silent for this long go back to the queue.</source>
         <translation>节点失联超过这个时长后，它的帧会退回队列。</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/settings_page.cpp" line="301"/>
+        <location filename="../../src/ui/pages/settings_page.cpp" line="310"/>
         <source>Load from programs other than Rendrop marks this machine busy, so it stops taking work from other nodes.</source>
         <translation>Rendrop 以外的程序负载过高时，本机标记为忙碌，不再接收其他节点的任务。</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/settings_page.cpp" line="308"/>
+        <location filename="../../src/ui/pages/settings_page.cpp" line="317"/>
         <source>Busy above</source>
         <translation>忙碌阈值</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/settings_page.cpp" line="308"/>
+        <location filename="../../src/ui/pages/settings_page.cpp" line="317"/>
         <source>Mean CPU or GPU load that marks the machine busy.</source>
         <translation>CPU 或 GPU 平均负载超过这个值即视为忙碌。</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/settings_page.cpp" line="310"/>
+        <location filename="../../src/ui/pages/settings_page.cpp" line="319"/>
         <source>Busy window</source>
         <translation>忙碌窗口</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/settings_page.cpp" line="310"/>
+        <location filename="../../src/ui/pages/settings_page.cpp" line="319"/>
         <source>Averaging time for the busy check.</source>
         <translation>忙碌判定的取平均时长。</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/settings_page.cpp" line="312"/>
+        <location filename="../../src/ui/pages/settings_page.cpp" line="321"/>
         <source>Idle below</source>
         <translation>空闲阈值</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/settings_page.cpp" line="312"/>
+        <location filename="../../src/ui/pages/settings_page.cpp" line="321"/>
         <source>Both CPU and GPU must stay under this to be idle again.</source>
         <translation>CPU 和 GPU 都低于这个值才会恢复空闲。</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/settings_page.cpp" line="314"/>
+        <location filename="../../src/ui/pages/settings_page.cpp" line="323"/>
         <source>Idle window</source>
         <translation>空闲窗口</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/settings_page.cpp" line="314"/>
+        <location filename="../../src/ui/pages/settings_page.cpp" line="323"/>
         <source>Averaging time for the idle check.</source>
         <translation>空闲判定的取平均时长。</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/settings_page.cpp" line="315"/>
+        <location filename="../../src/ui/pages/settings_page.cpp" line="324"/>
         <source> ms</source>
         <translation> 毫秒</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/settings_page.cpp" line="316"/>
+        <location filename="../../src/ui/pages/settings_page.cpp" line="325"/>
         <source>Sample interval</source>
         <translation>采样间隔</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/settings_page.cpp" line="321"/>
+        <location filename="../../src/ui/pages/settings_page.cpp" line="330"/>
         <source>Send the .blend only</source>
         <translation>只发送 .blend</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/settings_page.cpp" line="322"/>
+        <location filename="../../src/ui/pages/settings_page.cpp" line="331"/>
         <source>Collect assets with BAT</source>
         <translation>用 BAT 收集资源</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/settings_page.cpp" line="324"/>
+        <location filename="../../src/ui/pages/settings_page.cpp" line="333"/>
         <source>Asset handling</source>
         <translation>资源处理</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/settings_page.cpp" line="325"/>
+        <location filename="../../src/ui/pages/settings_page.cpp" line="334"/>
         <source>With the .blend only, textures and caches must be packed into the file.</source>
         <translation>只发送 .blend 时，贴图和缓存必须打包进文件。</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/settings_page.cpp" line="326"/>
+        <location filename="../../src/ui/pages/settings_page.cpp" line="335"/>
         <source>Blender Asset Tracer</source>
         <translation>Blender Asset Tracer</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/settings_page.cpp" line="327"/>
+        <location filename="../../src/ui/pages/settings_page.cpp" line="336"/>
         <source>BAT location</source>
         <translation>BAT 位置</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/settings_page.cpp" line="328"/>
+        <location filename="../../src/ui/pages/settings_page.cpp" line="337"/>
         <source>Directory that contains the blender_asset_tracer package.</source>
         <translation>包含 blender_asset_tracer 包的目录。</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/settings_page.cpp" line="332"/>
-        <location filename="../../src/ui/pages/settings_page.cpp" line="334"/>
+        <location filename="../../src/ui/pages/settings_page.cpp" line="341"/>
+        <location filename="../../src/ui/pages/settings_page.cpp" line="343"/>
         <source>Worker cache</source>
         <translation>工作缓存</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/settings_page.cpp" line="335"/>
+        <location filename="../../src/ui/pages/settings_page.cpp" line="344"/>
         <source>Where projects from other nodes are kept while this machine renders them.</source>
         <translation>本机为其他节点渲染时存放其工程文件的位置。</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/settings_page.cpp" line="389"/>
+        <location filename="../../src/ui/pages/settings_page.cpp" line="405"/>
         <source>Hide</source>
         <translation>隐藏</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/settings_page.cpp" line="397"/>
+        <location filename="../../src/ui/pages/settings_page.cpp" line="413"/>
         <source>New farm key</source>
         <translation>新集群密钥</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/settings_page.cpp" line="398"/>
+        <location filename="../../src/ui/pages/settings_page.cpp" line="414"/>
         <source>Machines that keep the old key can no longer work with this one. Generate a new key?</source>
         <translation>仍用旧密钥的机器将无法和本机协作。确定生成新密钥？</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/settings_page.cpp" line="571"/>
+        <location filename="../../src/ui/pages/settings_page.cpp" line="597"/>
         <source>Checking Blender...</source>
         <translation>正在检查 Blender...</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/settings_page.cpp" line="655"/>
+        <location filename="../../src/ui/pages/settings_page.cpp" line="681"/>
         <source>Reset every setting to its default? The farm key, manual nodes, Blender versions and language are kept.</source>
         <translation>将所有设置恢复为默认值？集群密钥、手动节点、Blender 版本和语言会保留。</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/settings_page.cpp" line="738"/>
+        <location filename="../../src/ui/pages/settings_page.cpp" line="765"/>
         <source>The farm key needs at least %1 characters. Not saved yet.</source>
         <translation>集群密钥至少需要 %1 个字符，尚未保存。</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/settings_page.cpp" line="523"/>
+        <location filename="../../src/ui/pages/settings_page.cpp" line="549"/>
         <source>No Blender added yet.</source>
         <translation>尚未添加 Blender。</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/settings_page.cpp" line="544"/>
+        <location filename="../../src/ui/pages/settings_page.cpp" line="570"/>
         <source>Remove</source>
         <translation>移除</translation>
     </message>
     <message>
-        <location filename="../../src/ui/pages/settings_page.cpp" line="745"/>
+        <location filename="../../src/ui/pages/settings_page.cpp" line="772"/>
         <source>Failed to save distributed.json.</source>
         <translation>保存 distributed.json 失败。</translation>
     </message>
@@ -986,13 +1011,13 @@
 <context>
     <name>Widget</name>
     <message>
-        <location filename="../../src/ui/window/widget.cpp" line="133"/>
+        <location filename="../../src/ui/window/widget.cpp" line="135"/>
         <source>Minimize</source>
         <translation>最小化</translation>
     </message>
     <message>
         <location filename="../../src/ui/window/widget.cpp" line="119"/>
-        <location filename="../../src/ui/window/widget.cpp" line="134"/>
+        <location filename="../../src/ui/window/widget.cpp" line="136"/>
         <source>Maximize</source>
         <translation>最大化</translation>
     </message>
@@ -1002,137 +1027,137 @@
         <translation>还原</translation>
     </message>
     <message>
-        <location filename="../../src/ui/window/widget.cpp" line="135"/>
+        <location filename="../../src/ui/window/widget.cpp" line="137"/>
         <source>Close</source>
         <translation>关闭</translation>
     </message>
     <message>
-        <location filename="../../src/ui/window/widget.cpp" line="260"/>
-        <location filename="../../src/ui/window/widget.cpp" line="468"/>
-        <location filename="../../src/ui/window/widget.cpp" line="558"/>
+        <location filename="../../src/ui/window/widget.cpp" line="262"/>
+        <location filename="../../src/ui/window/widget.cpp" line="470"/>
+        <location filename="../../src/ui/window/widget.cpp" line="560"/>
         <source>Warning</source>
         <translation>警告</translation>
     </message>
     <message>
-        <location filename="../../src/ui/window/widget.cpp" line="258"/>
+        <location filename="../../src/ui/window/widget.cpp" line="260"/>
         <source>Some files are still rendering. Are you sure to exit?</source>
         <translation>一些文件仍在渲染中，确定要退出吗？</translation>
     </message>
     <message>
-        <location filename="../../src/ui/window/widget.cpp" line="174"/>
+        <location filename="../../src/ui/window/widget.cpp" line="176"/>
         <source>Rendrop keeps running in the tray. Right-click the icon to quit.</source>
         <translation>Rendrop 仍在托盘中运行。右键单击图标可退出。</translation>
     </message>
     <message>
-        <location filename="../../src/ui/window/widget.cpp" line="209"/>
+        <location filename="../../src/ui/window/widget.cpp" line="211"/>
         <source>Show Rendrop</source>
         <translation>显示 Rendrop</translation>
     </message>
     <message>
-        <location filename="../../src/ui/window/widget.cpp" line="211"/>
+        <location filename="../../src/ui/window/widget.cpp" line="213"/>
         <source>Quit</source>
         <translation>退出</translation>
     </message>
     <message>
-        <location filename="../../src/ui/window/widget.cpp" line="259"/>
+        <location filename="../../src/ui/window/widget.cpp" line="261"/>
         <source>Some files are still loading. Are you sure to exit?</source>
         <translation>一些文件仍在加载中，确定要退出吗？</translation>
     </message>
     <message>
-        <location filename="../../src/ui/window/widget.cpp" line="383"/>
+        <location filename="../../src/ui/window/widget.cpp" line="385"/>
         <source>Queue</source>
         <translation>队列</translation>
     </message>
     <message>
-        <location filename="../../src/ui/window/widget.cpp" line="384"/>
+        <location filename="../../src/ui/window/widget.cpp" line="386"/>
         <source>Nodes</source>
         <translation>节点</translation>
     </message>
     <message>
-        <location filename="../../src/ui/window/widget.cpp" line="385"/>
+        <location filename="../../src/ui/window/widget.cpp" line="387"/>
         <source>Settings</source>
         <translation>设置</translation>
     </message>
     <message numerus="yes">
-        <location filename="../../src/ui/window/widget.cpp" line="433"/>
+        <location filename="../../src/ui/window/widget.cpp" line="435"/>
         <source>Rendering · %n node(s)</source>
         <translation>
             <numerusform>渲染中 · %n 个节点</numerusform>
         </translation>
     </message>
     <message>
-        <location filename="../../src/ui/window/widget.cpp" line="433"/>
+        <location filename="../../src/ui/window/widget.cpp" line="435"/>
         <source>Rendering</source>
         <translation>渲染中</translation>
     </message>
     <message>
-        <location filename="../../src/ui/window/widget.cpp" line="439"/>
+        <location filename="../../src/ui/window/widget.cpp" line="441"/>
         <source>No Blender</source>
         <translation>无 Blender</translation>
     </message>
     <message>
-        <location filename="../../src/ui/window/widget.cpp" line="446"/>
+        <location filename="../../src/ui/window/widget.cpp" line="448"/>
         <source>Ready</source>
         <translation>就绪</translation>
     </message>
     <message numerus="yes">
-        <location filename="../../src/ui/window/widget.cpp" line="450"/>
+        <location filename="../../src/ui/window/widget.cpp" line="452"/>
         <source>%1 · %n peer(s)</source>
         <translation>
             <numerusform>%1 · %n 个节点</numerusform>
         </translation>
     </message>
     <message>
-        <location filename="../../src/ui/window/widget.cpp" line="489"/>
+        <location filename="../../src/ui/window/widget.cpp" line="491"/>
         <source>Select Blender Version</source>
         <translation>选择 Blender 版本</translation>
     </message>
     <message>
-        <location filename="../../src/ui/window/widget.cpp" line="491"/>
+        <location filename="../../src/ui/window/widget.cpp" line="493"/>
         <source>Blender Executable (blender.exe)</source>
         <translation>Blender 主程序 (blender.exe)</translation>
     </message>
     <message>
-        <location filename="../../src/ui/window/widget.cpp" line="499"/>
-        <location filename="../../src/ui/window/widget.cpp" line="524"/>
-        <location filename="../../src/ui/window/widget.cpp" line="532"/>
-        <location filename="../../src/ui/window/widget.cpp" line="568"/>
+        <location filename="../../src/ui/window/widget.cpp" line="501"/>
+        <location filename="../../src/ui/window/widget.cpp" line="526"/>
+        <location filename="../../src/ui/window/widget.cpp" line="534"/>
+        <location filename="../../src/ui/window/widget.cpp" line="570"/>
         <source>Error</source>
         <translation>错误</translation>
     </message>
     <message>
-        <location filename="../../src/ui/window/widget.cpp" line="499"/>
+        <location filename="../../src/ui/window/widget.cpp" line="501"/>
         <source>Cannot open specified path.</source>
         <translation>打开指定的路径时出现错误.</translation>
     </message>
     <message>
-        <location filename="../../src/ui/window/widget.cpp" line="524"/>
+        <location filename="../../src/ui/window/widget.cpp" line="526"/>
         <source>Failed to start Blender.</source>
         <translation>Blender 启动失败.</translation>
     </message>
     <message>
-        <location filename="../../src/ui/window/widget.cpp" line="528"/>
+        <location filename="../../src/ui/window/widget.cpp" line="530"/>
         <source>Note</source>
         <translation>提示</translation>
     </message>
     <message>
-        <location filename="../../src/ui/window/widget.cpp" line="528"/>
+        <location filename="../../src/ui/window/widget.cpp" line="530"/>
         <source>Selected Blender version already exists.</source>
         <translation>选择的 Blender 版本已存在.</translation>
     </message>
     <message>
-        <location filename="../../src/ui/window/widget.cpp" line="532"/>
-        <location filename="../../src/ui/window/widget.cpp" line="568"/>
+        <location filename="../../src/ui/window/widget.cpp" line="534"/>
+        <location filename="../../src/ui/window/widget.cpp" line="570"/>
         <source>Failed to save version configuration file.</source>
         <translation>保存配置文件时出现错误.</translation>
     </message>
     <message>
-        <location filename="../../src/ui/window/widget.cpp" line="559"/>
+        <location filename="../../src/ui/window/widget.cpp" line="561"/>
         <source>Remove Blender %1 from Rendrop? The program itself is not deleted.</source>
         <translation>从 Rendrop 中移除 Blender %1？程序本身不会被删除。</translation>
     </message>
     <message>
-        <location filename="../../src/ui/window/widget.cpp" line="469"/>
+        <location filename="../../src/ui/window/widget.cpp" line="471"/>
         <source>Language settings will take effect after restarting the program. Restart now?</source>
         <translation>语言设置将在重启程序后生效，是否重启程序？</translation>
     </message>

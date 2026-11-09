@@ -4,7 +4,9 @@
 #define POPUP_MOTION_H
 
 #include <QColor>
+#include <QRect>
 
+class QDialog;
 class QWidget;
 
 // Open and close motion for menus and combo popups, in place of the system
@@ -23,6 +25,9 @@ void disableSystemEffects();
 // match the outline the popup paints, so the edge stays drawn while the
 // popup unrolls. Call once per popup.
 void attach(QWidget *popup, const QColor &border, qreal radius);
+// The same for a dialog shown as a popover (a Qt::Popup window), which
+// unrolls from globalAnchor, the control that opened it.
+void attach(QDialog *popover, const QColor &border, qreal radius, const QRect &globalAnchor);
 }
 
 #endif // POPUP_MOTION_H

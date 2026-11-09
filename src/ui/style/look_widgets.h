@@ -11,10 +11,15 @@
 #include <QString>
 #include <QWidget>
 
+#include <functional>
+
 #include "ui/style/rounded_surface.h"
+#include "ui/style/theme.h"
 #include "ui/motion/transition.h"
 
 class QAbstractScrollArea;
+class QLabel;
+class QDialog;
 
 // Shared look of the main window: fonts, colors and surfaces that the queue,
 // nodes and settings pages all use. Nothing here uses style sheets; the
@@ -44,15 +49,15 @@ void applyTextRendering(QFont &font);
 // that does not choose its own strategy inherits. Call before any widget.
 void installTextRendering();
 
-inline const QColor frameColor(0x2C, 0x31, 0x3C);
-inline const QColor surfaceColor(26, 28, 32);
+inline const Theme::Tone &frameColor = Theme::frame;
+inline const Theme::Tone &surfaceColor = Theme::surface;
 // Dynamic property on the outer frame of a large card; Widget adds a drop
 // shadow to every direct child of a page that carries it.
 inline constexpr char cardProperty[] = "rendropCard";
-inline const QColor accentColor(110, 110, 180);
-inline const QColor dimTextColor(110, 115, 130);
-inline const QColor textColor(0xE0, 0xE0, 0xE0);
-inline const QColor windowColor(0x20, 0x21, 0x24);
+inline const Theme::Tone &accentColor = Theme::accent;
+inline const Theme::Tone &dimTextColor = Theme::textHelp;
+inline const Theme::Tone &textColor = Theme::text;
+inline const Theme::Tone &windowColor = Theme::window;
 
 // Dynamic properties RendropStyle reads.
 // QMargins between a push button's edge and its label.
@@ -72,16 +77,31 @@ void styleAccentButton(QAbstractButton *button);
 void stylePlainButton(QAbstractButton *button);
 void setPadding(QWidget *button, const QMargins &padding, Qt::Alignment align = Qt::AlignCenter);
 // Text color of a label or similar for every color group; disabled defaults
-// to the palette's disabled text.
-void setTextColor(QWidget *widget, const QColor &color, const QColor &disabled = QColor());
+// to the palette's disabled text. The widget follows a scheme switch.
+void setTextColor(QWidget *widget, const Theme::Tone &color, const Theme::Tone &disabled = Theme::Tone());
 // No frame and no background: the scroll area shows the surface it sits on.
 // Call after setWidget(), which turns the content's background back on.
 void clearScrollArea(QAbstractScrollArea *area);
 // Small modal dialog: dark gray background, white 12px Pixel Mixed for every
 // child that does not set its own font or colors.
 void styleDialog(QWidget *dialog);
+// styleDialog as a frameless, rounded popover next to anchor, the control
+// that opened it (centered by Qt when anchor is null). A click outside
+// closes it as Cancel would. Call last in the constructor, once the
+// dialog's contents have their final size.
+void stylePopover(QDialog *dialog, const QWidget *anchor);
 // Terminal glyph for the log toggle.
 QIcon terminalIcon(const QColor &color);
+// A white glyph from the resources (an alpha mask) in the tone's color for
+// the scheme on screen; the dark side of the tone left invalid keeps the
+// glyph as drawn.
+QIcon glyphIcon(const QString &path, const Theme::Tone &tone);
+// glyphIcon on a button or a label's pixmap, redone after scheme switches.
+void setGlyphIcon(QAbstractButton *button, const QString &path, const Theme::Tone &tone);
+void setGlyphPixmap(QLabel *label, const QString &path, const Theme::Tone &tone);
+// Runs `apply` now and after every scheme switch while `context` lives, for
+// state built from resolved colors (icons, palettes).
+void onThemeChanged(QObject *context, const std::function<void()> &apply);
 
 }
 
@@ -156,14 +176,14 @@ class StatusChip : public QWidget
 
 public:
     explicit StatusChip(QWidget *parent = nullptr);
-    void setStatus(const QColor &dot, const QString &text);
+    void setStatus(const Theme::Tone &dot, const QString &text);
     QSize sizeHint() const override;
 
 protected:
     void paintEvent(QPaintEvent *event) override;
 
 private:
-    QColor dot;
+    Theme::Tone dot;
     QString text;
 };
 

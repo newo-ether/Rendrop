@@ -5,6 +5,7 @@
 #include <QApplication>
 #include <QComboBox>
 #include <QCursor>
+#include <QDialog>
 #include <QEvent>
 #include <QMenu>
 #include <QPainter>
@@ -28,6 +29,7 @@ constexpr qreal openScale = 0.94;
 constexpr qreal closeScale = 0.97;
 constexpr char borderProperty[] = "rendropPopupBorder";
 constexpr char radiusProperty[] = "rendropPopupRadius";
+constexpr char anchorProperty[] = "rendropPopupAnchor";
 
 // Material's emphasized decelerate: most of the travel happens at once and
 // the rest settles in.
@@ -43,13 +45,20 @@ QEasingCurve openCurve()
 // grabbed.
 bool isLivePopup(const QWidget *popup)
 {
-    return qobject_cast<const QMenu *>(popup) || popup->inherits("QComboBoxPrivateContainer");
+    return qobject_cast<const QMenu *>(popup) || qobject_cast<const QDialog *>(popup)
+        || popup->inherits("QComboBoxPrivateContainer");
 }
 
 // Where the popup came from, in global coordinates: the combo box for a
 // combo popup, the pointer for a menu.
 QRect anchorOf(const QWidget *popup)
 {
+    // A popover dialog remembers what opened it.
+    const QVariant anchor = popup->property(anchorProperty);
+    if (anchor.isValid())
+    {
+        return anchor.toRect();
+    }
     if (popup->inherits("QComboBoxPrivateContainer"))
     {
         if (const auto *combo = qobject_cast<const QComboBox *>(popup->parentWidget()))
@@ -312,4 +321,10 @@ void PopupMotion::attach(QWidget *popup, const QColor &border, qreal radius)
     popup->setProperty(borderProperty, border);
     popup->setProperty(radiusProperty, radius);
     popup->installEventFilter(MotionFilter::instance());
+}
+
+void PopupMotion::attach(QDialog *popover, const QColor &border, qreal radius, const QRect &globalAnchor)
+{
+    popover->setProperty(anchorProperty, globalAnchor);
+    attach(static_cast<QWidget *>(popover), border, radius);
 }

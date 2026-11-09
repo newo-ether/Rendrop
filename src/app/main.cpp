@@ -16,6 +16,7 @@
 #include "ui/motion/frame_driver.h"
 #include "ui/style/look_widgets.h"
 #include "ui/style/rendrop_style.h"
+#include "ui/style/theme.h"
 #include "ui/window/widget.h"
 
 namespace {
@@ -50,7 +51,6 @@ int main(int argc, char *argv[])
     // Before any widget exists, so every widget is polished by it.
     RendropStyle::install();
     Look::installTextRendering();
-    FrameDriver::installForScreen();
     QCoreApplication::setApplicationName(QStringLiteral("Rendrop"));
     QCoreApplication::setApplicationVersion(QStringLiteral("2.0.3"));
     // The window hides to the tray; message boxes closing while it is hidden
@@ -79,10 +79,15 @@ int main(int argc, char *argv[])
     {
         return 1;
     }
-    Autostart::sync(AppPreferencesFile::load());
+    const AppPreferences preferences = AppPreferencesFile::load();
+    Autostart::sync(preferences);
+    // Before the first window, so it opens in its scheme without a fade.
+    Theme::init(Theme::modeFromName(preferences.theme));
 
     int exitCode = 0;
     do {
+        // Every exec() takes the driver off as it returns.
+        FrameDriver::installForScreen();
         QTranslator translator;
         // Qt's own strings: message box buttons, text edit context menus.
         QTranslator qtTranslator;

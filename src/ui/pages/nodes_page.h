@@ -10,6 +10,7 @@
 #include <QWidget>
 
 #include "farm/node_agent.h"
+#include "ui/style/theme.h"
 
 class LoadMonitor;
 class QLabel;
@@ -27,7 +28,7 @@ class NodeTable : public QWidget
 public:
     struct Row
     {
-        QColor dot;
+        Theme::Tone dot;
         QString name;
         QString address;
         QString state;
@@ -68,7 +69,7 @@ public:
     NodesPage(NodeAgent *agent, RenderQueue *queue, const LoadMonitor *monitor, QWidget *parent = nullptr);
 
     // Short state of this machine, shared with the title bar.
-    static QString describeSelf(const NodeAgent::Snapshot &snapshot, QColor *dot);
+    static QString describeSelf(const NodeAgent::Snapshot &snapshot, Theme::Tone *dot);
     // Follows a rebuilt agent after the farm settings change. May be null
     // while the old one shuts down.
     void setAgent(NodeAgent *newAgent);

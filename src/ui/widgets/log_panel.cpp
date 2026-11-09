@@ -7,8 +7,10 @@
 
 #include <QDateTime>
 #include <QGraphicsOpacityEffect>
+#include <QLayout>
 #include <QPlainTextEdit>
 #include <QScrollBar>
+#include <QSpacerItem>
 #include <QTextDocument>
 #include <QVariantAnimation>
 #include <QVBoxLayout>
@@ -22,6 +24,10 @@ namespace {
 constexpr int logHeight = 160;
 constexpr int logMs = 260;
 constexpr int logRadius = 12;
+// Below twice the corner radius the rounded card cannot be drawn as itself,
+// so it stays invisible there and fades in over the next stretch of height.
+constexpr int hiddenBelow = 2 * logRadius;
+constexpr int fadeSpan = 48;
 
 } // namespace
 
@@ -40,12 +46,12 @@ LogPanel::LogPanel(QWidget *parent):
     setFixedHeight(logHeight);
 
     // Same frame-around-surface card as the queue list.
-    RoundedSurface::install(this, logRadius, QColor(0x2C, 0x31, 0x3C));
-    RoundedSurface::install(view, 10, QColor(26, 28, 32));
+    RoundedSurface::install(this, logRadius, Theme::frame);
+    RoundedSurface::install(view, 10, Theme::surface);
     Look::clearScrollArea(view);
     view->setFont(Look::monoFont(8));
     view->document()->setDocumentMargin(6);
-    Look::setTextColor(view, QColor(180, 180, 200));
+    Look::setTextColor(view, Theme::logText);
     // Whenever the range changes (a line arrives, the card is shown or
     // resized) the view stays at the bottom, unless the user has scrolled up
     // to read; scrolling back to the bottom resumes following. While the
@@ -70,6 +76,30 @@ void LogPanel::setShadow(DropShadowWidget *value)
     shadow = value;
 }
 
+void LogPanel::setLeadingGap(QSpacerItem *item, int size)
+{
+    gap = item;
+    gapSize = size;
+    applySlot(shown ? logHeight + gapSize : 0);
+}
+
+void LogPanel::applySlot(int value)
+{
+    slot = std::clamp(value, 0, logHeight + gapSize);
+    // The gap comes first and goes last, so the card itself grows from and
+    // shrinks to nothing right against the cards above.
+    const int gapHeight = std::min(slot, gapSize);
+    if (gap)
+    {
+        gap->changeSize(0, gapHeight, QSizePolicy::Minimum, QSizePolicy::Fixed);
+        if (parentWidget() && parentWidget()->layout())
+        {
+            parentWidget()->layout()->invalidate();
+        }
+    }
+    setFixedHeight(slot - gapHeight);
+}
+
 void LogPanel::append(const QString &text)
 {
     view->appendPlainText(QDateTime::currentDateTime().toString(QStringLiteral("HH:mm:ss  ")) + text);
@@ -91,20 +121,21 @@ void LogPanel::setShown(bool visible)
         {
             shadow->setFade(1.0);
         }
-        setFixedHeight(logHeight);
         setVisible(visible);
+        applySlot(visible ? logHeight + gapSize : 0);
+        if (!visible)
+        {
+            // Laid out at full height for the next show.
+            setFixedHeight(logHeight);
+        }
         followTail();
         return;
     }
-    // The card grows from or shrinks to nothing; the cards around it give
-    // way or ride along.
-    const int from = isVisible() ? height() : 0;
-    const int to = visible ? logHeight : 0;
-    // Below twice the corner radius the rounded card cannot be drawn as
-    // itself, so it stays invisible there and fades in over the next
-    // stretch of height.
-    constexpr int hiddenBelow = 2 * logRadius;
-    constexpr int fadeSpan = 48;
+    // The card and its gap grow from or shrink to nothing; the cards around
+    // them give way or ride along.
+    const int full = logHeight + gapSize;
+    const int from = isVisible() ? slot : 0;
+    const int to = visible ? full : 0;
     auto *fade = qobject_cast<QGraphicsOpacityEffect *>(graphicsEffect());
     if (!fade)
     {
@@ -112,13 +143,13 @@ void LogPanel::setShown(bool visible)
         setGraphicsEffect(fade);
     }
     const auto applyHeight = [this, fade](int value) {
-        const qreal alpha = std::clamp(static_cast<qreal>(value - hiddenBelow) / fadeSpan, 0.0, 1.0);
+        applySlot(value);
+        const qreal alpha = std::clamp(static_cast<qreal>(height() - hiddenBelow) / fadeSpan, 0.0, 1.0);
         fade->setOpacity(alpha);
         if (shadow)
         {
             shadow->setFade(alpha);
         }
-        setFixedHeight(value);
         followTail();
     };
     applyHeight(from);
@@ -127,7 +158,7 @@ void LogPanel::setShown(bool visible)
     grow->setStartValue(from);
     grow->setEndValue(to);
     // A reversal part way only travels what is left.
-    grow->setDuration(std::max(120, logMs * std::abs(to - from) / logHeight));
+    grow->setDuration(std::max(120, logMs * std::abs(to - from) / full));
     grow->setEasingCurve(Look::bezierInOut(Look::cubicInOut));
     QObject::connect(grow, &QVariantAnimation::valueChanged, this, [applyHeight](const QVariant &value) {
         applyHeight(value.toInt());
@@ -140,7 +171,11 @@ void LogPanel::setShown(bool visible)
             shadow->setFade(1.0);
         }
         setVisible(visible);
-        setFixedHeight(logHeight);
+        applySlot(visible ? logHeight + gapSize : 0);
+        if (!visible)
+        {
+            setFixedHeight(logHeight);
+        }
         followTail();
     });
     animation = grow;

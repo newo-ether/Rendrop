@@ -123,9 +123,11 @@ void Widget::changeEvent(QEvent *event)
 
 void Widget::setupWindowFrame()
 {
-    // The app has a single dark theme; keep native parts (system menu, Snap
-    // Layout flyout) dark too, whatever the system color scheme is.
-    windowAgent->setWindowAttribute(QStringLiteral("dark-mode"), true);
+    // Native parts (system menu, Snap Layout flyout) follow the app's scheme,
+    // not the system one.
+    Look::onThemeChanged(this, [this]() {
+        windowAgent->setWindowAttribute(QStringLiteral("dark-mode"), !Theme::isLight());
+    });
 
     CaptionButton *minimizeButton = new CaptionButton(CaptionButton::Kind::Minimize, ui->titleBar);
     maximizeButton = new CaptionButton(CaptionButton::Kind::Maximize, ui->titleBar);
@@ -429,21 +431,21 @@ void Widget::updateStatusChip()
             nodes += worker.leaseId.isNull() ? 0 : 1;
         }
         ui->statusChip->setStatus(
-            QColor(110, 110, 180),
+            Theme::accent,
             nodes > 1 ? tr("Rendering · %n node(s)", nullptr, nodes) : tr("Rendering")
         );
         return;
     }
     if (blenderVersionManager->getBlenderVersionCount() == 0)
     {
-        ui->statusChip->setStatus(QColor(215, 165, 70), tr("No Blender"));
+        ui->statusChip->setStatus(Theme::warning, tr("No Blender"));
         return;
     }
-    QColor dot;
+    Theme::Tone dot;
     const QString self = NodesPage::describeSelf(snapshot, &dot);
     if (!snapshot.enabled)
     {
-        ui->statusChip->setStatus(QColor(90, 185, 120), tr("Ready"));
+        ui->statusChip->setStatus(Theme::ok, tr("Ready"));
         return;
     }
     const int peers = static_cast<int>(snapshot.peers.size());
@@ -454,7 +456,7 @@ void Widget::installRoundedSurfaces()
 {
     // The pages paint their own cards; only the window background is left.
     ui->ContentWidget->setAutoFillBackground(true);
-    Look::setTextColor(ui->rendropLabel, Qt::white);
+    Look::setTextColor(ui->rendropLabel, Theme::textStrong);
 }
 
 void Widget::onLanguageChanged(int index)

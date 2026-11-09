@@ -6,15 +6,19 @@
 
 #include <QAbstractScrollArea>
 #include <QApplication>
+#include <QDialog>
 #include <QEvent>
 #include <QFontMetrics>
+#include <QLabel>
 #include <QPainter>
 #include <QPainterPath>
 #include <QPixmap>
 #include <QPolygonF>
+#include <QScreen>
 
 #include <QScrollArea>
 
+#include "ui/motion/popup_motion.h"
 #include "ui/style/look_widgets.h"
 
 namespace Look {
@@ -25,6 +29,42 @@ QString &pixelFamilyStorage()
     static QString family = QStringLiteral("Mi Outfit");
     return family;
 }
+
+// The tones setTextColor() gave a widget, put back into its palette after a
+// scheme switch. Found again by its object name.
+constexpr char textToneName[] = "rendropTextTone";
+
+class TextTone : public QObject
+{
+public:
+    explicit TextTone(QWidget *widget):
+        QObject(widget),
+        widget(widget)
+    {
+        setObjectName(QLatin1String(textToneName));
+        QObject::connect(Theme::notifier(), &Theme::Notifier::changed, this, [this]() { apply(); });
+    }
+
+    void apply() const
+    {
+        QPalette palette = widget->palette();
+        const QColor resolved = color.color();
+        for (const QPalette::ColorRole role : {QPalette::WindowText, QPalette::Text, QPalette::ButtonText})
+        {
+            palette.setColor(QPalette::Active, role, resolved);
+            palette.setColor(QPalette::Inactive, role, resolved);
+            if (disabled.isValid())
+            {
+                palette.setColor(QPalette::Disabled, role, disabled.color());
+            }
+        }
+        widget->setPalette(palette);
+    }
+
+    QWidget *widget;
+    Theme::Tone color;
+    Theme::Tone disabled;
+};
 }
 
 void selectFontEngine()
@@ -104,8 +144,7 @@ QFont monoFont(int pointSize, QFont::Weight weight)
 RoundedSurface::Colors plainButtonColors()
 {
     RoundedSurface::Colors colors {
-        QColor(0x33, 0x38, 0x42), QColor(0x4B, 0x53, 0x62), QColor(0x2B, 0x2F, 0x38), QColor(0x2E, 0x31, 0x38),
-        QColor(65, 65, 85)};
+        Theme::control, Theme::controlHover, Theme::controlPressed, Theme::controlDisabled, Theme::controlBorder};
     colors.text = textColor;
     return colors;
 }
@@ -113,22 +152,21 @@ RoundedSurface::Colors plainButtonColors()
 RoundedSurface::Colors accentButtonColors()
 {
     RoundedSurface::Colors colors {
-        QColor(90, 90, 150), QColor(120, 120, 180), QColor(70, 70, 130), QColor(85, 89, 95)};
-    colors.text = Qt::white;
+        Theme::accentFill, Theme::accentHover, Theme::accentPressed, Theme::accentDisabled};
+    colors.text = Theme::onAccent;
     return colors;
 }
 
 RoundedSurface::Colors fieldColors()
 {
     return RoundedSurface::Colors {
-        QColor(0x33, 0x38, 0x42), QColor(0x3C, 0x42, 0x4D), QColor(), QColor(0x2E, 0x31, 0x38),
-        QColor(65, 65, 85), accentColor};
+        Theme::control, Theme::fieldHover, {}, Theme::controlDisabled, Theme::controlBorder, accentColor};
 }
 
 RoundedSurface::Colors comboColors()
 {
     RoundedSurface::Colors colors = fieldColors();
-    colors.focusBorder = QColor();
+    colors.focusBorder = {};
     return colors;
 }
 
@@ -152,19 +190,23 @@ void setPadding(QWidget *button, const QMargins &padding, Qt::Alignment align)
     button->update();
 }
 
-void setTextColor(QWidget *widget, const QColor &color, const QColor &disabled)
+void setTextColor(QWidget *widget, const Theme::Tone &color, const Theme::Tone &disabled)
 {
-    QPalette palette = widget->palette();
-    for (const QPalette::ColorRole role : {QPalette::WindowText, QPalette::Text, QPalette::ButtonText})
+    auto *tone = static_cast<TextTone *>(
+        widget->findChild<QObject *>(QLatin1String(textToneName), Qt::FindDirectChildrenOnly));
+    if (!tone)
     {
-        palette.setColor(QPalette::Active, role, color);
-        palette.setColor(QPalette::Inactive, role, color);
-        if (disabled.isValid())
-        {
-            palette.setColor(QPalette::Disabled, role, disabled);
-        }
+        tone = new TextTone(widget);
     }
-    widget->setPalette(palette);
+    tone->color = color;
+    tone->disabled = disabled;
+    tone->apply();
+}
+
+void onThemeChanged(QObject *context, const std::function<void()> &apply)
+{
+    apply();
+    QObject::connect(Theme::notifier(), &Theme::Notifier::changed, context, apply);
 }
 
 void clearScrollArea(QAbstractScrollArea *area)
@@ -180,14 +222,56 @@ void clearScrollArea(QAbstractScrollArea *area)
 
 void styleDialog(QWidget *dialog)
 {
-    QPalette palette = dialog->palette();
-    palette.setColor(QPalette::Window, QColor(43, 45, 48));
-    dialog->setPalette(palette);
+    onThemeChanged(dialog, [dialog]() {
+        QPalette palette = dialog->palette();
+        palette.setColor(QPalette::Window, Theme::dialog);
+        dialog->setPalette(palette);
+    });
     dialog->setAutoFillBackground(true);
-    setTextColor(dialog, Qt::white);
+    setTextColor(dialog, Theme::textStrong);
     QFont font = pixelFont(9);
     font.setPixelSize(12);
     dialog->setFont(font);
+}
+
+void stylePopover(QDialog *dialog, const QWidget *anchor)
+{
+    constexpr qreal radius = 10;
+    constexpr int gap = 6;
+    const QColor border = Theme::popupBorder;
+    styleDialog(dialog);
+    // Qt::Popup closes the window on a click anywhere outside it, which
+    // rejects the dialog like Esc does. Rounded corners need a see-through
+    // window, without the square system shadow around them.
+    dialog->setWindowFlags(Qt::Popup | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint);
+    dialog->setAttribute(Qt::WA_TranslucentBackground);
+    dialog->setAutoFillBackground(false);
+    RoundedSurface::install(dialog, radius, RoundedSurface::Colors {
+        Theme::dialog, {}, {}, {}, Theme::popupBorder});
+
+    // Below the control that opened it, left edges lined up; above it when
+    // the screen ends first. Kept on the anchor's screen.
+    dialog->adjustSize();
+    if (!anchor)
+    {
+        PopupMotion::attach(static_cast<QWidget *>(dialog), border, radius);
+        return;
+    }
+    const QRect from(anchor->mapToGlobal(QPoint(0, 0)), anchor->size());
+    const QSize size = dialog->size();
+    QPoint position(from.left(), from.bottom() + 1 + gap);
+    if (const QScreen *screen = anchor->screen())
+    {
+        const QRect area = screen->availableGeometry();
+        if (position.y() + size.height() > area.bottom() + 1)
+        {
+            position.setY(from.top() - gap - size.height());
+        }
+        position.setX(std::clamp(position.x(), area.left(), std::max(area.left(), area.right() + 1 - size.width())));
+        position.setY(std::clamp(position.y(), area.top(), std::max(area.top(), area.bottom() + 1 - size.height())));
+    }
+    dialog->move(position);
+    PopupMotion::attach(dialog, border, radius, from);
 }
 
 QIcon terminalIcon(const QColor &color)
@@ -206,6 +290,47 @@ QIcon terminalIcon(const QColor &color)
     painter.end();
     pixmap.setDevicePixelRatio(2.0);
     return QIcon(pixmap);
+}
+
+QIcon glyphIcon(const QString &path, const Theme::Tone &tone)
+{
+    const QIcon source(path);
+    const QColor color = tone.color();
+    if (!color.isValid())
+    {
+        return source;
+    }
+    QIcon tinted;
+    for (const QSize &size : source.availableSizes())
+    {
+        QPixmap pixmap = source.pixmap(size);
+        QPainter painter(&pixmap);
+        // Keeps the glyph's alpha, replaces its color.
+        painter.setCompositionMode(QPainter::CompositionMode_SourceIn);
+        painter.fillRect(pixmap.rect(), color);
+        painter.end();
+        tinted.addPixmap(pixmap);
+    }
+    return tinted;
+}
+
+void setGlyphIcon(QAbstractButton *button, const QString &path, const Theme::Tone &tone)
+{
+    onThemeChanged(button, [button, path, tone]() {
+        button->setIcon(glyphIcon(path, tone));
+    });
+}
+
+void setGlyphPixmap(QLabel *label, const QString &path, const Theme::Tone &tone)
+{
+    onThemeChanged(label, [label, path, tone]() {
+        // The largest size; the label scales it down.
+        const QIcon icon = glyphIcon(path, tone);
+        const QList<QSize> sizes = icon.availableSizes();
+        const QSize largest = sizes.isEmpty() ? QSize(256, 256) : *std::max_element(sizes.begin(), sizes.end(),
+            [](const QSize &a, const QSize &b) { return a.width() < b.width(); });
+        label->setPixmap(icon.pixmap(largest));
+    });
 }
 
 }
@@ -268,11 +393,11 @@ void ToggleSwitch::paintEvent(QPaintEvent *)
     // setChecked() under a QSignalBlocker sends no toggled(); it still repaints.
     position.setTarget(isChecked() ? 1.0 : 0.0);
     const qreal on = position.value();
-    QColor trackColor = Look::mix(QColor(0x33, 0x38, 0x42), Look::accentColor, on);
-    trackColor = Look::mix(trackColor, trackColor.lighter(125), hover.value());
+    QColor trackColor = Look::mix(Theme::switchOff, Look::accentColor, on);
+    trackColor = Look::mix(trackColor, Theme::isLight() ? trackColor.darker(108) : trackColor.lighter(125), hover.value());
     const qreal disabled = Fader::level(this, 0, !isEnabled());
-    trackColor = Look::mix(trackColor, QColor(0x55, 0x59, 0x5F), disabled);
-    painter.setPen(QPen(QColor(65, 65, 85), 1));
+    trackColor = Look::mix(trackColor, Theme::disabledFill, disabled);
+    painter.setPen(QPen(Theme::controlBorder.color(), 1));
     painter.setBrush(trackColor);
     painter.drawRoundedRect(track, track.height() / 2, track.height() / 2);
     const qreal knob = track.height() - 4;
@@ -282,7 +407,7 @@ void ToggleSwitch::paintEvent(QPaintEvent *)
     const qreal travel = track.right() - 2 - knob - stretch - left;
     const qreal x = left + travel * on;
     painter.setPen(Qt::NoPen);
-    painter.setBrush(Look::mix(QColor(240, 240, 248), QColor(170, 170, 170), disabled));
+    painter.setBrush(Look::mix(Theme::knob, Theme::knobDisabled, disabled));
     const QRectF knobRect(x, track.top() + 2, knob + stretch, knob);
     painter.drawRoundedRect(knobRect, knob / 2, knob / 2);
 }
@@ -330,25 +455,25 @@ void NavButton::paintEvent(QPaintEvent *)
     painter.setPen(Qt::NoPen);
     if (hovered > 0.0)
     {
-        painter.setBrush(QColor(255, 255, 255, qRound(14 * hovered)));
+        painter.setBrush(Theme::veil(qRound(14 * hovered)));
         painter.drawRoundedRect(area, 8, 8);
     }
     if (chosen > 0.0)
     {
-        QColor fill(0x2B, 0x2D, 0x40);
+        QColor fill = Theme::selected;
         fill.setAlphaF(static_cast<float>(chosen));
         painter.setBrush(fill);
         painter.drawRoundedRect(area, 8, 8);
         // The mark grows from the middle as the button becomes selected.
-        QColor mark = Look::accentColor.lighter(115);
+        QColor mark = Theme::isLight() ? Look::accentColor.color() : Look::accentColor.lighter(115);
         mark.setAlphaF(static_cast<float>(chosen));
         painter.setBrush(mark);
         const qreal half = 8.0 * chosen;
         painter.drawRoundedRect(QRectF(0, area.center().y() - half, 3, half * 2), 1.5, 1.5);
     }
 
-    const QColor rest = Look::mix(QColor(0x8A, 0x8F, 0x9C), QColor(0xC4, 0xC8, 0xD4), hover.value());
-    const QColor glyph = Look::mix(rest, QColor(0xB4, 0xB8, 0xFF), chosen);
+    const QColor rest = Look::mix(Theme::glyph, Theme::glyphHover, hover.value());
+    const QColor glyph = Look::mix(rest, Theme::accentGlyph, chosen);
     QPen pen(glyph, 1.6);
     pen.setCapStyle(Qt::RoundCap);
     pen.setJoinStyle(Qt::RoundJoin);
@@ -440,13 +565,13 @@ void LinearProgress::paintEvent(QPaintEvent *)
     const QRectF track = QRectF(rect());
     const qreal radius = track.height() / 2.0;
     painter.setPen(Qt::NoPen);
-    painter.setBrush(QColor(0x33, 0x35, 0x3C));
+    painter.setBrush(Theme::track.color());
     painter.drawRoundedRect(track, radius, radius);
     if (value > 0.0)
     {
         QRectF fill = track;
         fill.setWidth(std::max(track.height(), track.width() * value / 100.0));
-        painter.setBrush(Look::accentColor.lighter(110));
+        painter.setBrush(Theme::isLight() ? Look::accentColor.color() : Look::accentColor.lighter(110));
         painter.drawRoundedRect(fill, radius, radius);
     }
 }
@@ -461,9 +586,9 @@ StatusChip::StatusChip(QWidget *parent):
     setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
 }
 
-void StatusChip::setStatus(const QColor &newDot, const QString &newText)
+void StatusChip::setStatus(const Theme::Tone &newDot, const QString &newText)
 {
-    if (dot == newDot && text == newText)
+    if (dot.dark == newDot.dark && dot.light == newDot.light && text == newText)
     {
         return;
     }
@@ -486,10 +611,10 @@ void StatusChip::paintEvent(QPaintEvent *)
     painter.setRenderHint(QPainter::TextAntialiasing);
     const QRectF area = QRectF(rect()).adjusted(0.5, 0.5, -0.5, -0.5);
     painter.setPen(Qt::NoPen);
-    painter.setBrush(QColor(0x2B, 0x2D, 0x33));
+    painter.setBrush(Theme::chip.color());
     painter.drawRoundedRect(area, area.height() / 2, area.height() / 2);
-    painter.setBrush(dot);
+    painter.setBrush(dot.color());
     painter.drawEllipse(QRectF(11, area.center().y() - 3.5, 7, 7));
-    painter.setPen(QColor(0xA8, 0xAC, 0xB8));
+    painter.setPen(Theme::textMuted.color());
     painter.drawText(rect().adjusted(24, 0, -8, 0), Qt::AlignVCenter | Qt::AlignLeft, text);
 }

@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "ui/style/drop_shadow_widget.h"
+#include "ui/style/theme.h"
 
 namespace {
 
@@ -236,7 +237,10 @@ void DropShadowWidget::paintShadow(QPainter &painter, const QRectF &target, cons
     const float halfBlur = blur * 0.5f;
     const float radius = std::clamp(params.borderRadius * scale, 0.0f,
         static_cast<float>(std::min(rect.width(), rect.height())) * 0.5f);
-    const float alphaMax = std::clamp(params.alphaMax, 0.0f, 1.0f);
+    // Black at full strength turns a light background muddy; the light
+    // scheme keeps the same shape at less than half the darkness.
+    const float schemeScale = Theme::isLight() ? 0.4f : 1.0f;
+    const float alphaMax = std::clamp(params.alphaMax * schemeScale, 0.0f, 1.0f);
     // Columns and rows this far inside the rect are constant along the edge.
     const float inset = std::max(radius, halfBlur);
 
