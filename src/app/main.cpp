@@ -52,7 +52,7 @@ int main(int argc, char *argv[])
     RendropStyle::install();
     Look::installTextRendering();
     QCoreApplication::setApplicationName(QStringLiteral("Rendrop"));
-    QCoreApplication::setApplicationVersion(QStringLiteral("2.0.3"));
+    QCoreApplication::setApplicationVersion(QStringLiteral("2.0.4"));
     // The window hides to the tray; message boxes closing while it is hidden
     // must not end the process. Quitting goes through the tray menu.
     app.setQuitOnLastWindowClosed(false);

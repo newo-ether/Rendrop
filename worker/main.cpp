@@ -35,7 +35,7 @@ int main(int argc, char *argv[])
 {
     QCoreApplication application(argc, argv);
     QCoreApplication::setApplicationName(QStringLiteral("rendrop-worker"));
-    QCoreApplication::setApplicationVersion(QStringLiteral("2.0.3"));
+    QCoreApplication::setApplicationVersion(QStringLiteral("2.0.4"));
 
     QCommandLineParser parser;
     parser.setApplicationDescription(QStringLiteral(
@@ -76,7 +76,7 @@ int main(int argc, char *argv[])
     }
     if (parser.isSet(versionOption))
     {
-        std::fputs("rendrop-worker 2.0.3\n", stdout);
+        std::fputs("rendrop-worker 2.0.4\n", stdout);
         return 0;
     }
 
