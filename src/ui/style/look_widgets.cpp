@@ -8,6 +8,8 @@
 #include <QApplication>
 #include <QDialog>
 #include <QEvent>
+#include <QFile>
+#include <QFontDatabase>
 #include <QFontMetrics>
 #include <QLabel>
 #include <QPainter>
@@ -105,8 +107,33 @@ void applyTextRendering(QFont &font)
 void installTextRendering()
 {
     QFont font = QApplication::font();
+    // The bundled face, not the system UI font: a system with Segoe UI
+    // swapped out (its registry entries emptied for a substitute) makes Qt's
+    // FreeType database fall back through every installed family, which
+    // cost half a second at startup on a machine with 1600 font files.
+    font.setFamily(pixelFamilyStorage());
     applyTextRendering(font);
     QApplication::setFont(font);
+}
+
+void addBundledFonts()
+{
+    // From data, not from the resource path: Qt's FreeType engine reads a
+    // non-native path again for every face it opens, so each weight and
+    // axis setting of the 19 MB Mi Outfit kept its own copy of the file.
+    // Data fonts are opened from the one copy the database holds.
+    for (const char *path : {":/font/MiOutfit.ttf", ":/font/JetBrainsMono-Regular.ttf",
+             ":/font/JetBrainsMono-Bold.ttf", ":/font/BitcountSingle-Bold.ttf"})
+    {
+        QFile file(QString::fromLatin1(path));
+        if (file.open(QIODevice::ReadOnly))
+        {
+            QFontDatabase::addApplicationFontFromData(file.readAll());
+        }
+    }
+    // Chinese in JetBrains Mono text comes from Mi Outfit, which carries
+    // MiSans, instead of whatever the system falls back to.
+    QFontDatabase::addApplicationFallbackFontFamily(QChar::Script_Han, pixelFamilyStorage());
 }
 
 QString pixelFamily()
@@ -123,7 +150,29 @@ QFont pixelFont(int pointSize, QFont::Weight weight)
 {
     QFont font(pixelFamilyStorage());
     font.setPointSize(pointSize);
-    font.setWeight(weight);
+    // Mi Outfit is a variable font whose named instances stop at 200, 300,
+    // 400, 500 and 700. Any other weight is an imperfect match, and Qt meets
+    // its first imperfect match by enumerating every installed family (half
+    // a second with 1600 font files). So the request names the instance
+    // below and the wght axis carries the exact weight.
+    static const int instances[] = {200, 300, 400, 500, 700};
+    int named = instances[0];
+    for (int instance : instances)
+    {
+        if (instance <= weight)
+        {
+            named = instance;
+        }
+    }
+    if (named != weight && pixelFamilyStorage() == QLatin1String("Mi Outfit"))
+    {
+        font.setWeight(QFont::Weight(named));
+        font.setVariableAxis(QFont::Tag("wght"), float(weight));
+    }
+    else
+    {
+        font.setWeight(weight);
+    }
     applyTextRendering(font);
     return font;
 }
@@ -131,10 +180,12 @@ QFont pixelFont(int pointSize, QFont::Weight weight)
 QFont monoFont(int pointSize, QFont::Weight weight)
 {
     QFont font(QStringLiteral("JetBrains Mono"));
-    // JetBrains Mono has no CJK; Mi Outfit (Outfit + MiSans) carries it, so
-    // Chinese in mono text matches the rest of the UI instead of the system
-    // fallback.
-    font.setFamilies({QStringLiteral("JetBrains Mono"), pixelFamilyStorage()});
+    // JetBrains Mono has no CJK; Mi Outfit (Outfit + MiSans) carries it
+    // through the application fallback main() registers for Han. A family
+    // list would do the same, but Qt resolves the system fallbacks of a
+    // multi-family font when it loads it, which enumerates every installed
+    // family at startup; the application fallback is only consulted once a
+    // glyph is missing.
     font.setPointSize(pointSize);
     font.setWeight(weight);
     applyTextRendering(font);

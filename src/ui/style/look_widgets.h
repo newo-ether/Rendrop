@@ -26,6 +26,9 @@ class QDialog;
 // painting is RendropStyle's and RoundedSurface's.
 namespace Look {
 
+// Registers the fonts in the resources (Mi Outfit, JetBrains Mono, Bitcount
+// Single) and Mi Outfit as the fallback for Chinese. Call after QApplication.
+void addBundledFonts();
 // Family behind pixelFont(); "Mi Outfit" unless a test swaps it.
 QString pixelFamily();
 void setPixelFamily(const QString &family);

@@ -1,7 +1,6 @@
 // main.cpp
 
 #include <QApplication>
-#include <QFontDatabase>
 #include <QLocalServer>
 #include <QLocalSocket>
 #include <QPointer>
@@ -70,10 +69,7 @@ int main(int argc, char *argv[])
     // Started by the Run entry at login: stay in the tray.
     bool startInTray = app.arguments().contains(QLatin1String(Autostart::trayArgument));
 
-    QFontDatabase::addApplicationFont(":/font/MiOutfit.ttf");
-    QFontDatabase::addApplicationFont(":/font/JetBrainsMono-Regular.ttf");
-    QFontDatabase::addApplicationFont(":/font/JetBrainsMono-Bold.ttf");
-    QFontDatabase::addApplicationFont(":/font/BitcountSingle-Bold.ttf");
+    Look::addBundledFonts();
 
     if (!AppPaths::ensureConfigDirectory())
     {

@@ -182,9 +182,7 @@ int main(int argc, char *argv[])
         FrameDriver::installForScreen();
     }
     QCoreApplication::setApplicationName(QStringLiteral("RendropSnapshot"));
-    QFontDatabase::addApplicationFont(":/font/MiOutfit.ttf");
-    QFontDatabase::addApplicationFont(":/font/JetBrainsMono-Regular.ttf");
-    QFontDatabase::addApplicationFont(":/font/JetBrainsMono-Bold.ttf");
+    Look::addBundledFonts();
     if (qEnvironmentVariableIntValue("RENDROP_SNAPSHOT_TOGGLES") == 1 && argc > 1)
     {
         QWidget sheet;
@@ -278,7 +276,6 @@ int main(int argc, char *argv[])
             Look::setPixelFamily(families.first());
         }
     }
-    QFontDatabase::addApplicationFont(":/font/BitcountSingle-Bold.ttf");
     if (argc < 2)
     {
         return 1;

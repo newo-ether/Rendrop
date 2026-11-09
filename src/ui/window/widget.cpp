@@ -51,6 +51,13 @@ Widget::Widget(AppController *controller, int languageIndex, QWidget *parent):
     windowAgent = new QWK::WidgetWindowAgent(this);
     windowAgent->setup(this);
     ui->setupUi(this);
+    // widget.ui gives the content Segoe UI; the app face replaces it for the
+    // same reason as Look::installTextRendering().
+    {
+        QFont font = ui->ContentWidget->font();
+        font.setFamily(Look::pixelFamily());
+        ui->ContentWidget->setFont(font);
+    }
     // Before any shadow exists, so none flashes when they are off.
     DropShadowWidget::setShadowsEnabled(AppPreferencesFile::load().shadows);
     setupWindowFrame();
