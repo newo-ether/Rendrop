@@ -1,6 +1,7 @@
 // file_bar.cpp
 
 #include <algorithm>
+#include <cmath>
 
 #include <QEvent>
 #include <QMouseEvent>
@@ -139,6 +140,10 @@ FileBar::FileBar(QWidget *parent, const ProjectInfo &project):
     ui->fileBarContentWidget->setToolTip(tr("Click to open the project"));
 
     applySnapshot(project);
+    // A new bar starts in its state's colors; only later changes animate.
+    timer->stop();
+    style = targetStyle;
+    velocity = Style::zero();
     show();
     dropShadowWidget->setVisible(DropShadowWidget::shadowsEnabled());
 }
@@ -476,10 +481,12 @@ void FileBar::updateProgress()
 void FileBar::updateStyle()
 {
     qint64 elapsed = elapsedTimer->elapsed();
-    float dt = static_cast<float>(elapsed - lastElapsed) / 1000;
+    // A stalled event loop must not hand the spring one huge step: explicit
+    // integration diverges once damping * step exceeds 2, which flashes
+    // clamped colors. Long gaps are dropped and the rest is cut into 5ms steps.
+    float dt = std::min(static_cast<float>(elapsed - lastElapsed) / 1000, 0.05f);
     lastElapsed = elapsed;
-    int iteration = std::max(1, static_cast<int>(dt / 0.01f));
-    iteration = std::min(iteration, 10);
+    const int iteration = std::max(1, static_cast<int>(std::ceil(dt / 0.005f)));
     dt /= iteration;
     for (int index = 0; index < iteration; ++index)
     {
